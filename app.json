@@ -2,6 +2,7 @@
   "expo": {
     "name": "city-care-mobile",
     "slug": "city-care-mobile",
+    "owner": "citycare",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -43,6 +44,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "3a2efec0-7cf2-4e4b-8709-a785e0de8ca8"
+      }
     }
   }
 }
