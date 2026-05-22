@@ -1,3 +1,4 @@
+import { refreshToken as apiRefreshToken } from "@/services/auth";
 import * as SecureStore from "expo-secure-store";
 
 const KEYS = {
@@ -5,10 +6,10 @@ const KEYS = {
   refreshToken: "auth_refresh_token",
 } as const;
 
-export async function saveTokens(accessToken: string, refreshToken: string) {
+export async function saveTokens(access: string, refresh: string) {
   await Promise.all([
-    SecureStore.setItemAsync(KEYS.accessToken, accessToken),
-    SecureStore.setItemAsync(KEYS.refreshToken, refreshToken),
+    SecureStore.setItemAsync(KEYS.accessToken, access),
+    SecureStore.setItemAsync(KEYS.refreshToken, refresh),
   ]);
 }
 
@@ -34,5 +35,29 @@ export function isTokenExpired(token: string): boolean {
     return payload.exp * 1000 < Date.now() + 30_000;
   } catch {
     return true;
+  }
+}
+
+/**
+ * Retourne un access token valide.
+ * Si le token courant est expiré, tente un refresh automatique.
+ * Retourne null si le refresh échoue (session terminée).
+ */
+export async function getValidToken(): Promise<string | null> {
+  const access = await SecureStore.getItemAsync(KEYS.accessToken);
+  if (access && !isTokenExpired(access)) return access;
+
+  const refresh = await SecureStore.getItemAsync(KEYS.refreshToken);
+  if (!refresh) return null;
+
+  try {
+    const res = await apiRefreshToken(refresh);
+    await Promise.all([
+      SecureStore.setItemAsync(KEYS.accessToken, res.accessToken),
+      SecureStore.setItemAsync(KEYS.refreshToken, res.refreshToken),
+    ]);
+    return res.accessToken;
+  } catch {
+    return null;
   }
 }

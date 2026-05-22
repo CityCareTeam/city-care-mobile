@@ -40,7 +40,14 @@
           }
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-maps",
+        {
+          "requestLocationPermission": true,
+          "locationPermission": "Autoriser $(PRODUCT_NAME) à utiliser votre localisation"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
