@@ -1,4 +1,5 @@
 import { ToastMessage } from "@/components/ui/ToastMessage";
+import { CityCareColors } from "@/constants/theme";
 import {
     DarkTheme,
     DefaultTheme,
@@ -23,6 +24,16 @@ export default function RootLayout() {
         <Stack.Screen name="login" options={{ headerShown: false }} />
         <Stack.Screen name="register" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="report"
+          options={{
+            presentation: "modal",
+            title: "Signaler un incident",
+            headerStyle: { backgroundColor: CityCareColors.background },
+            headerTintColor: CityCareColors.primary,
+            headerTitleStyle: { fontWeight: "700", color: CityCareColors.text },
+          }}
+        />
         <Stack.Screen
           name="modal"
           options={{ presentation: "modal", title: "Modal" }}

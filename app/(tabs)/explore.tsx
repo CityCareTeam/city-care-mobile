@@ -1,112 +1,458 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { CityCareColors } from "@/constants/theme";
+import { getMe } from "@/services/auth";
+import { getIncidents, updateIncidentStatus } from "@/services/incidents";
+import { getValidToken } from "@/storage/tokens";
+import type { IncidentResponse } from "@/types/incidents";
+import { useFocusEffect } from "@react-navigation/native";
+import { router } from "expo-router";
+import { useCallback, useRef, useState } from "react";
+import {
+    ActivityIndicator,
+    Alert,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
+import MapView, { Marker, Region } from "react-native-maps";
 
-import { Collapsible } from '@/components/ui/collapsible';
-import { ExternalLink } from '@/components/external-link';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Fonts } from '@/constants/theme';
+const LYON: Region = {
+  latitude: 45.748,
+  longitude: 4.847,
+  latitudeDelta: 0.08,
+  longitudeDelta: 0.08,
+};
 
-export default function TabTwoScreen() {
+const STATUS_COLOR: Record<string, string> = {
+  reported: "#2196f3", // bleu — déclaré, en attente
+  in_progress: "#f0a500", // jaune — en cours
+  resolved: "#4caf50", // vert — résolu
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  reported: "Déclaré",
+  in_progress: "En cours",
+  resolved: "Résolu",
+};
+
+const TYPE_LABEL: Record<string, string> = {
+  Road: "Voirie",
+  Lighting: "Éclairage",
+  Waste: "Déchets",
+  Graffiti: "Graffiti",
+  Safety: "Sécurité",
+  Other: "Autre",
+};
+
+// Transitions valides côté client (le back valide aussi)
+const NEXT_STATUSES: Record<string, string[]> = {
+  reported: ["in_progress", "resolved"],
+  in_progress: ["resolved"],
+  resolved: [],
+};
+
+export default function SignalementsScreen() {
+  const [incidents, setIncidents] = useState<IncidentResponse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<IncidentResponse | null>(null);
+  const [isStaff, setIsStaff] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const markerJustPressed = useRef(false);
+
+  const loadIncidents = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await getIncidents();
+      setIncidents(res.data);
+    } catch {
+      // réseau indisponible — liste vide
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadIncidents();
+      // Vérifie le rôle à chaque focus via auth/me
+      getValidToken().then((token) => {
+        if (!token) {
+          setIsStaff(false);
+          return;
+        }
+        getMe(token)
+          .then((me) => {
+            setIsStaff(me.mainRole === "Admin" || me.mainRole === "Agent");
+          })
+          .catch(() => setIsStaff(false));
+      });
+    }, [loadIncidents]),
+  );
+
+  const handleStatusChange = useCallback(
+    async (newStatus: string) => {
+      if (!selected) return;
+      setUpdatingStatus(true);
+      try {
+        const token = await getValidToken();
+        if (!token) throw new Error("Non authentifié");
+        await updateIncidentStatus(selected.id, newStatus, token);
+        // Mise à jour locale immédiate
+        const updated = { ...selected, status: newStatus } as IncidentResponse;
+        setIncidents((prev) =>
+          prev.map((inc) => (inc.id === selected.id ? updated : inc)),
+        );
+        setSelected(updated);
+      } catch (e) {
+        Alert.alert(
+          "Erreur",
+          e instanceof Error ? e.message : "Erreur inconnue",
+        );
+      } finally {
+        setUpdatingStatus(false);
+      }
+    },
+    [selected],
+  );
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
-      headerImage={
-        <IconSymbol
-          size={310}
-          color="#808080"
-          name="chevron.left.forwardslash.chevron.right"
-          style={styles.headerImage}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText
-          type="title"
-          style={{
-            fontFamily: Fonts.rounded,
-          }}>
-          Explore
-        </ThemedText>
-      </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
-        </ThemedText>
-        <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image
-          source={require('@/assets/images/react-logo.png')}
-          style={{ width: 100, height: 100, alignSelf: 'center' }}
-        />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful{' '}
-          <ThemedText type="defaultSemiBold" style={{ fontFamily: Fonts.mono }}>
-            react-native-reanimated
-          </ThemedText>{' '}
-          library to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
-            </ThemedText>
-          ),
-        })}
-      </Collapsible>
-    </ParallaxScrollView>
+    <View style={styles.container}>
+      <MapView
+        style={styles.map}
+        initialRegion={LYON}
+        showsUserLocation
+        onPress={() => {
+          if (!markerJustPressed.current) setSelected(null);
+        }}
+      >
+        {incidents.map((inc) => (
+          <Marker
+            key={inc.id}
+            coordinate={{ latitude: inc.latitude, longitude: inc.longitude }}
+            pinColor={STATUS_COLOR[inc.status] ?? CityCareColors.primary}
+            tracksViewChanges={false}
+            onPress={() => {
+              markerJustPressed.current = true;
+              setSelected(inc);
+              setTimeout(() => {
+                markerJustPressed.current = false;
+              }, 350);
+            }}
+          />
+        ))}
+      </MapView>
+
+      {loading && (
+        <View style={styles.loader}>
+          <ActivityIndicator color={CityCareColors.primary} size="large" />
+        </View>
+      )}
+
+      {/* Bouton refresh */}
+      <TouchableOpacity
+        style={styles.refreshBtn}
+        onPress={loadIncidents}
+        activeOpacity={0.8}
+        disabled={loading}
+      >
+        <Text style={styles.refreshIcon}>↻</Text>
+      </TouchableOpacity>
+
+      {/* Bottom sheet détail */}
+      {selected && (
+        <View style={styles.sheet}>
+          <View style={styles.sheetHandle} />
+
+          {/* En-tête */}
+          <View style={styles.sheetHeader}>
+            <View style={styles.sheetTitleRow}>
+              <Text style={styles.sheetType}>
+                {TYPE_LABEL[selected.type] ?? selected.type}
+              </Text>
+              <View
+                style={[
+                  styles.statusBadge,
+                  { backgroundColor: STATUS_COLOR[selected.status] ?? "#999" },
+                ]}
+              >
+                <Text style={styles.statusBadgeText}>
+                  {STATUS_LABEL[selected.status] ?? selected.status}
+                </Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              onPress={() => setSelected(null)}
+              style={styles.closeBtn}
+            >
+              <Text style={styles.closeBtnText}>✕</Text>
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView showsVerticalScrollIndicator={false}>
+            {/* Description */}
+            <View style={styles.descBlock}>
+              <Text style={styles.sheetDesc}>{selected.description}</Text>
+            </View>
+
+            {/* Infos */}
+            <View style={styles.infoCard}>
+              {selected.addressLabel ? (
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Adresse</Text>
+                  <Text style={styles.infoValue} numberOfLines={2}>
+                    {selected.addressLabel}
+                  </Text>
+                </View>
+              ) : null}
+              <View style={[styles.infoRow, styles.infoRowBorder]}>
+                <Text style={styles.infoLabel}>Signalé le</Text>
+                <Text style={styles.infoValue}>
+                  {new Date(selected.createdAt).toLocaleDateString("fr-FR", {
+                    day: "2-digit",
+                    month: "long",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </Text>
+              </View>
+              {selected.resolvedAt ? (
+                <View style={[styles.infoRow, styles.infoRowBorder]}>
+                  <Text style={styles.infoLabel}>Résolu le</Text>
+                  <Text
+                    style={[
+                      styles.infoValue,
+                      { color: CityCareColors.statusGreen },
+                    ]}
+                  >
+                    {new Date(selected.resolvedAt).toLocaleDateString("fr-FR", {
+                      day: "2-digit",
+                      month: "long",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+
+            {/* Boutons statut — agents / admins */}
+            {isStaff && NEXT_STATUSES[selected.status]?.length > 0 && (
+              <View style={styles.statusActions}>
+                <Text style={styles.statusActionsLabel}>Changer le statut</Text>
+                <View style={styles.statusActionsRow}>
+                  {NEXT_STATUSES[selected.status].map((s) => (
+                    <TouchableOpacity
+                      key={s}
+                      style={[
+                        styles.statusActionBtn,
+                        { backgroundColor: STATUS_COLOR[s] ?? "#999" },
+                      ]}
+                      onPress={() => handleStatusChange(s)}
+                      disabled={updatingStatus}
+                      activeOpacity={0.8}
+                    >
+                      {updatingStatus ? (
+                        <ActivityIndicator size="small" color="#fff" />
+                      ) : (
+                        <Text style={styles.statusActionBtnText}>
+                          {STATUS_LABEL[s]}
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            )}
+          </ScrollView>
+        </View>
+      )}
+
+      {/* FAB Signaler — masqué quand le sheet est ouvert */}
+      {!selected && (
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => router.push("/report")}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.fabIcon}>+</Text>
+          <Text style={styles.fabLabel}>Signaler</Text>
+        </TouchableOpacity>
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  headerImage: {
-    color: '#808080',
-    bottom: -90,
-    left: -35,
-    position: 'absolute',
+  container: { flex: 1 },
+  map: { flex: 1 },
+  loader: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(249,247,233,0.6)",
   },
-  titleContainer: {
-    flexDirection: 'row',
+  fab: {
+    position: "absolute",
+    bottom: 32,
+    right: 24,
+    backgroundColor: CityCareColors.primary,
+    borderRadius: 28,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  refreshBtn: {
+    position: "absolute",
+    top: 56,
+    right: 16,
+    backgroundColor: CityCareColors.primary,
+    borderRadius: 22,
+    width: 44,
+    height: 44,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+    opacity: 1,
+  },
+  refreshIcon: { fontSize: 20, color: "#fff", fontWeight: "700" },
+  fabIcon: { fontSize: 24, color: "#fff", fontWeight: "700", marginRight: 8 },
+  fabLabel: { fontSize: 15, fontWeight: "700", color: "#fff" },
+  // Bottom sheet
+  sheet: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: CityCareColors.background,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingBottom: 36,
+    paddingTop: 10,
+    maxHeight: "62%",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 12,
+  },
+  sheetHandle: {
+    width: 44,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: CityCareColors.secondary,
+    alignSelf: "center",
+    marginBottom: 14,
+  },
+  sheetHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 14,
+  },
+  sheetTitleRow: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
     gap: 8,
   },
+  sheetType: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: CityCareColors.text,
+  },
+  statusBadge: {
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  statusBadgeText: { color: "#fff", fontWeight: "700", fontSize: 12 },
+  closeBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: CityCareColors.secondary,
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: 8,
+  },
+  closeBtnText: { fontSize: 13, color: CityCareColors.text, fontWeight: "700" },
+  descBlock: {
+    backgroundColor: CityCareColors.white,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: CityCareColors.primary,
+  },
+  sheetDesc: {
+    fontSize: 14,
+    color: CityCareColors.text,
+    lineHeight: 21,
+  },
+  infoCard: {
+    backgroundColor: CityCareColors.white,
+    borderRadius: 12,
+    overflow: "hidden",
+    marginBottom: 14,
+  },
+  infoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+  },
+  infoRowBorder: {
+    borderTopWidth: 1,
+    borderTopColor: CityCareColors.background,
+  },
+  infoLabel: {
+    fontSize: 13,
+    color: CityCareColors.text,
+    opacity: 0.5,
+    flex: 1,
+  },
+  infoValue: {
+    fontSize: 13,
+    color: CityCareColors.text,
+    fontWeight: "600",
+    flex: 2,
+    textAlign: "right",
+  },
+  // Status actions (agent/admin)
+  statusActions: {
+    marginBottom: 4,
+  },
+  statusActionsLabel: {
+    fontSize: 11,
+    color: CityCareColors.text,
+    opacity: 0.45,
+    marginBottom: 10,
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+    fontWeight: "600",
+  },
+  statusActionsRow: { flexDirection: "row", gap: 10 },
+  statusActionBtn: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  statusActionBtnText: { fontWeight: "700", fontSize: 14, color: "#fff" },
 });

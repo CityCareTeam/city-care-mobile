@@ -10,4 +10,7 @@ export const API_ENDPOINTS = {
   // Users
   userMe: `${API_BASE_URL}/users/me`,
   userMyIncidents: `${API_BASE_URL}/users/me/incidents`,
+  // Incidents
+  incidents: `${API_BASE_URL}/incidents`,
+  geocodeReverse: `${API_BASE_URL}/geocode/reverse`,
 };
