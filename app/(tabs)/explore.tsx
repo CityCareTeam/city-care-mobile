@@ -323,8 +323,8 @@ export default function SignalementsScreen() {
         </View>
       )}
 
-      {/* FAB Signaler — masqué quand le sheet est ouvert */}
-      {!selected && (
+      {/* FAB Signaler — citoyens uniquement, masqué quand le sheet est ouvert */}
+      {!selected && !isStaff && (
         <TouchableOpacity
           style={styles.fab}
           onPress={() => router.push("/report")}
