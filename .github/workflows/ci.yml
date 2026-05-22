@@ -43,7 +43,7 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npm audit --audit-level=moderate
+      - run: npm audit --audit-level=high
  
   # ── Tests ─────────────────────────────────────────────────────────────
   test:
@@ -56,7 +56,7 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npm test -- --watchAll=false --passWithNoTests
+      - run: npx jest --watchAll=false --passWithNoTests
  
   # ── Build APK (main uniquement) ───────────────────────────────────────
   build:
