@@ -7,4 +7,7 @@ export const API_ENDPOINTS = {
   refresh: `${API_BASE_URL}/auth/refresh`,
   me: `${API_BASE_URL}/auth/me`,
   logout: `${API_BASE_URL}/auth/logout`,
+  // Users
+  userMe: `${API_BASE_URL}/users/me`,
+  userMyIncidents: `${API_BASE_URL}/users/me/incidents`,
 };
