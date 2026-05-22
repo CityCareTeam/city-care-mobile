@@ -120,3 +120,26 @@ export async function updateIncidentStatus(
     throw new Error(msg);
   }
 }
+
+export async function deleteIncident(
+  id: string,
+  accessToken: string,
+): Promise<void> {
+  const response = await fetch(`${API_ENDPOINTS.incidents}/${id}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!response.ok) {
+    const text = await response.text().catch(() => "");
+    let msg = `Erreur ${response.status}`;
+    try {
+      const data = JSON.parse(text) as Record<string, unknown>;
+      msg =
+        ((data?.error ?? data?.message ?? data?.title ?? text) as string) ||
+        msg;
+    } catch {
+      if (text) msg = text;
+    }
+    throw new Error(msg);
+  }
+}
