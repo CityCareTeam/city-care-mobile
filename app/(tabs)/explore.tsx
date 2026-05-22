@@ -1,6 +1,10 @@
 import { CityCareColors } from "@/constants/theme";
 import { getMe } from "@/services/auth";
-import { getIncidents, updateIncidentStatus } from "@/services/incidents";
+import {
+    deleteIncident,
+    getIncidents,
+    updateIncidentStatus,
+} from "@/services/incidents";
 import { getValidToken } from "@/storage/tokens";
 import type { IncidentResponse } from "@/types/incidents";
 import { useFocusEffect } from "@react-navigation/native";
@@ -57,6 +61,7 @@ export default function SignalementsScreen() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<IncidentResponse | null>(null);
   const [isStaff, setIsStaff] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const markerJustPressed = useRef(false);
 
@@ -84,8 +89,12 @@ export default function SignalementsScreen() {
         getMe(token)
           .then((me) => {
             setIsStaff(me.mainRole === "Admin" || me.mainRole === "Agent");
+            setIsAdmin(me.mainRole === "Admin");
           })
-          .catch(() => setIsStaff(false));
+          .catch(() => {
+            setIsStaff(false);
+            setIsAdmin(false);
+          });
       });
     }, [loadIncidents]),
   );
@@ -115,6 +124,37 @@ export default function SignalementsScreen() {
     },
     [selected],
   );
+
+  const handleDelete = useCallback(() => {
+    if (!selected) return;
+    Alert.alert(
+      "Supprimer l'incident",
+      "Cette action est irréversible. Confirmer la suppression ?",
+      [
+        { text: "Annuler", style: "cancel" },
+        {
+          text: "Supprimer",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const token = await getValidToken();
+              if (!token) throw new Error("Non authentifié");
+              await deleteIncident(selected.id, token);
+              setIncidents((prev) =>
+                prev.filter((inc) => inc.id !== selected.id),
+              );
+              setSelected(null);
+            } catch (e) {
+              Alert.alert(
+                "Erreur",
+                e instanceof Error ? e.message : "Erreur inconnue",
+              );
+            }
+          },
+        },
+      ],
+    );
+  }, [selected]);
 
   return (
     <View style={styles.container}>
@@ -265,6 +305,19 @@ export default function SignalementsScreen() {
                   ))}
                 </View>
               </View>
+            )}
+
+            {/* Bouton suppression — admin uniquement */}
+            {isAdmin && (
+              <TouchableOpacity
+                style={styles.deleteBtn}
+                onPress={handleDelete}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.deleteBtnText}>
+                  {"Supprimer l'incident"}
+                </Text>
+              </TouchableOpacity>
             )}
           </ScrollView>
         </View>
@@ -455,4 +508,18 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   statusActionBtnText: { fontWeight: "700", fontSize: 14, color: "#fff" },
+  deleteBtn: {
+    marginTop: 12,
+    borderRadius: 12,
+    paddingVertical: 13,
+    alignItems: "center",
+    backgroundColor: "#fdecea",
+    borderWidth: 1,
+    borderColor: CityCareColors.statusRed,
+  },
+  deleteBtnText: {
+    fontWeight: "700",
+    fontSize: 14,
+    color: CityCareColors.statusRed,
+  },
 });
