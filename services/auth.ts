@@ -1,4 +1,5 @@
 import { API_ENDPOINTS } from "@/constants/api";
+import { fetchWithTimeout, throwFromResponse } from "@/services/api-client";
 import type {
     LoginPayload,
     LoginResponse,
@@ -6,44 +7,6 @@ import type {
     RegisterPayload,
     RegisterResponse,
 } from "@/types/auth";
-
-// ── Helpers ──────────────────────────────────────────────────────────────
-
-const TIMEOUT_MS = 8000;
-
-function fetchWithTimeout(
-  url: string,
-  options: RequestInit,
-): Promise<Response> {
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), TIMEOUT_MS);
-  return fetch(url, { ...options, signal: controller.signal }).finally(() =>
-    clearTimeout(id),
-  );
-}
-
-async function throwFromResponse(
-  response: Response,
-  fallback: string,
-): Promise<never> {
-  const text = await response.text().catch(() => "");
-  try {
-    const json = JSON.parse(text);
-    // Format validation ASP.NET Core : { errors: { Field: ["msg"] }, title: "..." }
-    if (json.errors && typeof json.errors === "object") {
-      const first = Object.values(json.errors as Record<string, string[]>)[0];
-      if (Array.isArray(first) && first.length > 0) throw new Error(first[0]);
-    }
-    // Format OAuth Keycloak : { error: "invalid_grant", error_description: "..." }
-    if (json.error_description) throw new Error(json.error_description);
-    throw new Error(json.message ?? json.error ?? json.title ?? fallback);
-  } catch (e) {
-    if (e instanceof Error && e.message !== fallback) throw e;
-    throw new Error(text || fallback);
-  }
-}
-
-// ── Fonctions ────────────────────────────────────────────────────────────
 
 export async function login(payload: LoginPayload): Promise<LoginResponse> {
   let response: Response;

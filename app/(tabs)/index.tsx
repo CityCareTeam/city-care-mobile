@@ -1,7 +1,9 @@
 import { IncidentRow } from "@/components/incident-row";
 import { Logo } from "@/components/ui/Logo";
 import { STATUS_COLOR, STATUS_LABEL, TYPE_LABEL } from "@/constants/incidents";
+import { ROLE_LABELS } from "@/constants/roles";
 import { CityCareColors } from "@/constants/theme";
+import { applyFilters, useIncidentFilters } from "@/hooks/use-incident-filters";
 import { getMe } from "@/services/auth";
 import { getIncidents } from "@/services/incidents";
 import { getMyIncidents } from "@/services/users";
@@ -10,7 +12,7 @@ import type { IncidentResponse } from "@/types/incidents";
 import type { MyIncidentItem } from "@/types/users";
 import { useFocusEffect } from "@react-navigation/native";
 import { router } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
     ActivityIndicator,
     RefreshControl,
@@ -33,12 +35,6 @@ const TODAY = (() => {
 })();
 
 type Role = "Admin" | "Agent" | "Citizen" | null;
-
-const ROLE_LABEL: Record<string, string> = {
-  Citizen: "Citoyen",
-  Agent: "Agent municipal",
-  Admin: "Administrateur",
-};
 
 // ── Composants partagés ───────────────────────────────────────────────────
 
@@ -150,25 +146,16 @@ function CitizenView({
   const inProgress = incidents.filter((i) => i.status === "in_progress").length;
   const resolved = incidents.filter((i) => i.status === "resolved").length;
 
-  const [filterType, setFilterType] = useState<string | null>(null);
-  const [filterStatus, setFilterStatus] = useState<string | null>(null);
+  const { filterType, setFilterType, filterStatus, setFilterStatus, filteredIncidents: filteredMyIncidents } =
+    useIncidentFilters(incidents);
 
-  const typeCount: Record<string, number> = {};
-  allIncidents.forEach((inc) => {
-    typeCount[inc.type] = (typeCount[inc.type] ?? 0) + 1;
-  });
+  const typeCount = useMemo(() => {
+    const acc: Record<string, number> = {};
+    allIncidents.forEach((inc) => { acc[inc.type] = (acc[inc.type] ?? 0) + 1; });
+    return acc;
+  }, [allIncidents]);
 
-  const filteredMyIncidents = incidents.filter((inc) => {
-    if (filterType && inc.type !== filterType) return false;
-    if (filterStatus && inc.status !== filterStatus) return false;
-    return true;
-  });
-
-  const filteredAllIncidents = allIncidents.filter((inc) => {
-    if (filterType && inc.type !== filterType) return false;
-    if (filterStatus && inc.status !== filterStatus) return false;
-    return true;
-  });
+  const filteredAllIncidents = applyFilters(allIncidents, filterType, filterStatus);
 
   return (
     <>
@@ -307,23 +294,16 @@ function AgentView({
     (i) => i.status === "reported" || i.status === "in_progress",
   );
   const reportedCount = toHandle.filter((i) => i.status === "reported").length;
-  const inProgressCount = toHandle.filter(
-    (i) => i.status === "in_progress",
-  ).length;
+  const inProgressCount = toHandle.filter((i) => i.status === "in_progress").length;
 
-  const [filterType, setFilterType] = useState<string | null>(null);
-  const [filterStatus, setFilterStatus] = useState<string | null>(null);
+  const { filterType, setFilterType, filterStatus, setFilterStatus, filteredIncidents: filteredToHandle } =
+    useIncidentFilters(toHandle);
 
-  const typeCount: Record<string, number> = {};
-  toHandle.forEach((inc) => {
-    typeCount[inc.type] = (typeCount[inc.type] ?? 0) + 1;
-  });
-
-  const filteredToHandle = toHandle.filter((inc) => {
-    if (filterType && inc.type !== filterType) return false;
-    if (filterStatus && inc.status !== filterStatus) return false;
-    return true;
-  });
+  const typeCount = useMemo(() => {
+    const acc: Record<string, number> = {};
+    toHandle.forEach((inc) => { acc[inc.type] = (acc[inc.type] ?? 0) + 1; });
+    return acc;
+  }, [toHandle]);
 
   return (
     <>
@@ -435,19 +415,14 @@ function AdminView({
   const inProgress = incidents.filter((i) => i.status === "in_progress").length;
   const resolved = incidents.filter((i) => i.status === "resolved").length;
 
-  const typeCount: Record<string, number> = {};
-  incidents.forEach((inc) => {
-    typeCount[inc.type] = (typeCount[inc.type] ?? 0) + 1;
-  });
+  const { filterType, setFilterType, filterStatus, setFilterStatus, filteredIncidents } =
+    useIncidentFilters(incidents);
 
-  const [filterType, setFilterType] = useState<string | null>(null);
-  const [filterStatus, setFilterStatus] = useState<string | null>(null);
-
-  const filteredIncidents = incidents.filter((inc) => {
-    if (filterType && inc.type !== filterType) return false;
-    if (filterStatus && inc.status !== filterStatus) return false;
-    return true;
-  });
+  const typeCount = useMemo(() => {
+    const acc: Record<string, number> = {};
+    incidents.forEach((inc) => { acc[inc.type] = (acc[inc.type] ?? 0) + 1; });
+    return acc;
+  }, [incidents]);
 
   return (
     <>
@@ -640,7 +615,7 @@ export default function HomeScreen() {
         </View>
         {role && (
           <View style={styles.rolePill}>
-            <Text style={styles.rolePillText}>{ROLE_LABEL[role] ?? role}</Text>
+            <Text style={styles.rolePillText}>{ROLE_LABELS[role] ?? role}</Text>
           </View>
         )}
       </View>

@@ -1,4 +1,5 @@
 import { API_ENDPOINTS } from "@/constants/api";
+import { fetchWithTimeout } from "@/services/api-client";
 import type {
     CreateIncidentPayload,
     IncidentListResponse,
@@ -12,15 +13,17 @@ export type ReverseGeocodeResult = {
   country: string;
 };
 
-export async function reverseGeocode(
-  lat: number,
-  lng: number,
-): Promise<ReverseGeocodeResult | null> {
-  const response = await fetch(
-    `${API_ENDPOINTS.geocodeReverse}?lat=${lat}&lng=${lng}`,
-  );
-  if (!response.ok) return null;
-  return response.json() as Promise<ReverseGeocodeResult>;
+async function parseErrorMessage(
+  response: Response,
+  fallback: string,
+): Promise<string> {
+  const text = await response.text().catch(() => "");
+  try {
+    const data = JSON.parse(text) as Record<string, unknown>;
+    return ((data?.error ?? data?.message ?? data?.title ?? text) as string) || fallback;
+  } catch {
+    return text || fallback;
+  }
 }
 
 // Mapping vers les valeurs entières .NET (ordre de l'enum côté backend)
@@ -33,11 +36,22 @@ const INCIDENT_TYPE_INT: Record<string, number> = {
   Other: 5,
 };
 
+export async function reverseGeocode(
+  lat: number,
+  lng: number,
+): Promise<ReverseGeocodeResult | null> {
+  const response = await fetch(
+    `${API_ENDPOINTS.geocodeReverse}?lat=${lat}&lng=${lng}`,
+  );
+  if (!response.ok) return null;
+  return response.json() as Promise<ReverseGeocodeResult>;
+}
+
 export async function createIncident(
   payload: CreateIncidentPayload,
   accessToken: string,
 ): Promise<IncidentResponse> {
-  const response = await fetch(API_ENDPOINTS.incidents, {
+  const response = await fetchWithTimeout(API_ENDPOINTS.incidents, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -56,7 +70,6 @@ export async function createIncident(
     try {
       const data = JSON.parse(text) as Record<string, unknown>;
       if (data?.errors && typeof data.errors === "object") {
-        // ASP.NET Core validation errors — affiche les champs en erreur
         const fields = Object.entries(data.errors as Record<string, string[]>)
           .map(([k, v]) => `${k}: ${v.join(", ")}`)
           .join(" | ");
@@ -98,26 +111,19 @@ export async function updateIncidentStatus(
   accessToken: string,
   comment?: string,
 ): Promise<void> {
-  const response = await fetch(`${API_ENDPOINTS.incidents}/${id}/status`, {
-    method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${accessToken}`,
+  const response = await fetchWithTimeout(
+    `${API_ENDPOINTS.incidents}/${id}/status`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({ status, comment }),
     },
-    body: JSON.stringify({ status, comment }),
-  });
+  );
   if (!response.ok) {
-    const text = await response.text().catch(() => "");
-    let msg = `Erreur ${response.status}`;
-    try {
-      const data = JSON.parse(text) as Record<string, unknown>;
-      msg =
-        ((data?.error ?? data?.message ?? data?.title ?? text) as string) ||
-        msg;
-    } catch {
-      if (text) msg = text;
-    }
-    throw new Error(msg);
+    throw new Error(await parseErrorMessage(response, `Erreur ${response.status}`));
   }
 }
 
@@ -125,21 +131,14 @@ export async function deleteIncident(
   id: string,
   accessToken: string,
 ): Promise<void> {
-  const response = await fetch(`${API_ENDPOINTS.incidents}/${id}`, {
-    method: "DELETE",
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
+  const response = await fetchWithTimeout(
+    `${API_ENDPOINTS.incidents}/${id}`,
+    {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${accessToken}` },
+    },
+  );
   if (!response.ok) {
-    const text = await response.text().catch(() => "");
-    let msg = `Erreur ${response.status}`;
-    try {
-      const data = JSON.parse(text) as Record<string, unknown>;
-      msg =
-        ((data?.error ?? data?.message ?? data?.title ?? text) as string) ||
-        msg;
-    } catch {
-      if (text) msg = text;
-    }
-    throw new Error(msg);
+    throw new Error(await parseErrorMessage(response, `Erreur ${response.status}`));
   }
 }
