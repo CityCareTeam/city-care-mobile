@@ -9,7 +9,8 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?logo=typescript&logoColor=white&style=flat-square)](https://www.typescriptlang.org/)
 [![Expo](https://img.shields.io/badge/Expo-54-000020?logo=expo&logoColor=white&style=flat-square)](https://expo.dev)
 [![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20Android-lightgrey?style=flat-square)](#)
-[![CI/CD](https://img.shields.io/github/actions/workflow/status/CityCareTeam/city-care-mobile/ci.yml?style=flat-square&label=CI/CD)](https://github.com/CityCareTeam/city-care-mobile/actions)
+[![CI/CD](https://img.shields.io/github/actions/workflow/status/CityCareTeam/city-care-mobile/ci-cd.yml?style=flat-square&label=CI/CD)](https://github.com/CityCareTeam/city-care-mobile/actions)
+[![Coverage](https://codecov.io/gh/CityCareTeam/city-care-mobile/branch/main/graph/badge.svg)](https://codecov.io/gh/CityCareTeam/city-care-mobile)
 
 ---
 
@@ -99,6 +100,18 @@ Créer un fichier `.env` à la racine :
 
 ```env
 GOOGLE_MAPS_API_KEY=your_google_maps_key_here
+```
+
+---
+
+## Tests
+
+```bash
+# Lancer les tests
+npm test
+
+# Lancer les tests avec rapport de coverage
+npm run test:coverage
 ```
 
 ---
