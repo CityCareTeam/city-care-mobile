@@ -1,11 +1,12 @@
 import { ConfigContext, ExpoConfig } from "expo/config";
+import { version } from "./package.json";
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: "city-care-mobile",
   slug: "city-care-mobile",
   owner: "citycare",
-  version: "1.0.0",
+  version,
   orientation: "portrait",
   icon: "./assets/images/icon.png",
   scheme: "citycaremobile",
