@@ -1,5 +1,11 @@
+import {
+    NEXT_STATUSES,
+    STATUS_COLOR,
+    STATUS_LABEL,
+    TYPE_LABEL,
+} from "@/constants/incidents";
 import { CityCareColors } from "@/constants/theme";
-import { getMe } from "@/services/auth";
+import { useRole } from "@/hooks/use-role";
 import {
     deleteIncident,
     getIncidents,
@@ -8,8 +14,8 @@ import {
 import { getValidToken } from "@/storage/tokens";
 import type { IncidentResponse } from "@/types/incidents";
 import { useFocusEffect } from "@react-navigation/native";
-import { router } from "expo-router";
-import { useCallback, useRef, useState } from "react";
+import { router, useLocalSearchParams } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
@@ -28,42 +34,15 @@ const LYON: Region = {
   longitudeDelta: 0.08,
 };
 
-const STATUS_COLOR: Record<string, string> = {
-  reported: "#2196f3", // bleu — déclaré, en attente
-  in_progress: "#f0a500", // jaune — en cours
-  resolved: "#4caf50", // vert — résolu
-};
-
-const STATUS_LABEL: Record<string, string> = {
-  reported: "Déclaré",
-  in_progress: "En cours",
-  resolved: "Résolu",
-};
-
-const TYPE_LABEL: Record<string, string> = {
-  Road: "Voirie",
-  Lighting: "Éclairage",
-  Waste: "Déchets",
-  Graffiti: "Graffiti",
-  Safety: "Sécurité",
-  Other: "Autre",
-};
-
-// Transitions valides côté client (le back valide aussi)
-const NEXT_STATUSES: Record<string, string[]> = {
-  reported: ["in_progress", "resolved"],
-  in_progress: ["resolved"],
-  resolved: [],
-};
-
 export default function SignalementsScreen() {
   const [incidents, setIncidents] = useState<IncidentResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<IncidentResponse | null>(null);
-  const [isStaff, setIsStaff] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const { isStaff, isAdmin } = useRole();
   const markerJustPressed = useRef(false);
+  const { selectId } = useLocalSearchParams<{ selectId?: string }>();
+  const pendingSelectRef = useRef<string | null>(null);
 
   const loadIncidents = useCallback(async () => {
     setLoading(true);
@@ -77,26 +56,21 @@ export default function SignalementsScreen() {
     }
   }, []);
 
+  // Auto-sélection depuis le dashboard
+  useEffect(() => {
+    if (!pendingSelectRef.current || incidents.length === 0) return;
+    const inc = incidents.find((i) => i.id === pendingSelectRef.current);
+    if (inc) {
+      setSelected(inc);
+      pendingSelectRef.current = null;
+    }
+  }, [incidents]);
+
   useFocusEffect(
     useCallback(() => {
+      if (selectId) pendingSelectRef.current = selectId;
       loadIncidents();
-      // Vérifie le rôle à chaque focus via auth/me
-      getValidToken().then((token) => {
-        if (!token) {
-          setIsStaff(false);
-          return;
-        }
-        getMe(token)
-          .then((me) => {
-            setIsStaff(me.mainRole === "Admin" || me.mainRole === "Agent");
-            setIsAdmin(me.mainRole === "Admin");
-          })
-          .catch(() => {
-            setIsStaff(false);
-            setIsAdmin(false);
-          });
-      });
-    }, [loadIncidents]),
+    }, [loadIncidents, selectId]),
   );
 
   const handleStatusChange = useCallback(
