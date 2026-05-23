@@ -7,7 +7,7 @@ import { CityCareColors } from "@/constants/theme";
 import { register } from "@/services/auth";
 import { router } from "expo-router";
 import { useState } from "react";
-import { KeyboardAvoidingView, Platform, StyleSheet, Text } from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text } from "react-native";
 
 export default function RegisterScreen() {
   const [email, setEmail] = useState("");
@@ -71,8 +71,13 @@ export default function RegisterScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.screen}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      behavior={Platform.OS === "ios" ? "padding" : "padding"}
     >
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
       <Card>
         <Logo style={styles.logo} />
         <Text style={styles.title}>Créer un compte</Text>
@@ -138,6 +143,7 @@ export default function RegisterScreen() {
           disabled={loading}
         />
       </Card>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -146,6 +152,9 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: CityCareColors.background,
+  },
+  scrollContent: {
+    flexGrow: 1,
     alignItems: "center",
     justifyContent: "center",
     padding: 24,
