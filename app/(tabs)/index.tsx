@@ -1,32 +1,606 @@
+import { IncidentRow } from "@/components/incident-row";
+import { Logo } from "@/components/ui/Logo";
+import { TYPE_LABEL } from "@/constants/incidents";
 import { CityCareColors } from "@/constants/theme";
-import { StyleSheet, Text, View } from "react-native";
+import { getMe } from "@/services/auth";
+import { getIncidents } from "@/services/incidents";
+import { getMyIncidents } from "@/services/users";
+import { getValidToken } from "@/storage/tokens";
+import type { IncidentResponse } from "@/types/incidents";
+import type { MyIncidentItem } from "@/types/users";
+import { useFocusEffect } from "@react-navigation/native";
+import { router } from "expo-router";
+import { useCallback, useState } from "react";
+import {
+    ActivityIndicator,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-export default function HomeScreen() {
+const TODAY = (() => {
+  const s = new Date().toLocaleDateString("fr-FR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+  return s.charAt(0).toUpperCase() + s.slice(1);
+})();
+
+type Role = "Admin" | "Agent" | "Citizen" | null;
+
+const ROLE_LABEL: Record<string, string> = {
+  Citizen: "Citoyen",
+  Agent: "Agent municipal",
+  Admin: "Administrateur",
+};
+
+// ── Composants partagés ───────────────────────────────────────────────────
+
+function StatCard({
+  label,
+  value,
+  color,
+}: {
+  label: string;
+  value: number;
+  color: string;
+}) {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>CityCare+</Text>
-      <Text style={styles.subtitle}>Tableau de bord — à venir</Text>
+    <View
+      style={[
+        styles.statCard,
+        { backgroundColor: color + "1A", borderTopColor: color },
+      ]}
+    >
+      <Text style={[styles.statValue, { color }]}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
     </View>
   );
 }
 
+function EmptyState({ text }: { text: string }) {
+  return (
+    <View style={styles.empty}>
+      <Text style={styles.emptyText}>{text}</Text>
+    </View>
+  );
+}
+
+function SectionHeader({ title, count }: { title: string; count?: number }) {
+  return (
+    <View style={styles.sectionHeader}>
+      <Text style={styles.sectionTitle}>{title}</Text>
+      {count !== undefined && (
+        <View style={styles.countBadge}>
+          <Text style={styles.countBadgeText}>{count}</Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+function IncidentList({
+  incidents,
+  onPress,
+  pageSize = 10,
+}: {
+  incidents: {
+    id: string;
+    type: string;
+    status: string;
+    address: string | null;
+  }[];
+  onPress: (id: string) => void;
+  pageSize?: number;
+}) {
+  const [visibleCount, setVisibleCount] = useState(pageSize);
+  const visible = incidents.slice(0, visibleCount);
+  const remaining = incidents.length - visibleCount;
+
+  return (
+    <View style={styles.incCard}>
+      {visible.map((inc, idx) => (
+        <View key={inc.id}>
+          {idx > 0 && <View style={styles.incDivider} />}
+          <IncidentRow
+            id={inc.id}
+            type={inc.type}
+            status={inc.status}
+            address={inc.address}
+            onPress={onPress}
+          />
+        </View>
+      ))}
+      {remaining > 0 && (
+        <>
+          <View style={styles.incDivider} />
+          <TouchableOpacity
+            style={styles.showMore}
+            onPress={() => setVisibleCount((c) => c + pageSize)}
+            activeOpacity={0.75}
+          >
+            <Text style={styles.showMoreText}>
+              Afficher {Math.min(remaining, pageSize)} de plus
+            </Text>
+          </TouchableOpacity>
+        </>
+      )}
+    </View>
+  );
+}
+
+// ── Vue Citoyen ───────────────────────────────────────────────────────────
+
+function CitizenView({
+  incidents,
+  allIncidents,
+  onPress,
+}: {
+  incidents: MyIncidentItem[];
+  allIncidents: IncidentResponse[];
+  onPress: (id: string) => void;
+}) {
+  const reported = incidents.filter((i) => i.status === "reported").length;
+  const inProgress = incidents.filter((i) => i.status === "in_progress").length;
+  const resolved = incidents.filter((i) => i.status === "resolved").length;
+  const recent = incidents.slice(0, 5);
+
+  return (
+    <>
+      <View style={styles.statRow}>
+        <StatCard label="Déclarés" value={reported} color="#2196f3" />
+        <StatCard label="En cours" value={inProgress} color="#f0a500" />
+        <StatCard label="Résolus" value={resolved} color="#4caf50" />
+      </View>
+
+      <SectionHeader
+        title="Mes signalements récents"
+        count={incidents.length}
+      />
+      {recent.length === 0 ? (
+        <EmptyState text="Aucun signalement pour le moment." />
+      ) : (
+        <IncidentList
+          incidents={recent.map((i) => ({
+            id: i.id,
+            type: i.type,
+            status: i.status,
+            address: i.address_label,
+          }))}
+          onPress={onPress}
+        />
+      )}
+
+      <SectionHeader
+        title="Tous les signalements"
+        count={allIncidents.length}
+      />
+      {allIncidents.length === 0 ? (
+        <EmptyState text="Aucun signalement dans la ville." />
+      ) : (
+        <IncidentList
+          incidents={allIncidents.map((i) => ({
+            id: i.id,
+            type: i.type,
+            status: i.status,
+            address: i.addressLabel,
+          }))}
+          onPress={onPress}
+        />
+      )}
+    </>
+  );
+}
+
+// ── Vue Agent ─────────────────────────────────────────────────────────────
+
+function AgentView({
+  incidents,
+  onPress,
+}: {
+  incidents: IncidentResponse[];
+  onPress: (id: string) => void;
+}) {
+  const toHandle = incidents.filter(
+    (i) => i.status === "reported" || i.status === "in_progress",
+  );
+  const reportedCount = toHandle.filter((i) => i.status === "reported").length;
+  const inProgressCount = toHandle.filter(
+    (i) => i.status === "in_progress",
+  ).length;
+
+  return (
+    <>
+      <View style={styles.statRow}>
+        <StatCard label="À traiter" value={reportedCount} color="#2196f3" />
+        <StatCard label="En cours" value={inProgressCount} color="#f0a500" />
+      </View>
+
+      <SectionHeader title="Incidents à traiter" count={toHandle.length} />
+      {toHandle.length === 0 ? (
+        <EmptyState text="Tout est traité, bravo !" />
+      ) : (
+        <IncidentList
+          incidents={toHandle.map((i) => ({
+            id: i.id,
+            type: i.type,
+            status: i.status,
+            address: i.addressLabel,
+          }))}
+          onPress={onPress}
+        />
+      )}
+    </>
+  );
+}
+
+// ── Vue Admin ─────────────────────────────────────────────────────────────
+
+function AdminView({
+  incidents,
+  onPress,
+}: {
+  incidents: IncidentResponse[];
+  onPress: (id: string) => void;
+}) {
+  const reported = incidents.filter((i) => i.status === "reported").length;
+  const inProgress = incidents.filter((i) => i.status === "in_progress").length;
+  const resolved = incidents.filter((i) => i.status === "resolved").length;
+
+  const typeCount: Record<string, number> = {};
+  incidents.forEach((inc) => {
+    typeCount[inc.type] = (typeCount[inc.type] ?? 0) + 1;
+  });
+
+  const recent = incidents.slice(0, 5);
+
+  return (
+    <>
+      <View style={styles.statRow}>
+        <StatCard label="Déclarés" value={reported} color="#2196f3" />
+        <StatCard label="En cours" value={inProgress} color="#f0a500" />
+        <StatCard label="Résolus" value={resolved} color="#4caf50" />
+      </View>
+      <Text style={styles.totalLabel}>
+        {incidents.length} signalement{incidents.length !== 1 ? "s" : ""} au
+        total
+      </Text>
+
+      <SectionHeader title="Par catégorie" />
+      <View style={styles.typeRow}>
+        {Object.entries(typeCount).map(([type, count]) => (
+          <View key={type} style={styles.typeChip}>
+            <Text style={styles.typeChipCount}>{count}</Text>
+            <Text style={styles.typeChipLabel}>{TYPE_LABEL[type] ?? type}</Text>
+          </View>
+        ))}
+      </View>
+
+      <SectionHeader title="Signalements récents" count={recent.length} />
+      {recent.length === 0 ? (
+        <EmptyState text="Aucun signalement." />
+      ) : (
+        <IncidentList
+          incidents={recent.map((i) => ({
+            id: i.id,
+            type: i.type,
+            status: i.status,
+            address: i.addressLabel,
+          }))}
+          onPress={onPress}
+        />
+      )}
+    </>
+  );
+}
+
+// ── Écran principal ────────────────────────────────────────────────────────
+
+export default function HomeScreen() {
+  const [role, setRole] = useState<Role>(null);
+  const [firstName, setFirstName] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [myIncidents, setMyIncidents] = useState<MyIncidentItem[]>([]);
+  const [allIncidents, setAllIncidents] = useState<IncidentResponse[]>([]);
+
+  const load = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
+
+    try {
+      const token = await getValidToken();
+      if (!token) return;
+
+      const me = await getMe(token);
+      setRole(me.mainRole);
+      setFirstName(me.firstName);
+
+      if (me.mainRole === "Citizen") {
+        const [myRes, allRes] = await Promise.all([
+          getMyIncidents(token),
+          getIncidents({ pageSize: 50 }),
+        ]);
+        setMyIncidents(myRes.data);
+        setAllIncidents(allRes.data);
+      } else {
+        const res = await getIncidents({ pageSize: 50 });
+        setAllIncidents(res.data);
+      }
+    } catch {
+      // silencieux
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load]),
+  );
+
+  const navigateToIncident = useCallback((id: string) => {
+    router.navigate({
+      pathname: "/(tabs)/explore",
+      params: { selectId: id },
+    });
+  }, []);
+
+  const insets = useSafeAreaInsets();
+
+  if (loading) {
+    return (
+      <View style={[styles.centered, { paddingTop: insets.top }]}>
+        <ActivityIndicator color={CityCareColors.primary} size="large" />
+      </View>
+    );
+  }
+
+  return (
+    <ScrollView
+      style={styles.scroll}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={() => load(true)}
+          tintColor={CityCareColors.primary}
+        />
+      }
+    >
+      {/* Header card */}
+      <View style={styles.headerCard}>
+        <View style={styles.headerRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.headerTag}>CityCare+</Text>
+            <Text style={styles.greeting}>
+              {firstName ? `Bonjour, ${firstName}` : "Bonjour"}
+            </Text>
+            <Text style={styles.headerDate}>{TODAY}</Text>
+          </View>
+          <Logo size={48} />
+        </View>
+        {role && (
+          <View style={styles.rolePill}>
+            <Text style={styles.rolePillText}>{ROLE_LABEL[role] ?? role}</Text>
+          </View>
+        )}
+      </View>
+
+      {role === "Citizen" && (
+        <CitizenView
+          incidents={myIncidents}
+          allIncidents={allIncidents}
+          onPress={navigateToIncident}
+        />
+      )}
+      {role === "Agent" && (
+        <AgentView incidents={allIncidents} onPress={navigateToIncident} />
+      )}
+      {role === "Admin" && (
+        <AdminView incidents={allIncidents} onPress={navigateToIncident} />
+      )}
+    </ScrollView>
+  );
+}
+
 const styles = StyleSheet.create({
-  container: {
+  centered: {
     flex: 1,
     backgroundColor: CityCareColors.background,
-    alignItems: "center",
     justifyContent: "center",
-    padding: 24,
+    alignItems: "center",
   },
-  title: {
-    fontSize: 28,
+  scroll: { flex: 1, backgroundColor: CityCareColors.background },
+  content: { padding: 20, paddingBottom: 40 },
+  // Header card
+  headerCard: {
+    backgroundColor: CityCareColors.primary,
+    borderRadius: 20,
+    padding: 22,
+    marginBottom: 20,
+    shadowColor: CityCareColors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 12,
+  },
+  headerTag: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "rgba(255,255,255,0.65)",
+    textTransform: "uppercase",
+    letterSpacing: 1.2,
+    marginBottom: 4,
+  },
+  greeting: {
+    fontSize: 24,
     fontWeight: "800",
-    color: CityCareColors.text,
-    marginBottom: 8,
+    color: "#fff",
+    marginBottom: 2,
   },
-  subtitle: {
-    fontSize: 15,
+  headerDate: {
+    fontSize: 13,
+    color: "rgba(255,255,255,0.6)",
+  },
+  rolePill: {
+    alignSelf: "flex-start",
+    backgroundColor: "rgba(255,255,255,0.22)",
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+  },
+  rolePillText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#fff",
+  },
+  // Stat cards
+  statRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 24,
+  },
+  statCard: {
+    flex: 1,
+    borderRadius: 12,
+    borderTopWidth: 3,
+    padding: 14,
+    alignItems: "center",
+  },
+  statValue: {
+    fontSize: 30,
+    fontWeight: "800",
+    marginBottom: 2,
+  },
+  statLabel: {
+    fontSize: 11,
     color: CityCareColors.text,
     opacity: 0.5,
+    textAlign: "center",
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
+  totalLabel: {
+    fontSize: 13,
+    color: CityCareColors.text,
+    opacity: 0.5,
+    textAlign: "center",
+    marginTop: -14,
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: CityCareColors.text,
+    opacity: 0.5,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
+  // Type chips (admin)
+  typeRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 24,
+  },
+  typeChip: {
+    backgroundColor: CityCareColors.white,
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  typeChipCount: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: CityCareColors.primary,
+  },
+  typeChipLabel: {
+    fontSize: 13,
+    color: CityCareColors.text,
+    fontWeight: "500",
+  },
+  // Incident list
+  incCard: {
+    backgroundColor: CityCareColors.white,
+    borderRadius: 12,
+    overflow: "hidden",
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  incDivider: {
+    height: 1,
+    backgroundColor: CityCareColors.background,
+    marginHorizontal: 14,
+  },
+  // Empty state
+  empty: {
+    backgroundColor: CityCareColors.white,
+    borderRadius: 12,
+    padding: 28,
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: CityCareColors.text,
+    opacity: 0.5,
+    textAlign: "center",
+  },
+  // Section header
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 10,
+    marginTop: 6,
+  },
+  countBadge: {
+    backgroundColor: CityCareColors.primary + "25",
+    borderRadius: 10,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+  },
+  countBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: CityCareColors.primary,
+  },
+  // Show more
+  showMore: {
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    alignItems: "center",
+  },
+  showMoreText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: CityCareColors.primary,
   },
 });
