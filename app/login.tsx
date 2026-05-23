@@ -1,12 +1,12 @@
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
-import Constants from "expo-constants";
 import { Logo } from "@/components/ui/Logo";
 import { Toast } from "@/components/ui/ToastMessage";
 import { CityCareColors } from "@/constants/theme";
 import { login } from "@/services/auth";
 import { saveTokens } from "@/storage/tokens";
+import Constants from "expo-constants";
 import { router } from "expo-router";
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform, StyleSheet, Text } from "react-native";
@@ -80,7 +80,9 @@ export default function LoginScreen() {
           disabled={loading}
         />
       </Card>
-      <Text style={styles.version}>v {Constants.expoConfig?.version ?? "1.0.0"}</Text>
+      <Text style={styles.version}>
+        v {Constants.expoConfig?.version ?? "1.0.0"}
+      </Text>
     </KeyboardAvoidingView>
   );
 }

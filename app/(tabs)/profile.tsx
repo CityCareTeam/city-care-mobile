@@ -1,12 +1,12 @@
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { CityCareColors } from "@/constants/theme";
-import Constants from "expo-constants";
 import { getMe, logout } from "@/services/auth";
 import { getUserMe } from "@/services/users";
 import { clearTokens, getAccessToken, getRefreshToken } from "@/storage/tokens";
 import type { MeResponse } from "@/types/auth";
 import type { UserMeResponse } from "@/types/users";
+import Constants from "expo-constants";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -119,7 +119,9 @@ export default function ProfileScreen() {
         onPress={handleLogout}
         style={styles.btn}
       />
-      <Text style={styles.version}>v {Constants.expoConfig?.version ?? "1.0.0"}</Text>
+      <Text style={styles.version}>
+        v {Constants.expoConfig?.version ?? "1.0.0"}
+      </Text>
     </ScrollView>
   );
 }
