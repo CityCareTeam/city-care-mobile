@@ -1,50 +1,119 @@
-# Welcome to your Expo app 👋
+# CityCare+ Mobile
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+> Application mobile citoyenne de signalement d'incidents urbains — voirie, éclairage, déchets, graffiti et plus.
 
-## Get started
+[![Version](https://img.shields.io/badge/version-1.0.0-f6aa54?style=flat-square)](https://github.com/CityCareTeam/city-care-mobile/releases)
+[![Last Commit](https://img.shields.io/github/last-commit/CityCareTeam/city-care-mobile?style=flat-square)](https://github.com/CityCareTeam/city-care-mobile/commits)
+[![Issues](https://img.shields.io/github/issues/CityCareTeam/city-care-mobile?style=flat-square)](https://github.com/CityCareTeam/city-care-mobile/issues)
+[![Pull Requests](https://img.shields.io/github/issues-pr/CityCareTeam/city-care-mobile?style=flat-square)](https://github.com/CityCareTeam/city-care-mobile/pulls)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?logo=typescript&logoColor=white&style=flat-square)](https://www.typescriptlang.org/)
+[![Expo](https://img.shields.io/badge/Expo-54-000020?logo=expo&logoColor=white&style=flat-square)](https://expo.dev)
+[![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20Android-lightgrey?style=flat-square)](#)
 
-1. Install dependencies
+---
 
-   ```bash
-   npm install
-   ```
+## Présentation
 
-2. Start the app
+CityCare+ connecte les citoyens à leur mairie. Les signalements remontent en temps réel sur une carte interactive et sont traités par les agents municipaux.
 
-   ```bash
-   npx expo start
-   ```
+**Rôles disponibles :**
 
-In the output, you'll find options to open the app in a
+| Rôle        | Accès                                                                                  |
+| ----------- | -------------------------------------------------------------------------------------- |
+| **Citoyen** | Déclare des incidents, consulte ses signalements et tous ceux de la ville avec filtres |
+| **Agent**   | Voit sa file de travail (déclarés + en cours), filtre par catégorie et statut          |
+| **Admin**   | Vue globale — statistiques, filtres type & statut, gestion complète                    |
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+---
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## Stack technique
 
-## Get a fresh project
+| Technologie       | Version  |
+| ----------------- | -------- |
+| Expo SDK          | ~54.0.33 |
+| expo-router       | ~6.0.23  |
+| React Native      | 0.81.5   |
+| React             | 19.1.0   |
+| TypeScript        | 5        |
+| expo-maps         | ~0.12.10 |
+| expo-secure-store | ~15.0.8  |
 
-When you're ready, run:
+---
+
+## Démarrage rapide
 
 ```bash
-npm run reset-project
+# Installer les dépendances
+npm install
+
+# Lancer l'app (scan QR avec Expo Go)
+npx expo start --clear
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Cibles directes :
 
-## Learn more
+```bash
+npm run android
+npm run ios
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+---
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Structure du projet
 
-## Join the community
+```
+app/
+  (tabs)/
+    index.tsx        # Dashboard rôle-adaptatif (Citoyen / Agent / Admin)
+    explore.tsx      # Carte plein écran + filtres overlay + bottom sheet
+    profile.tsx      # Profil utilisateur & déconnexion
+  login.tsx          # Authentification (Keycloak)
+  register.tsx       # Création de compte
+  report.tsx         # Formulaire de signalement
 
-Join our community of developers creating universal apps.
+components/
+  incident-filter-bar.tsx  # Barre de filtres chips (overlay carte)
+  incident-row.tsx         # Ligne d'incident réutilisable
+  ui/                      # Button, Card, Input, Logo, Toast…
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+constants/
+  incidents.ts   # STATUS_COLOR, STATUS_LABEL, TYPE_LABEL, NEXT_STATUSES
+  theme.ts       # CityCareColors
+
+hooks/
+  use-role.ts                 # Rôle utilisateur (Admin / Agent / Citizen)
+  use-incident-filters.ts     # Filtres type + statut réutilisables
+  use-color-scheme.ts
+
+services/          # Appels API REST (auth, incidents, users)
+storage/           # Tokens JWT (expo-secure-store)
+types/             # Types TypeScript (incidents, auth, users)
+```
+
+---
+
+## Variables d'environnement
+
+Créer un fichier `.env` à la racine :
+
+```env
+GOOGLE_MAPS_API_KEY=your_google_maps_key_here
+```
+
+---
+
+## Build EAS
+
+```bash
+# Build preview (TestFlight / APK interne)
+eas build --profile preview --platform ios
+
+# Build production
+eas build --profile production --platform all
+```
+
+---
+
+## Licence
+
+Projet académique — YNOV / ORT 2025-2026
