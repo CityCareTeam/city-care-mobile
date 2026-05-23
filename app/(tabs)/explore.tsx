@@ -1,3 +1,4 @@
+import { IncidentFilterBar } from "@/components/incident-filter-bar";
 import {
     NEXT_STATUSES,
     STATUS_COLOR,
@@ -5,6 +6,7 @@ import {
     TYPE_LABEL,
 } from "@/constants/incidents";
 import { CityCareColors } from "@/constants/theme";
+import { useIncidentFilters } from "@/hooks/use-incident-filters";
 import { useRole } from "@/hooks/use-role";
 import {
     deleteIncident,
@@ -26,6 +28,7 @@ import {
     View,
 } from "react-native";
 import MapView, { Marker, Region } from "react-native-maps";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const LYON: Region = {
   latitude: 45.748,
@@ -40,6 +43,10 @@ export default function SignalementsScreen() {
   const [selected, setSelected] = useState<IncidentResponse | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const { isStaff, isAdmin } = useRole();
+  const insets = useSafeAreaInsets();
+  const { filterType, setFilterType, filterStatus, setFilterStatus, filteredIncidents } =
+    useIncidentFilters(incidents);
+
   const markerJustPressed = useRef(false);
   const { selectId } = useLocalSearchParams<{ selectId?: string }>();
   const pendingSelectRef = useRef<string | null>(null);
@@ -140,7 +147,7 @@ export default function SignalementsScreen() {
           if (!markerJustPressed.current) setSelected(null);
         }}
       >
-        {incidents.map((inc) => (
+        {filteredIncidents.map((inc) => (
           <Marker
             key={inc.id}
             coordinate={{ latitude: inc.latitude, longitude: inc.longitude }}
@@ -157,21 +164,24 @@ export default function SignalementsScreen() {
         ))}
       </MapView>
 
+      {/* Barre de filtres (overlay) */}
+      <View style={styles.filterBarOverlay}>
+        <IncidentFilterBar
+          filterStatus={filterStatus}
+          setFilterStatus={setFilterStatus}
+          filterType={filterType}
+          setFilterType={setFilterType}
+          onRefresh={loadIncidents}
+          loading={loading}
+          paddingTop={insets.top + 8}
+        />
+      </View>
+
       {loading && (
         <View style={styles.loader}>
           <ActivityIndicator color={CityCareColors.primary} size="large" />
         </View>
       )}
-
-      {/* Bouton refresh */}
-      <TouchableOpacity
-        style={styles.refreshBtn}
-        onPress={loadIncidents}
-        activeOpacity={0.8}
-        disabled={loading}
-      >
-        <Text style={styles.refreshIcon}>↻</Text>
-      </TouchableOpacity>
 
       {/* Bottom sheet détail */}
       {selected && (
@@ -337,24 +347,6 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 6,
   },
-  refreshBtn: {
-    position: "absolute",
-    top: 56,
-    right: 16,
-    backgroundColor: CityCareColors.primary,
-    borderRadius: 22,
-    width: 44,
-    height: 44,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
-    opacity: 1,
-  },
-  refreshIcon: { fontSize: 20, color: "#fff", fontWeight: "700" },
   fabIcon: { fontSize: 24, color: "#fff", fontWeight: "700", marginRight: 8 },
   fabLabel: { fontSize: 15, fontWeight: "700", color: "#fff" },
   // Bottom sheet
@@ -495,5 +487,11 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontSize: 14,
     color: CityCareColors.statusRed,
+  },
+  filterBarOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
   },
 });
