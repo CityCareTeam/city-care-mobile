@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
+import Constants from "expo-constants";
 import { Logo } from "@/components/ui/Logo";
 import { Toast } from "@/components/ui/ToastMessage";
 import { CityCareColors } from "@/constants/theme";
@@ -79,6 +80,7 @@ export default function LoginScreen() {
           disabled={loading}
         />
       </Card>
+      <Text style={styles.version}>v {Constants.expoConfig?.version ?? "1.0.0"}</Text>
     </KeyboardAvoidingView>
   );
 }
@@ -103,5 +105,11 @@ const styles = StyleSheet.create({
   btnTop: {
     marginTop: 8,
     marginBottom: 12,
+  },
+  version: {
+    marginTop: 20,
+    fontSize: 12,
+    color: CityCareColors.text,
+    opacity: 0.35,
   },
 });

@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { CityCareColors } from "@/constants/theme";
+import Constants from "expo-constants";
 import { getMe, logout } from "@/services/auth";
 import { getUserMe } from "@/services/users";
 import { clearTokens, getAccessToken, getRefreshToken } from "@/storage/tokens";
@@ -118,6 +119,7 @@ export default function ProfileScreen() {
         onPress={handleLogout}
         style={styles.btn}
       />
+      <Text style={styles.version}>v {Constants.expoConfig?.version ?? "1.0.0"}</Text>
     </ScrollView>
   );
 }
@@ -190,4 +192,10 @@ const styles = StyleSheet.create({
     textAlign: "right",
   },
   btn: { width: "100%" },
+  version: {
+    marginTop: 16,
+    fontSize: 12,
+    color: CityCareColors.text,
+    opacity: 0.35,
+  },
 });

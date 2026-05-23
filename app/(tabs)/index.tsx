@@ -1,6 +1,6 @@
 import { IncidentRow } from "@/components/incident-row";
 import { Logo } from "@/components/ui/Logo";
-import { TYPE_LABEL } from "@/constants/incidents";
+import { STATUS_COLOR, STATUS_LABEL, TYPE_LABEL } from "@/constants/incidents";
 import { CityCareColors } from "@/constants/theme";
 import { getMe } from "@/services/auth";
 import { getIncidents } from "@/services/incidents";
@@ -149,7 +149,26 @@ function CitizenView({
   const reported = incidents.filter((i) => i.status === "reported").length;
   const inProgress = incidents.filter((i) => i.status === "in_progress").length;
   const resolved = incidents.filter((i) => i.status === "resolved").length;
-  const recent = incidents.slice(0, 5);
+
+  const [filterType, setFilterType] = useState<string | null>(null);
+  const [filterStatus, setFilterStatus] = useState<string | null>(null);
+
+  const typeCount: Record<string, number> = {};
+  allIncidents.forEach((inc) => {
+    typeCount[inc.type] = (typeCount[inc.type] ?? 0) + 1;
+  });
+
+  const filteredMyIncidents = incidents.filter((inc) => {
+    if (filterType && inc.type !== filterType) return false;
+    if (filterStatus && inc.status !== filterStatus) return false;
+    return true;
+  });
+
+  const filteredAllIncidents = allIncidents.filter((inc) => {
+    if (filterType && inc.type !== filterType) return false;
+    if (filterStatus && inc.status !== filterStatus) return false;
+    return true;
+  });
 
   return (
     <>
@@ -159,15 +178,51 @@ function CitizenView({
         <StatCard label="Résolus" value={resolved} color="#4caf50" />
       </View>
 
-      <SectionHeader
-        title="Mes signalements récents"
-        count={incidents.length}
-      />
-      {recent.length === 0 ? (
-        <EmptyState text="Aucun signalement pour le moment." />
+      <SectionHeader title="Par catégorie" />
+      <View style={styles.typeRow}>
+        {Object.entries(typeCount).map(([type, count]) => {
+          const active = filterType === type;
+          return (
+            <TouchableOpacity
+              key={type}
+              style={[styles.typeChip, active && styles.typeChipActive]}
+              onPress={() => setFilterType(active ? null : type)}
+              activeOpacity={0.75}
+            >
+              <Text style={[styles.typeChipCount, active && styles.typeChipActiveText]}>{count}</Text>
+              <Text style={[styles.typeChipLabel, active && styles.typeChipActiveText]}>{TYPE_LABEL[type] ?? type}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+      <View style={styles.statusFilterRow}>
+        {([null, "reported", "in_progress", "resolved"] as (string | null)[]).map((s) => {
+          const active = filterStatus === s;
+          const color = s ? (STATUS_COLOR[s] ?? "#999") : CityCareColors.primary;
+          return (
+            <TouchableOpacity
+              key={s ?? "all"}
+              style={[styles.statusPill, active && { backgroundColor: color, borderColor: color }]}
+              onPress={() => setFilterStatus(filterStatus === s ? null : s)}
+              activeOpacity={0.75}
+            >
+              {s ? <View style={[styles.pillDot, { backgroundColor: active ? "#fff" : color }]} /> : null}
+              <Text style={[styles.pillText, active && { color: "#fff" }]}>
+                {s ? STATUS_LABEL[s] : "Tous"}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      <SectionHeader title="Mes signalements" count={filteredMyIncidents.length} />
+      {filteredMyIncidents.length === 0 ? (
+        <EmptyState
+          text={incidents.length === 0 ? "Aucun signalement pour le moment." : "Aucun résultat pour ces filtres."}
+        />
       ) : (
         <IncidentList
-          incidents={recent.map((i) => ({
+          incidents={filteredMyIncidents.map((i) => ({
             id: i.id,
             type: i.type,
             status: i.status,
@@ -177,15 +232,14 @@ function CitizenView({
         />
       )}
 
-      <SectionHeader
-        title="Tous les signalements"
-        count={allIncidents.length}
-      />
-      {allIncidents.length === 0 ? (
-        <EmptyState text="Aucun signalement dans la ville." />
+      <SectionHeader title="Tous les signalements" count={filteredAllIncidents.length} />
+      {filteredAllIncidents.length === 0 ? (
+        <EmptyState
+          text={allIncidents.length === 0 ? "Aucun signalement dans la ville." : "Aucun résultat pour ces filtres."}
+        />
       ) : (
         <IncidentList
-          incidents={allIncidents.map((i) => ({
+          incidents={filteredAllIncidents.map((i) => ({
             id: i.id,
             type: i.type,
             status: i.status,
@@ -215,6 +269,20 @@ function AgentView({
     (i) => i.status === "in_progress",
   ).length;
 
+  const [filterType, setFilterType] = useState<string | null>(null);
+  const [filterStatus, setFilterStatus] = useState<string | null>(null);
+
+  const typeCount: Record<string, number> = {};
+  toHandle.forEach((inc) => {
+    typeCount[inc.type] = (typeCount[inc.type] ?? 0) + 1;
+  });
+
+  const filteredToHandle = toHandle.filter((inc) => {
+    if (filterType && inc.type !== filterType) return false;
+    if (filterStatus && inc.status !== filterStatus) return false;
+    return true;
+  });
+
   return (
     <>
       <View style={styles.statRow}>
@@ -222,12 +290,51 @@ function AgentView({
         <StatCard label="En cours" value={inProgressCount} color="#f0a500" />
       </View>
 
-      <SectionHeader title="Incidents à traiter" count={toHandle.length} />
-      {toHandle.length === 0 ? (
-        <EmptyState text="Tout est traité, bravo !" />
+      <SectionHeader title="Par catégorie" />
+      <View style={styles.typeRow}>
+        {Object.entries(typeCount).map(([type, count]) => {
+          const active = filterType === type;
+          return (
+            <TouchableOpacity
+              key={type}
+              style={[styles.typeChip, active && styles.typeChipActive]}
+              onPress={() => setFilterType(active ? null : type)}
+              activeOpacity={0.75}
+            >
+              <Text style={[styles.typeChipCount, active && styles.typeChipActiveText]}>{count}</Text>
+              <Text style={[styles.typeChipLabel, active && styles.typeChipActiveText]}>{TYPE_LABEL[type] ?? type}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      <SectionHeader title="Incidents à traiter" count={filteredToHandle.length} />
+      <View style={styles.statusFilterRow}>
+        {([null, "reported", "in_progress"] as (string | null)[]).map((s) => {
+          const active = filterStatus === s;
+          const color = s ? (STATUS_COLOR[s] ?? "#999") : CityCareColors.primary;
+          return (
+            <TouchableOpacity
+              key={s ?? "all"}
+              style={[styles.statusPill, active && { backgroundColor: color, borderColor: color }]}
+              onPress={() => setFilterStatus(filterStatus === s ? null : s)}
+              activeOpacity={0.75}
+            >
+              {s ? <View style={[styles.pillDot, { backgroundColor: active ? "#fff" : color }]} /> : null}
+              <Text style={[styles.pillText, active && { color: "#fff" }]}>
+                {s ? STATUS_LABEL[s] : "Tous"}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+      {filteredToHandle.length === 0 ? (
+        <EmptyState
+          text={toHandle.length === 0 ? "Tout est traité, bravo !" : "Aucun résultat pour ces filtres."}
+        />
       ) : (
         <IncidentList
-          incidents={toHandle.map((i) => ({
+          incidents={filteredToHandle.map((i) => ({
             id: i.id,
             type: i.type,
             status: i.status,
@@ -258,7 +365,14 @@ function AdminView({
     typeCount[inc.type] = (typeCount[inc.type] ?? 0) + 1;
   });
 
-  const recent = incidents.slice(0, 5);
+  const [filterType, setFilterType] = useState<string | null>(null);
+  const [filterStatus, setFilterStatus] = useState<string | null>(null);
+
+  const filteredIncidents = incidents.filter((inc) => {
+    if (filterType && inc.type !== filterType) return false;
+    if (filterStatus && inc.status !== filterStatus) return false;
+    return true;
+  });
 
   return (
     <>
@@ -274,20 +388,49 @@ function AdminView({
 
       <SectionHeader title="Par catégorie" />
       <View style={styles.typeRow}>
-        {Object.entries(typeCount).map(([type, count]) => (
-          <View key={type} style={styles.typeChip}>
-            <Text style={styles.typeChipCount}>{count}</Text>
-            <Text style={styles.typeChipLabel}>{TYPE_LABEL[type] ?? type}</Text>
-          </View>
-        ))}
+        {Object.entries(typeCount).map(([type, count]) => {
+          const active = filterType === type;
+          return (
+            <TouchableOpacity
+              key={type}
+              style={[styles.typeChip, active && styles.typeChipActive]}
+              onPress={() => setFilterType(active ? null : type)}
+              activeOpacity={0.75}
+            >
+              <Text style={[styles.typeChipCount, active && styles.typeChipActiveText]}>{count}</Text>
+              <Text style={[styles.typeChipLabel, active && styles.typeChipActiveText]}>{TYPE_LABEL[type] ?? type}</Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
-      <SectionHeader title="Signalements récents" count={recent.length} />
-      {recent.length === 0 ? (
-        <EmptyState text="Aucun signalement." />
+      <SectionHeader title="Signalements" count={filteredIncidents.length} />
+      <View style={styles.statusFilterRow}>
+        {([null, "reported", "in_progress", "resolved"] as (string | null)[]).map((s) => {
+          const active = filterStatus === s;
+          const color = s ? (STATUS_COLOR[s] ?? "#999") : CityCareColors.primary;
+          return (
+            <TouchableOpacity
+              key={s ?? "all"}
+              style={[styles.statusPill, active && { backgroundColor: color, borderColor: color }]}
+              onPress={() => setFilterStatus(filterStatus === s ? null : s)}
+              activeOpacity={0.75}
+            >
+              {s ? <View style={[styles.pillDot, { backgroundColor: active ? "#fff" : color }]} /> : null}
+              <Text style={[styles.pillText, active && { color: "#fff" }]}>
+                {s ? STATUS_LABEL[s] : "Tous"}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+      {filteredIncidents.length === 0 ? (
+        <EmptyState
+          text={incidents.length === 0 ? "Aucun signalement." : "Aucun résultat pour ces filtres."}
+        />
       ) : (
         <IncidentList
-          incidents={recent.map((i) => ({
+          incidents={filteredIncidents.map((i) => ({
             id: i.id,
             type: i.type,
             status: i.status,
@@ -526,11 +669,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
+    borderWidth: 1.5,
+    borderColor: "transparent",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
+  },
+  typeChipActive: {
+    backgroundColor: CityCareColors.primary,
+    borderColor: CityCareColors.primary,
+  },
+  typeChipActiveText: {
+    color: "#fff",
   },
   typeChipCount: {
     fontSize: 14,
@@ -541,6 +693,33 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: CityCareColors.text,
     fontWeight: "500",
+  },
+  statusFilterRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 12,
+  },
+  statusPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: CityCareColors.white,
+    borderWidth: 1.5,
+    borderColor: "rgba(0,0,0,0.10)",
+    gap: 5,
+  },
+  pillDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+  },
+  pillText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: CityCareColors.text,
   },
   // Incident list
   incCard: {
