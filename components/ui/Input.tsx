@@ -14,7 +14,7 @@ type InputProps = TextInputProps & {
 
 export function Input({ label, error, style, ...props }: InputProps) {
   return (
-    <View style={styles.wrapper}>
+    <View style={styles.wrapper} collapsable={false}>
       <Text style={styles.label}>{label}</Text>
       <TextInput
         style={[styles.input, !!error && styles.inputError, style]}

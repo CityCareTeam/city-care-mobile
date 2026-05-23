@@ -9,7 +9,7 @@ import { saveTokens } from "@/storage/tokens";
 import Constants from "expo-constants";
 import { router } from "expo-router";
 import { useState } from "react";
-import { KeyboardAvoidingView, Platform, StyleSheet, Text } from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text } from "react-native";
 
 export default function LoginScreen() {
   const [username, setUsername] = useState("");
@@ -44,8 +44,13 @@ export default function LoginScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.screen}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      behavior={Platform.OS === "ios" ? "padding" : "padding"}
     >
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
       <Card>
         <Logo style={styles.logo} />
         <Text style={styles.title}>CityCare+</Text>
@@ -83,6 +88,7 @@ export default function LoginScreen() {
       <Text style={styles.version}>
         v {Constants.expoConfig?.version ?? "1.0.0"}
       </Text>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -91,6 +97,9 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: CityCareColors.background,
+  },
+  scrollContent: {
+    flexGrow: 1,
     alignItems: "center",
     justifyContent: "center",
     padding: 24,
