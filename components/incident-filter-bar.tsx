@@ -1,12 +1,12 @@
 import { STATUS_COLOR, STATUS_LABEL, TYPE_LABEL } from "@/constants/incidents";
 import { CityCareColors } from "@/constants/theme";
 import {
-  ActivityIndicator,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 type Props = {
@@ -39,20 +39,32 @@ export function IncidentFilterBar({
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.row}
         >
-          {([null, "reported", "in_progress", "resolved"] as (string | null)[]).map((s) => {
+          {(
+            [null, "reported", "in_progress", "resolved"] as (string | null)[]
+          ).map((s) => {
             const active = filterStatus === s;
             const color = s ? (STATUS_COLOR[s] ?? "#999") : CityCareColors.text;
             return (
               <TouchableOpacity
                 key={s ?? "all-status"}
-                style={[styles.chip, active && { backgroundColor: color, borderColor: color }]}
+                style={[
+                  styles.chip,
+                  active && { backgroundColor: color, borderColor: color },
+                ]}
                 onPress={() => setFilterStatus(s)}
                 activeOpacity={0.75}
               >
                 {s ? (
-                  <View style={[styles.dot, { backgroundColor: active ? "#fff" : color }]} />
+                  <View
+                    style={[
+                      styles.dot,
+                      { backgroundColor: active ? "#fff" : color },
+                    ]}
+                  />
                 ) : null}
-                <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                <Text
+                  style={[styles.chipText, active && styles.chipTextActive]}
+                >
                   {s ? (STATUS_LABEL[s] ?? s) : "Tous statuts"}
                 </Text>
               </TouchableOpacity>

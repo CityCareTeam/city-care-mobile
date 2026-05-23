@@ -44,8 +44,13 @@ export default function SignalementsScreen() {
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const { isStaff, isAdmin } = useRole();
   const insets = useSafeAreaInsets();
-  const { filterType, setFilterType, filterStatus, setFilterStatus, filteredIncidents } =
-    useIncidentFilters(incidents);
+  const {
+    filterType,
+    setFilterType,
+    filterStatus,
+    setFilterStatus,
+    filteredIncidents,
+  } = useIncidentFilters(incidents);
 
   const markerJustPressed = useRef(false);
   const { selectId } = useLocalSearchParams<{ selectId?: string }>();

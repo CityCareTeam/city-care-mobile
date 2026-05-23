@@ -21,5 +21,11 @@ export function useIncidentFilters(
     return true;
   });
 
-  return { filterType, setFilterType, filterStatus, setFilterStatus, filteredIncidents };
+  return {
+    filterType,
+    setFilterType,
+    filterStatus,
+    setFilterStatus,
+    filteredIncidents,
+  };
 }

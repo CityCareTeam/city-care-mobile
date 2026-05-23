@@ -189,24 +189,52 @@ function CitizenView({
               onPress={() => setFilterType(active ? null : type)}
               activeOpacity={0.75}
             >
-              <Text style={[styles.typeChipCount, active && styles.typeChipActiveText]}>{count}</Text>
-              <Text style={[styles.typeChipLabel, active && styles.typeChipActiveText]}>{TYPE_LABEL[type] ?? type}</Text>
+              <Text
+                style={[
+                  styles.typeChipCount,
+                  active && styles.typeChipActiveText,
+                ]}
+              >
+                {count}
+              </Text>
+              <Text
+                style={[
+                  styles.typeChipLabel,
+                  active && styles.typeChipActiveText,
+                ]}
+              >
+                {TYPE_LABEL[type] ?? type}
+              </Text>
             </TouchableOpacity>
           );
         })}
       </View>
       <View style={styles.statusFilterRow}>
-        {([null, "reported", "in_progress", "resolved"] as (string | null)[]).map((s) => {
+        {(
+          [null, "reported", "in_progress", "resolved"] as (string | null)[]
+        ).map((s) => {
           const active = filterStatus === s;
-          const color = s ? (STATUS_COLOR[s] ?? "#999") : CityCareColors.primary;
+          const color = s
+            ? (STATUS_COLOR[s] ?? "#999")
+            : CityCareColors.primary;
           return (
             <TouchableOpacity
               key={s ?? "all"}
-              style={[styles.statusPill, active && { backgroundColor: color, borderColor: color }]}
+              style={[
+                styles.statusPill,
+                active && { backgroundColor: color, borderColor: color },
+              ]}
               onPress={() => setFilterStatus(filterStatus === s ? null : s)}
               activeOpacity={0.75}
             >
-              {s ? <View style={[styles.pillDot, { backgroundColor: active ? "#fff" : color }]} /> : null}
+              {s ? (
+                <View
+                  style={[
+                    styles.pillDot,
+                    { backgroundColor: active ? "#fff" : color },
+                  ]}
+                />
+              ) : null}
               <Text style={[styles.pillText, active && { color: "#fff" }]}>
                 {s ? STATUS_LABEL[s] : "Tous"}
               </Text>
@@ -215,10 +243,17 @@ function CitizenView({
         })}
       </View>
 
-      <SectionHeader title="Mes signalements" count={filteredMyIncidents.length} />
+      <SectionHeader
+        title="Mes signalements"
+        count={filteredMyIncidents.length}
+      />
       {filteredMyIncidents.length === 0 ? (
         <EmptyState
-          text={incidents.length === 0 ? "Aucun signalement pour le moment." : "Aucun résultat pour ces filtres."}
+          text={
+            incidents.length === 0
+              ? "Aucun signalement pour le moment."
+              : "Aucun résultat pour ces filtres."
+          }
         />
       ) : (
         <IncidentList
@@ -232,10 +267,17 @@ function CitizenView({
         />
       )}
 
-      <SectionHeader title="Tous les signalements" count={filteredAllIncidents.length} />
+      <SectionHeader
+        title="Tous les signalements"
+        count={filteredAllIncidents.length}
+      />
       {filteredAllIncidents.length === 0 ? (
         <EmptyState
-          text={allIncidents.length === 0 ? "Aucun signalement dans la ville." : "Aucun résultat pour ces filtres."}
+          text={
+            allIncidents.length === 0
+              ? "Aucun signalement dans la ville."
+              : "Aucun résultat pour ces filtres."
+          }
         />
       ) : (
         <IncidentList
@@ -301,26 +343,55 @@ function AgentView({
               onPress={() => setFilterType(active ? null : type)}
               activeOpacity={0.75}
             >
-              <Text style={[styles.typeChipCount, active && styles.typeChipActiveText]}>{count}</Text>
-              <Text style={[styles.typeChipLabel, active && styles.typeChipActiveText]}>{TYPE_LABEL[type] ?? type}</Text>
+              <Text
+                style={[
+                  styles.typeChipCount,
+                  active && styles.typeChipActiveText,
+                ]}
+              >
+                {count}
+              </Text>
+              <Text
+                style={[
+                  styles.typeChipLabel,
+                  active && styles.typeChipActiveText,
+                ]}
+              >
+                {TYPE_LABEL[type] ?? type}
+              </Text>
             </TouchableOpacity>
           );
         })}
       </View>
 
-      <SectionHeader title="Incidents à traiter" count={filteredToHandle.length} />
+      <SectionHeader
+        title="Incidents à traiter"
+        count={filteredToHandle.length}
+      />
       <View style={styles.statusFilterRow}>
         {([null, "reported", "in_progress"] as (string | null)[]).map((s) => {
           const active = filterStatus === s;
-          const color = s ? (STATUS_COLOR[s] ?? "#999") : CityCareColors.primary;
+          const color = s
+            ? (STATUS_COLOR[s] ?? "#999")
+            : CityCareColors.primary;
           return (
             <TouchableOpacity
               key={s ?? "all"}
-              style={[styles.statusPill, active && { backgroundColor: color, borderColor: color }]}
+              style={[
+                styles.statusPill,
+                active && { backgroundColor: color, borderColor: color },
+              ]}
               onPress={() => setFilterStatus(filterStatus === s ? null : s)}
               activeOpacity={0.75}
             >
-              {s ? <View style={[styles.pillDot, { backgroundColor: active ? "#fff" : color }]} /> : null}
+              {s ? (
+                <View
+                  style={[
+                    styles.pillDot,
+                    { backgroundColor: active ? "#fff" : color },
+                  ]}
+                />
+              ) : null}
               <Text style={[styles.pillText, active && { color: "#fff" }]}>
                 {s ? STATUS_LABEL[s] : "Tous"}
               </Text>
@@ -330,7 +401,11 @@ function AgentView({
       </View>
       {filteredToHandle.length === 0 ? (
         <EmptyState
-          text={toHandle.length === 0 ? "Tout est traité, bravo !" : "Aucun résultat pour ces filtres."}
+          text={
+            toHandle.length === 0
+              ? "Tout est traité, bravo !"
+              : "Aucun résultat pour ces filtres."
+          }
         />
       ) : (
         <IncidentList
@@ -397,8 +472,22 @@ function AdminView({
               onPress={() => setFilterType(active ? null : type)}
               activeOpacity={0.75}
             >
-              <Text style={[styles.typeChipCount, active && styles.typeChipActiveText]}>{count}</Text>
-              <Text style={[styles.typeChipLabel, active && styles.typeChipActiveText]}>{TYPE_LABEL[type] ?? type}</Text>
+              <Text
+                style={[
+                  styles.typeChipCount,
+                  active && styles.typeChipActiveText,
+                ]}
+              >
+                {count}
+              </Text>
+              <Text
+                style={[
+                  styles.typeChipLabel,
+                  active && styles.typeChipActiveText,
+                ]}
+              >
+                {TYPE_LABEL[type] ?? type}
+              </Text>
             </TouchableOpacity>
           );
         })}
@@ -406,17 +495,31 @@ function AdminView({
 
       <SectionHeader title="Signalements" count={filteredIncidents.length} />
       <View style={styles.statusFilterRow}>
-        {([null, "reported", "in_progress", "resolved"] as (string | null)[]).map((s) => {
+        {(
+          [null, "reported", "in_progress", "resolved"] as (string | null)[]
+        ).map((s) => {
           const active = filterStatus === s;
-          const color = s ? (STATUS_COLOR[s] ?? "#999") : CityCareColors.primary;
+          const color = s
+            ? (STATUS_COLOR[s] ?? "#999")
+            : CityCareColors.primary;
           return (
             <TouchableOpacity
               key={s ?? "all"}
-              style={[styles.statusPill, active && { backgroundColor: color, borderColor: color }]}
+              style={[
+                styles.statusPill,
+                active && { backgroundColor: color, borderColor: color },
+              ]}
               onPress={() => setFilterStatus(filterStatus === s ? null : s)}
               activeOpacity={0.75}
             >
-              {s ? <View style={[styles.pillDot, { backgroundColor: active ? "#fff" : color }]} /> : null}
+              {s ? (
+                <View
+                  style={[
+                    styles.pillDot,
+                    { backgroundColor: active ? "#fff" : color },
+                  ]}
+                />
+              ) : null}
               <Text style={[styles.pillText, active && { color: "#fff" }]}>
                 {s ? STATUS_LABEL[s] : "Tous"}
               </Text>
@@ -426,7 +529,11 @@ function AdminView({
       </View>
       {filteredIncidents.length === 0 ? (
         <EmptyState
-          text={incidents.length === 0 ? "Aucun signalement." : "Aucun résultat pour ces filtres."}
+          text={
+            incidents.length === 0
+              ? "Aucun signalement."
+              : "Aucun résultat pour ces filtres."
+          }
         />
       ) : (
         <IncidentList
