@@ -1,4 +1,5 @@
 import { IncidentFilterBar } from "@/components/incident-filter-bar";
+import { formatIncidentDateTime } from "@/utils/format-date";
 import {
     NEXT_STATUSES,
     STATUS_COLOR,
@@ -237,13 +238,7 @@ export default function SignalementsScreen() {
               <View style={[styles.infoRow, styles.infoRowBorder]}>
                 <Text style={styles.infoLabel}>Signalé le</Text>
                 <Text style={styles.infoValue}>
-                  {new Date(selected.createdAt).toLocaleDateString("fr-FR", {
-                    day: "2-digit",
-                    month: "long",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
+                  {formatIncidentDateTime(selected.createdAt)}
                 </Text>
               </View>
               {selected.resolvedAt ? (
@@ -255,13 +250,7 @@ export default function SignalementsScreen() {
                       { color: CityCareColors.statusGreen },
                     ]}
                   >
-                    {new Date(selected.resolvedAt).toLocaleDateString("fr-FR", {
-                      day: "2-digit",
-                      month: "long",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
+                    {formatIncidentDateTime(selected.resolvedAt)}
                   </Text>
                 </View>
               ) : null}

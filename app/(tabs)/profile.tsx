@@ -1,6 +1,8 @@
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { ROLE_COLORS, ROLE_LABELS } from "@/constants/roles";
 import { CityCareColors } from "@/constants/theme";
+import { formatDate } from "@/utils/format-date";
 import { getMe, logout } from "@/services/auth";
 import { getUserMe } from "@/services/users";
 import { clearTokens, getAccessToken, getRefreshToken } from "@/storage/tokens";
@@ -17,17 +19,6 @@ import {
     View,
 } from "react-native";
 
-const ROLE_LABELS: Record<string, string> = {
-  Admin: "Administrateur",
-  Agent: "Agent municipal",
-  Citizen: "Citoyen",
-};
-
-const ROLE_COLORS: Record<string, string> = {
-  Admin: CityCareColors.statusRed,
-  Agent: CityCareColors.primary,
-  Citizen: CityCareColors.statusGreen,
-};
 
 export default function ProfileScreen() {
   const [keycloakUser, setKeycloakUser] = useState<MeResponse | null>(null);
@@ -79,13 +70,7 @@ export default function ProfileScreen() {
     "?";
 
   const role = keycloakUser?.mainRole ?? null;
-  const memberSince = dbUser?.createdAt
-    ? new Date(dbUser.createdAt).toLocaleDateString("fr-FR", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      })
-    : null;
+  const memberSince = dbUser?.createdAt ? formatDate(dbUser.createdAt) : null;
 
   return (
     <ScrollView contentContainerStyle={styles.container}>

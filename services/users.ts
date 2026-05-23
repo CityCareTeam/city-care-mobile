@@ -1,4 +1,5 @@
 import { API_ENDPOINTS } from "@/constants/api";
+import { fetchWithTimeout } from "@/services/api-client";
 import type { MyIncidentsResponse, UserMeResponse } from "@/types/users";
 
 async function authFetch(
@@ -6,7 +7,7 @@ async function authFetch(
   token: string,
   options: RequestInit = {},
 ): Promise<Response> {
-  const response = await fetch(url, {
+  return fetchWithTimeout(url, {
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -14,7 +15,6 @@ async function authFetch(
       ...options.headers,
     },
   });
-  return response;
 }
 
 export async function getUserMe(accessToken: string): Promise<UserMeResponse> {
