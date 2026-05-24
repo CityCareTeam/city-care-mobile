@@ -2,9 +2,11 @@ import { IncidentRow } from "@/components/incident-row";
 import { Logo } from "@/components/ui/Logo";
 import { STATUS_COLOR, STATUS_LABEL, TYPE_LABEL } from "@/constants/incidents";
 import { ROLE_LABELS } from "@/constants/roles";
-import { CityCareColors } from "@/constants/theme";
-import { useAuth } from "@/context/AuthContext";
+import { CityCareColors, CityCareColorsDark } from "@/constants/theme";
 import { STRINGS } from "@/constants/strings";
+import { useAuth } from "@/context/AuthContext";
+import type { AppColors } from "@/hooks/use-app-colors";
+import { useAppColors } from "@/hooks/use-app-colors";
 import { applyFilters, useIncidentFilters } from "@/hooks/use-incident-filters";
 import { getIncidents } from "@/services/incidents";
 import { getMyIncidents } from "@/services/users";
@@ -46,6 +48,8 @@ function StatCard({
   value: number;
   color: string;
 }) {
+  const { isDark } = useAppColors();
+  const styles = isDark ? darkStyles : lightStyles;
   return (
     <View
       style={[
@@ -60,6 +64,8 @@ function StatCard({
 }
 
 function EmptyState({ text }: { text: string }) {
+  const { isDark } = useAppColors();
+  const styles = isDark ? darkStyles : lightStyles;
   return (
     <View style={styles.empty}>
       <Text style={styles.emptyText}>{text}</Text>
@@ -68,6 +74,8 @@ function EmptyState({ text }: { text: string }) {
 }
 
 function SectionHeader({ title, count }: { title: string; count?: number }) {
+  const { isDark } = useAppColors();
+  const styles = isDark ? darkStyles : lightStyles;
   return (
     <View style={styles.sectionHeader}>
       <Text style={styles.sectionTitle}>{title}</Text>
@@ -94,6 +102,8 @@ function IncidentList({
   onPress: (id: string) => void;
   pageSize?: number;
 }) {
+  const { isDark } = useAppColors();
+  const styles = isDark ? darkStyles : lightStyles;
   const [visibleCount, setVisibleCount] = useState(pageSize);
   const visible = incidents.slice(0, visibleCount);
   const remaining = incidents.length - visibleCount;
@@ -141,6 +151,8 @@ function CitizenView({
   allIncidents: IncidentResponse[];
   onPress: (id: string) => void;
 }) {
+  const { isDark, colors } = useAppColors();
+  const styles = isDark ? darkStyles : lightStyles;
   const reported = incidents.filter((i) => i.status === "reported").length;
   const inProgress = incidents.filter((i) => i.status === "in_progress").length;
   const resolved = incidents.filter((i) => i.status === "resolved").length;
@@ -202,7 +214,7 @@ function CitizenView({
           const active = filterStatus === s;
           const color = s
             ? (STATUS_COLOR[s] ?? "#999")
-            : CityCareColors.primary;
+            : colors.primary;
           return (
             <TouchableOpacity
               key={s ?? "all"}
@@ -289,6 +301,8 @@ function AgentView({
   incidents: IncidentResponse[];
   onPress: (id: string) => void;
 }) {
+  const { isDark, colors } = useAppColors();
+  const styles = isDark ? darkStyles : lightStyles;
   const toHandle = incidents.filter(
     (i) => i.status === "reported" || i.status === "in_progress",
   );
@@ -352,7 +366,7 @@ function AgentView({
           const active = filterStatus === s;
           const color = s
             ? (STATUS_COLOR[s] ?? "#999")
-            : CityCareColors.primary;
+            : colors.primary;
           return (
             <TouchableOpacity
               key={s ?? "all"}
@@ -410,6 +424,8 @@ function AdminView({
   incidents: IncidentResponse[];
   onPress: (id: string) => void;
 }) {
+  const { isDark, colors } = useAppColors();
+  const styles = isDark ? darkStyles : lightStyles;
   const reported = incidents.filter((i) => i.status === "reported").length;
   const inProgress = incidents.filter((i) => i.status === "in_progress").length;
   const resolved = incidents.filter((i) => i.status === "resolved").length;
@@ -475,7 +491,7 @@ function AdminView({
           const active = filterStatus === s;
           const color = s
             ? (STATUS_COLOR[s] ?? "#999")
-            : CityCareColors.primary;
+            : colors.primary;
           return (
             <TouchableOpacity
               key={s ?? "all"}
@@ -527,6 +543,8 @@ function AdminView({
 // ── Écran principal ────────────────────────────────────────────────────────
 
 export default function HomeScreen() {
+  const { colors, isDark } = useAppColors();
+  const styles = isDark ? darkStyles : lightStyles;
   const { role, firstName, loading: authLoading } = useAuth();
   const [incidentsLoading, setIncidentsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -579,7 +597,7 @@ export default function HomeScreen() {
   if (authLoading || incidentsLoading) {
     return (
       <View style={[styles.centered, { paddingTop: insets.top }]}>
-        <ActivityIndicator color={CityCareColors.primary} size="large" />
+        <ActivityIndicator color={colors.primary} size="large" />
       </View>
     );
   }
@@ -592,7 +610,7 @@ export default function HomeScreen() {
         <RefreshControl
           refreshing={refreshing}
           onRefresh={() => load(true)}
-          tintColor={CityCareColors.primary}
+          tintColor={colors.primary}
         />
       }
     >
@@ -632,231 +650,147 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  centered: {
-    flex: 1,
-    backgroundColor: CityCareColors.background,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  scroll: { flex: 1, backgroundColor: CityCareColors.background },
-  content: { padding: 20, paddingBottom: 40 },
-  // Header card
-  headerCard: {
-    backgroundColor: CityCareColors.primary,
-    borderRadius: 20,
-    padding: 22,
-    marginBottom: 20,
-    shadowColor: CityCareColors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    marginBottom: 12,
-  },
-  headerTag: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: "rgba(255,255,255,0.65)",
-    textTransform: "uppercase",
-    letterSpacing: 1.2,
-    marginBottom: 4,
-  },
-  greeting: {
-    fontSize: 24,
-    fontWeight: "800",
-    color: "#fff",
-    marginBottom: 2,
-  },
-  headerDate: {
-    fontSize: 13,
-    color: "rgba(255,255,255,0.6)",
-  },
-  rolePill: {
-    alignSelf: "flex-start",
-    backgroundColor: "rgba(255,255,255,0.22)",
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-  },
-  rolePillText: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#fff",
-  },
-  // Stat cards
-  statRow: {
-    flexDirection: "row",
-    gap: 10,
-    marginBottom: 24,
-  },
-  statCard: {
-    flex: 1,
-    borderRadius: 12,
-    borderTopWidth: 3,
-    padding: 14,
-    alignItems: "center",
-  },
-  statValue: {
-    fontSize: 30,
-    fontWeight: "800",
-    marginBottom: 2,
-  },
-  statLabel: {
-    fontSize: 11,
-    color: CityCareColors.text,
-    opacity: 0.5,
-    textAlign: "center",
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
-  },
-  totalLabel: {
-    fontSize: 13,
-    color: CityCareColors.text,
-    opacity: 0.5,
-    textAlign: "center",
-    marginTop: -14,
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: CityCareColors.text,
-    opacity: 0.5,
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
-  },
-  // Type chips (admin)
-  typeRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginBottom: 24,
-  },
-  typeChip: {
-    backgroundColor: CityCareColors.white,
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    borderWidth: 1.5,
-    borderColor: "transparent",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  typeChipActive: {
-    backgroundColor: CityCareColors.primary,
-    borderColor: CityCareColors.primary,
-  },
-  typeChipActiveText: {
-    color: "#fff",
-  },
-  typeChipCount: {
-    fontSize: 14,
-    fontWeight: "800",
-    color: CityCareColors.primary,
-  },
-  typeChipLabel: {
-    fontSize: 13,
-    color: CityCareColors.text,
-    fontWeight: "500",
-  },
-  statusFilterRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginBottom: 12,
-  },
-  statusPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: CityCareColors.white,
-    borderWidth: 1.5,
-    borderColor: "rgba(0,0,0,0.10)",
-    gap: 5,
-  },
-  pillDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-  },
-  pillText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: CityCareColors.text,
-  },
-  // Incident list
-  incCard: {
-    backgroundColor: CityCareColors.white,
-    borderRadius: 12,
-    overflow: "hidden",
-    marginBottom: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  incDivider: {
-    height: 1,
-    backgroundColor: CityCareColors.background,
-    marginHorizontal: 14,
-  },
-  // Empty state
-  empty: {
-    backgroundColor: CityCareColors.white,
-    borderRadius: 12,
-    padding: 28,
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: CityCareColors.text,
-    opacity: 0.5,
-    textAlign: "center",
-  },
-  // Section header
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 10,
-    marginTop: 6,
-  },
-  countBadge: {
-    backgroundColor: CityCareColors.primary + "25",
-    borderRadius: 10,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-  },
-  countBadgeText: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: CityCareColors.primary,
-  },
-  // Show more
-  showMore: {
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-    alignItems: "center",
-  },
-  showMoreText: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: CityCareColors.primary,
-  },
-});
+function makeStyles(c: AppColors) {
+  return StyleSheet.create({
+    centered: {
+      flex: 1,
+      backgroundColor: c.background,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    scroll: { flex: 1, backgroundColor: c.background },
+    content: { padding: 20, paddingBottom: 40 },
+    headerCard: {
+      backgroundColor: c.primary,
+      borderRadius: 20,
+      padding: 22,
+      marginBottom: 20,
+      shadowColor: c.primary,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.4,
+      shadowRadius: 12,
+      elevation: 6,
+    },
+    headerRow: { flexDirection: "row", alignItems: "flex-start", marginBottom: 12 },
+    headerTag: {
+      fontSize: 11,
+      fontWeight: "700",
+      color: "rgba(255,255,255,0.65)",
+      textTransform: "uppercase",
+      letterSpacing: 1.2,
+      marginBottom: 4,
+    },
+    greeting: { fontSize: 24, fontWeight: "800", color: "#fff", marginBottom: 2 },
+    headerDate: { fontSize: 13, color: "rgba(255,255,255,0.6)" },
+    rolePill: {
+      alignSelf: "flex-start",
+      backgroundColor: "rgba(255,255,255,0.22)",
+      borderRadius: 20,
+      paddingHorizontal: 12,
+      paddingVertical: 5,
+    },
+    rolePillText: { fontSize: 12, fontWeight: "700", color: "#fff" },
+    statRow: { flexDirection: "row", gap: 10, marginBottom: 24 },
+    statCard: { flex: 1, borderRadius: 12, borderTopWidth: 3, padding: 14, alignItems: "center" },
+    statValue: { fontSize: 30, fontWeight: "800", marginBottom: 2 },
+    statLabel: {
+      fontSize: 11,
+      color: c.text,
+      opacity: 0.5,
+      textAlign: "center",
+      fontWeight: "600",
+      textTransform: "uppercase",
+      letterSpacing: 0.4,
+    },
+    totalLabel: {
+      fontSize: 13,
+      color: c.text,
+      opacity: 0.5,
+      textAlign: "center",
+      marginTop: -14,
+      marginBottom: 20,
+    },
+    sectionTitle: {
+      fontSize: 11,
+      fontWeight: "700",
+      color: c.text,
+      opacity: 0.5,
+      textTransform: "uppercase",
+      letterSpacing: 0.8,
+    },
+    typeRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 24 },
+    typeChip: {
+      backgroundColor: c.white,
+      borderRadius: 20,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      borderWidth: 1.5,
+      borderColor: "transparent",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 2,
+      elevation: 1,
+    },
+    typeChipActive: { backgroundColor: c.primary, borderColor: c.primary },
+    typeChipActiveText: { color: "#fff" },
+    typeChipCount: { fontSize: 14, fontWeight: "800", color: c.primary },
+    typeChipLabel: { fontSize: 13, color: c.text, fontWeight: "500" },
+    statusFilterRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 },
+    statusPill: {
+      flexDirection: "row",
+      alignItems: "center",
+      borderRadius: 16,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      backgroundColor: c.white,
+      borderWidth: 1.5,
+      borderColor: c.chipBorder,
+      gap: 5,
+    },
+    pillDot: { width: 7, height: 7, borderRadius: 4 },
+    pillText: { fontSize: 12, fontWeight: "600", color: c.text },
+    incCard: {
+      backgroundColor: c.white,
+      borderRadius: 12,
+      overflow: "hidden",
+      marginBottom: 20,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.06,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    incDivider: { height: 1, backgroundColor: c.background, marginHorizontal: 14 },
+    empty: {
+      backgroundColor: c.white,
+      borderRadius: 12,
+      padding: 28,
+      alignItems: "center",
+      marginBottom: 20,
+    },
+    emptyText: { fontSize: 14, color: c.text, opacity: 0.5, textAlign: "center" },
+    sectionHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      marginBottom: 10,
+      marginTop: 6,
+    },
+    countBadge: {
+      backgroundColor: c.primary + "25",
+      borderRadius: 10,
+      paddingHorizontal: 7,
+      paddingVertical: 2,
+    },
+    countBadgeText: { fontSize: 11, fontWeight: "700", color: c.primary },
+    showMore: { paddingVertical: 14, paddingHorizontal: 14, alignItems: "center" },
+    showMoreText: { fontSize: 13, fontWeight: "700", color: c.primary },
+  });
+}
+
+const lightStyles = makeStyles(CityCareColors);
+const darkStyles = makeStyles(CityCareColorsDark);

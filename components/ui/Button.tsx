@@ -1,4 +1,6 @@
-import { CityCareColors } from "@/constants/theme";
+import type { AppColors } from "@/hooks/use-app-colors";
+import { useAppColors } from "@/hooks/use-app-colors";
+import { useMemo } from "react";
 import {
     ActivityIndicator,
     Pressable,
@@ -18,6 +20,39 @@ type ButtonProps = {
   style?: ViewStyle;
 };
 
+function makeStyles(c: AppColors) {
+  return StyleSheet.create({
+    base: {
+      width: "100%",
+      height: 50,
+      borderRadius: 10,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    primary: {
+      backgroundColor: c.primary,
+    },
+    secondary: {
+      borderWidth: 1.5,
+      borderColor: c.primary,
+      backgroundColor: "transparent",
+    },
+    pressed: {
+      opacity: 0.75,
+    },
+    labelPrimary: {
+      color: "#fff",
+      fontSize: 16,
+      fontWeight: "700",
+    },
+    labelSecondary: {
+      color: c.text,
+      fontSize: 15,
+      fontWeight: "500",
+    },
+  });
+}
+
 export function Button({
   label,
   onPress,
@@ -26,6 +61,8 @@ export function Button({
   disabled = false,
   style,
 }: ButtonProps) {
+  const { colors } = useAppColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const isPrimary = variant === "primary";
 
   return (
@@ -40,9 +77,7 @@ export function Button({
       disabled={disabled || loading}
     >
       {loading ? (
-        <ActivityIndicator
-          color={isPrimary ? CityCareColors.white : CityCareColors.text}
-        />
+        <ActivityIndicator color={isPrimary ? "#fff" : colors.text} />
       ) : (
         <Text style={isPrimary ? styles.labelPrimary : styles.labelSecondary}>
           {label}
@@ -51,34 +86,3 @@ export function Button({
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  base: {
-    width: "100%",
-    height: 50,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  primary: {
-    backgroundColor: CityCareColors.primary,
-  },
-  secondary: {
-    borderWidth: 1.5,
-    borderColor: CityCareColors.primary,
-    backgroundColor: "transparent",
-  },
-  pressed: {
-    opacity: 0.75,
-  },
-  labelPrimary: {
-    color: CityCareColors.white,
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  labelSecondary: {
-    color: CityCareColors.text,
-    fontSize: 15,
-    fontWeight: "500",
-  },
-});
