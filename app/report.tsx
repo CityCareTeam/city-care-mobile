@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/Button";
 import { Toast } from "@/components/ui/ToastMessage";
+import { STRINGS } from "@/constants/strings";
 import { CityCareColors } from "@/constants/theme";
 import { createIncident, reverseGeocode } from "@/services/incidents";
 import { getValidToken } from "@/storage/tokens";
@@ -89,7 +90,7 @@ export default function ReportScreen() {
     try {
       const token = await getValidToken();
       if (!token) {
-        Alert.alert("Session expirée", "Reconnectez-vous pour continuer.");
+        Alert.alert(STRINGS.alert.sessionExpiredTitle, STRINGS.alert.sessionExpiredMsg);
         router.replace("/login");
         return;
       }
@@ -104,13 +105,13 @@ export default function ReportScreen() {
       );
       Toast.show({
         type: "success",
-        text1: "Signalement envoyé",
-        text2: "Votre incident a été enregistré.",
+        text1: STRINGS.toast.reportSuccessTitle,
+        text2: STRINGS.toast.reportSuccess,
       });
       router.back();
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Erreur inconnue.";
-      Alert.alert("Erreur", msg);
+      const msg = e instanceof Error ? e.message : STRINGS.api.unknownError;
+      Alert.alert(STRINGS.alert.errorTitle, msg);
     } finally {
       setSubmitting(false);
     }

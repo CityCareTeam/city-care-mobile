@@ -1,3 +1,4 @@
+import { STRINGS } from '@/constants/strings';
 import { login, register, getMe, logout, refreshToken } from '@/services/auth';
 
 const mockFetch = jest.fn();
@@ -39,7 +40,7 @@ describe('login', () => {
   it('throws "Serveur inaccessible" on network failure', async () => {
     mockFetch.mockRejectedValueOnce(new Error('Failed to fetch'));
     await expect(login({ username: 'user', password: 'pass' }))
-      .rejects.toThrow('Serveur inaccessible. Vérifiez votre connexion.');
+      .rejects.toThrow(STRINGS.api.networkError);
   });
 
   it('parses ASP.NET Core validation error format', async () => {
@@ -106,7 +107,7 @@ describe('refreshToken', () => {
 
   it('throws "Session expirée" on 401', async () => {
     mockFetch.mockResolvedValueOnce(makeResponse(401, { title: 'Session expirée.' }));
-    await expect(refreshToken('bad-token')).rejects.toThrow('Session expirée.');
+    await expect(refreshToken('bad-token')).rejects.toThrow(STRINGS.api.sessionExpired);
   });
 });
 
@@ -135,7 +136,7 @@ describe('getMe', () => {
 
   it('throws "Non autorisé" on 401', async () => {
     mockFetch.mockResolvedValueOnce(makeResponse(401, {}));
-    await expect(getMe('expired-token')).rejects.toThrow('Non autorisé.');
+    await expect(getMe('expired-token')).rejects.toThrow(STRINGS.api.unauthorized);
   });
 });
 

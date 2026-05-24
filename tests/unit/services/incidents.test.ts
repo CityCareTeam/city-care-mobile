@@ -1,3 +1,4 @@
+import { STRINGS } from '@/constants/strings';
 import {
   createIncident,
   getIncidents,
@@ -115,7 +116,7 @@ describe('getIncidents — URL params', () => {
 
   it('throws on error response', async () => {
     mockFetch.mockResolvedValueOnce(makeResponse(500, {}));
-    await expect(getIncidents()).rejects.toThrow('Impossible de charger les signalements.');
+    await expect(getIncidents()).rejects.toThrow(STRINGS.api.incidentsLoadError);
   });
 });
 

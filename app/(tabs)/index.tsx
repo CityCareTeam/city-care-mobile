@@ -4,6 +4,7 @@ import { STATUS_COLOR, STATUS_LABEL, TYPE_LABEL } from "@/constants/incidents";
 import { ROLE_LABELS } from "@/constants/roles";
 import { CityCareColors } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
+import { STRINGS } from "@/constants/strings";
 import { applyFilters, useIncidentFilters } from "@/hooks/use-incident-filters";
 import { getIncidents } from "@/services/incidents";
 import { getMyIncidents } from "@/services/users";
@@ -236,8 +237,8 @@ function CitizenView({
         <EmptyState
           text={
             incidents.length === 0
-              ? "Aucun signalement pour le moment."
-              : "Aucun résultat pour ces filtres."
+              ? STRINGS.emptyState.noMyIncidents
+              : STRINGS.emptyState.noFilterResults
           }
         />
       ) : (
@@ -260,8 +261,8 @@ function CitizenView({
         <EmptyState
           text={
             allIncidents.length === 0
-              ? "Aucun signalement dans la ville."
-              : "Aucun résultat pour ces filtres."
+              ? STRINGS.emptyState.noAllIncidents
+              : STRINGS.emptyState.noFilterResults
           }
         />
       ) : (
@@ -381,8 +382,8 @@ function AgentView({
         <EmptyState
           text={
             toHandle.length === 0
-              ? "Tout est traité, bravo !"
-              : "Aucun résultat pour ces filtres."
+              ? STRINGS.emptyState.agentAllDone
+              : STRINGS.emptyState.noFilterResults
           }
         />
       ) : (
@@ -504,8 +505,8 @@ function AdminView({
         <EmptyState
           text={
             incidents.length === 0
-              ? "Aucun signalement."
-              : "Aucun résultat pour ces filtres."
+              ? STRINGS.emptyState.noIncidents
+              : STRINGS.emptyState.noFilterResults
           }
         />
       ) : (

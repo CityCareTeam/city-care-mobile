@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Logo } from "@/components/ui/Logo";
 import { Toast } from "@/components/ui/ToastMessage";
+import { STRINGS } from "@/constants/strings";
 import { CityCareColors } from "@/constants/theme";
 import { login } from "@/services/auth";
 import { saveTokens } from "@/storage/tokens";
@@ -20,8 +21,8 @@ export default function LoginScreen() {
     if (!username.trim() || !password.trim()) {
       Toast.show({
         type: "error",
-        text1: "Champs manquants",
-        text2: "Veuillez remplir tous les champs.",
+        text1: STRINGS.toast.missingFieldsTitle,
+        text2: STRINGS.toast.missingFields,
       });
       return;
     }
@@ -33,8 +34,8 @@ export default function LoginScreen() {
     } catch (e: unknown) {
       Toast.show({
         type: "error",
-        text1: "Connexion échouée",
-        text2: e instanceof Error ? e.message : "Une erreur est survenue.",
+        text1: STRINGS.toast.loginFailedTitle,
+        text2: e instanceof Error ? e.message : STRINGS.api.genericError,
       });
     } finally {
       setLoading(false);

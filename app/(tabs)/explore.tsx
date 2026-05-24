@@ -8,6 +8,7 @@ import {
 } from "@/constants/incidents";
 import { CityCareColors } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
+import { STRINGS } from "@/constants/strings";
 import { useIncidentFilters } from "@/hooks/use-incident-filters";
 import {
     deleteIncident,
@@ -92,7 +93,7 @@ export default function SignalementsScreen() {
       setUpdatingStatus(true);
       try {
         const token = await getValidToken();
-        if (!token) throw new Error("Non authentifié");
+        if (!token) throw new Error(STRINGS.api.unauthenticated);
         await updateIncidentStatus(selected.id, newStatus, token);
         // Mise à jour locale immédiate
         const updated = { ...selected, status: newStatus } as IncidentResponse;
@@ -102,8 +103,8 @@ export default function SignalementsScreen() {
         setSelected(updated);
       } catch (e) {
         Alert.alert(
-          "Erreur",
-          e instanceof Error ? e.message : "Erreur inconnue",
+          STRINGS.alert.errorTitle,
+          e instanceof Error ? e.message : STRINGS.api.unknownError,
         );
       } finally {
         setUpdatingStatus(false);
@@ -115,8 +116,8 @@ export default function SignalementsScreen() {
   const handleDelete = useCallback(() => {
     if (!selected) return;
     Alert.alert(
-      "Supprimer l'incident",
-      "Cette action est irréversible. Confirmer la suppression ?",
+      STRINGS.alert.deleteIncidentTitle,
+      STRINGS.alert.deleteIncidentMsg,
       [
         { text: "Annuler", style: "cancel" },
         {
@@ -125,7 +126,7 @@ export default function SignalementsScreen() {
           onPress: async () => {
             try {
               const token = await getValidToken();
-              if (!token) throw new Error("Non authentifié");
+              if (!token) throw new Error(STRINGS.api.unauthenticated);
               await deleteIncident(selected.id, token);
               setIncidents((prev) =>
                 prev.filter((inc) => inc.id !== selected.id),
@@ -134,7 +135,7 @@ export default function SignalementsScreen() {
             } catch (e) {
               Alert.alert(
                 "Erreur",
-                e instanceof Error ? e.message : "Erreur inconnue",
+                e instanceof Error ? e.message : STRINGS.api.unknownError,
               );
             }
           },
@@ -293,7 +294,7 @@ export default function SignalementsScreen() {
                 activeOpacity={0.8}
               >
                 <Text style={styles.deleteBtnText}>
-                  {"Supprimer l'incident"}
+                  {STRINGS.alert.deleteIncidentTitle}
                 </Text>
               </TouchableOpacity>
             )}

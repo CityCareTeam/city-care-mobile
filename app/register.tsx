@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Logo } from "@/components/ui/Logo";
 import { Toast } from "@/components/ui/ToastMessage";
+import { STRINGS } from "@/constants/strings";
 import { CityCareColors } from "@/constants/theme";
 import { register } from "@/services/auth";
 import { router } from "expo-router";
@@ -29,16 +30,16 @@ export default function RegisterScreen() {
     ) {
       Toast.show({
         type: "error",
-        text1: "Champs manquants",
-        text2: "Veuillez remplir tous les champs.",
+        text1: STRINGS.toast.missingFieldsTitle,
+        text2: STRINGS.toast.missingFields,
       });
       return;
     }
     if (password !== confirm) {
       Toast.show({
         type: "error",
-        text1: "Mots de passe différents",
-        text2: "Les mots de passe ne correspondent pas.",
+        text1: STRINGS.toast.passwordMismatchTitle,
+        text2: STRINGS.toast.passwordMismatch,
       });
       return;
     }
@@ -53,15 +54,15 @@ export default function RegisterScreen() {
       });
       Toast.show({
         type: "success",
-        text1: "Compte créé !",
-        text2: "Vous pouvez maintenant vous connecter.",
+        text1: STRINGS.toast.registerSuccessTitle,
+        text2: STRINGS.toast.registerSuccess,
       });
       router.replace("/login");
     } catch (e: unknown) {
       Toast.show({
         type: "error",
-        text1: "Inscription échouée",
-        text2: e instanceof Error ? e.message : "Une erreur est survenue.",
+        text1: STRINGS.toast.registerFailedTitle,
+        text2: e instanceof Error ? e.message : STRINGS.api.genericError,
       });
     } finally {
       setLoading(false);
