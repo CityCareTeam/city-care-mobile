@@ -1,11 +1,12 @@
 import { renderHook, waitFor } from '@testing-library/react-native';
 import { useRole } from '@/hooks/use-role';
+import { getMe } from '@/services/auth';
+import { getValidToken } from '@/storage/tokens';
 
 jest.mock('@/services/auth');
 jest.mock('@/storage/tokens');
 
-import { getMe } from '@/services/auth';
-import { getValidToken } from '@/storage/tokens';
+
 
 const mockGetMe = getMe as jest.Mock;
 const mockGetValidToken = getValidToken as jest.Mock;
