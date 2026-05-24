@@ -4,15 +4,34 @@ import { Input } from "@/components/ui/Input";
 import { Logo } from "@/components/ui/Logo";
 import { Toast } from "@/components/ui/ToastMessage";
 import { STRINGS } from "@/constants/strings";
-import { CityCareColors } from "@/constants/theme";
+import { useAppColors } from "@/hooks/use-app-colors";
+import type { AppColors } from "@/hooks/use-app-colors";
 import { login } from "@/services/auth";
 import { saveTokens } from "@/storage/tokens";
 import Constants from "expo-constants";
 import { router } from "expo-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text } from "react-native";
 
+function makeStyles(c: AppColors) {
+  return StyleSheet.create({
+    screen: { flex: 1, backgroundColor: c.background },
+    scrollContent: {
+      flexGrow: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 24,
+    },
+    logo: { marginBottom: 16 },
+    title: { fontSize: 28, fontWeight: "800", color: c.text, marginBottom: 28 },
+    btnTop: { marginTop: 8, marginBottom: 12 },
+    version: { marginTop: 20, fontSize: 12, color: c.text, opacity: 0.35 },
+  });
+}
+
 export default function LoginScreen() {
+  const { colors } = useAppColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -94,34 +113,3 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: CityCareColors.background,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 24,
-  },
-  logo: {
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "800",
-    color: CityCareColors.text,
-    marginBottom: 28,
-  },
-  btnTop: {
-    marginTop: 8,
-    marginBottom: 12,
-  },
-  version: {
-    marginTop: 20,
-    fontSize: 12,
-    color: CityCareColors.text,
-    opacity: 0.35,
-  },
-});

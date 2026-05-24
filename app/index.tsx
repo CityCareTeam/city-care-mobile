@@ -1,4 +1,4 @@
-import { CityCareColors } from "@/constants/theme";
+import { useAppColors } from "@/hooks/use-app-colors";
 import { refreshToken } from "@/services/auth";
 import {
     clearTokens,
@@ -51,17 +51,19 @@ export default function Index() {
     checkAuth();
   }, []);
 
+  const { colors } = useAppColors();
+
   if (!target) {
     return (
       <View
         style={{
           flex: 1,
-          backgroundColor: CityCareColors.background,
+          backgroundColor: colors.background,
           alignItems: "center",
           justifyContent: "center",
         }}
       >
-        <ActivityIndicator color={CityCareColors.primary} />
+        <ActivityIndicator color={colors.primary} />
       </View>
     );
   }
