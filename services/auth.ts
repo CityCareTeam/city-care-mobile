@@ -1,4 +1,5 @@
 import { API_ENDPOINTS } from "@/constants/api";
+import { STRINGS } from "@/constants/strings";
 import { fetchWithTimeout, throwFromResponse } from "@/services/api-client";
 import type {
     LoginPayload,
@@ -17,11 +18,11 @@ export async function login(payload: LoginPayload): Promise<LoginResponse> {
       body: JSON.stringify(payload),
     });
   } catch {
-    throw new Error("Serveur inaccessible. Vérifiez votre connexion.");
+    throw new Error(STRINGS.api.networkError);
   }
 
   if (!response.ok)
-    await throwFromResponse(response, "Identifiants incorrects.");
+    await throwFromResponse(response, STRINGS.api.invalidCredentials);
   return response.json() as Promise<LoginResponse>;
 }
 
@@ -36,11 +37,11 @@ export async function register(
       body: JSON.stringify(payload),
     });
   } catch {
-    throw new Error("Serveur inaccessible. Vérifiez votre connexion.");
+    throw new Error(STRINGS.api.networkError);
   }
 
   if (!response.ok)
-    await throwFromResponse(response, "Erreur lors de la création du compte.");
+    await throwFromResponse(response, STRINGS.api.registerError);
   return response.json() as Promise<RegisterResponse>;
 }
 
@@ -53,10 +54,10 @@ export async function refreshToken(token: string): Promise<LoginResponse> {
       body: JSON.stringify({ refreshToken: token }),
     });
   } catch {
-    throw new Error("Serveur inaccessible. Vérifiez votre connexion.");
+    throw new Error(STRINGS.api.networkError);
   }
 
-  if (!response.ok) await throwFromResponse(response, "Session expirée.");
+  if (!response.ok) await throwFromResponse(response, STRINGS.api.sessionExpired);
   return response.json() as Promise<LoginResponse>;
 }
 
@@ -67,10 +68,10 @@ export async function getMe(accessToken: string): Promise<MeResponse> {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
   } catch {
-    throw new Error("Serveur inaccessible. Vérifiez votre connexion.");
+    throw new Error(STRINGS.api.networkError);
   }
 
-  if (!response.ok) throw new Error("Non autorisé.");
+  if (!response.ok) throw new Error(STRINGS.api.unauthorized);
   return response.json() as Promise<MeResponse>;
 }
 
