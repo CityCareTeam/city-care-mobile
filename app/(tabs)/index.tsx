@@ -3,8 +3,8 @@ import { Logo } from "@/components/ui/Logo";
 import { STATUS_COLOR, STATUS_LABEL, TYPE_LABEL } from "@/constants/incidents";
 import { ROLE_LABELS } from "@/constants/roles";
 import { CityCareColors } from "@/constants/theme";
+import { useAuth } from "@/context/AuthContext";
 import { applyFilters, useIncidentFilters } from "@/hooks/use-incident-filters";
-import { getMe } from "@/services/auth";
 import { getIncidents } from "@/services/incidents";
 import { getMyIncidents } from "@/services/users";
 import { getValidToken } from "@/storage/tokens";
@@ -33,8 +33,6 @@ const TODAY = (() => {
   });
   return s.charAt(0).toUpperCase() + s.slice(1);
 })();
-
-type Role = "Admin" | "Agent" | "Citizen" | null;
 
 // ── Composants partagés ───────────────────────────────────────────────────
 
@@ -528,26 +526,22 @@ function AdminView({
 // ── Écran principal ────────────────────────────────────────────────────────
 
 export default function HomeScreen() {
-  const [role, setRole] = useState<Role>(null);
-  const [firstName, setFirstName] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { role, firstName, loading: authLoading } = useAuth();
+  const [incidentsLoading, setIncidentsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [myIncidents, setMyIncidents] = useState<MyIncidentItem[]>([]);
   const [allIncidents, setAllIncidents] = useState<IncidentResponse[]>([]);
 
   const load = useCallback(async (isRefresh = false) => {
+    if (role === null) return;
     if (isRefresh) setRefreshing(true);
-    else setLoading(true);
+    else setIncidentsLoading(true);
 
     try {
       const token = await getValidToken();
       if (!token) return;
 
-      const me = await getMe(token);
-      setRole(me.mainRole);
-      setFirstName(me.firstName);
-
-      if (me.mainRole === "Citizen") {
+      if (role === "Citizen") {
         const [myRes, allRes] = await Promise.all([
           getMyIncidents(token),
           getIncidents({ pageSize: 50 }),
@@ -561,10 +555,10 @@ export default function HomeScreen() {
     } catch {
       // silencieux
     } finally {
-      setLoading(false);
+      setIncidentsLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [role]);
 
   useFocusEffect(
     useCallback(() => {
@@ -581,7 +575,7 @@ export default function HomeScreen() {
 
   const insets = useSafeAreaInsets();
 
-  if (loading) {
+  if (authLoading || incidentsLoading) {
     return (
       <View style={[styles.centered, { paddingTop: insets.top }]}>
         <ActivityIndicator color={CityCareColors.primary} size="large" />

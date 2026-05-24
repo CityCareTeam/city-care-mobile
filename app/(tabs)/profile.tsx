@@ -2,15 +2,11 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ROLE_COLORS, ROLE_LABELS } from "@/constants/roles";
 import { CityCareColors } from "@/constants/theme";
+import { useAuth } from "@/context/AuthContext";
 import { formatDate } from "@/utils/format-date";
-import { getMe, logout } from "@/services/auth";
-import { getUserMe } from "@/services/users";
-import { clearTokens, getAccessToken, getRefreshToken } from "@/storage/tokens";
-import type { MeResponse } from "@/types/auth";
-import type { UserMeResponse } from "@/types/users";
 import Constants from "expo-constants";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import {
     ActivityIndicator,
     ScrollView,
@@ -21,37 +17,13 @@ import {
 
 
 export default function ProfileScreen() {
-  const [keycloakUser, setKeycloakUser] = useState<MeResponse | null>(null);
-  const [dbUser, setDbUser] = useState<UserMeResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { keycloakUser, dbUser, loading, logout } = useAuth();
 
   useEffect(() => {
-    async function load() {
-      const token = await getAccessToken();
-      if (!token) {
-        router.replace("/login");
-        return;
-      }
-      try {
-        const [kc, db] = await Promise.all([getMe(token), getUserMe(token)]);
-        setKeycloakUser(kc);
-        setDbUser(db);
-      } catch {
-        await clearTokens();
-        router.replace("/login");
-      } finally {
-        setLoading(false);
-      }
+    if (!loading && !keycloakUser) {
+      router.replace("/login");
     }
-    load();
-  }, []);
-
-  async function handleLogout() {
-    const token = await getRefreshToken();
-    if (token) await logout(token);
-    await clearTokens();
-    router.replace("/login");
-  }
+  }, [loading, keycloakUser]);
 
   if (loading) {
     return (
@@ -101,7 +73,7 @@ export default function ProfileScreen() {
       <Button
         label="Se déconnecter"
         variant="secondary"
-        onPress={handleLogout}
+        onPress={logout}
         style={styles.btn}
       />
       <Text style={styles.version}>
