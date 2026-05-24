@@ -7,8 +7,8 @@ import {
     TYPE_LABEL,
 } from "@/constants/incidents";
 import { CityCareColors } from "@/constants/theme";
+import { useAuth } from "@/context/AuthContext";
 import { useIncidentFilters } from "@/hooks/use-incident-filters";
-import { useRole } from "@/hooks/use-role";
 import {
     deleteIncident,
     getIncidents,
@@ -43,7 +43,7 @@ export default function SignalementsScreen() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<IncidentResponse | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
-  const { isStaff, isAdmin } = useRole();
+  const { isStaff, isAdmin } = useAuth();
   const insets = useSafeAreaInsets();
   const {
     filterType,
