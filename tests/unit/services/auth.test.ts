@@ -73,6 +73,20 @@ describe('login', () => {
 describe('register', () => {
   beforeEach(() => mockFetch.mockClear());
 
+  it('throws networkError on network failure', async () => {
+    mockFetch.mockRejectedValueOnce(new Error('Failed to fetch'));
+    await expect(
+      register({ email: 'a@b.com', username: 'a', firstName: 'A', lastName: 'B', password: 'p' }),
+    ).rejects.toThrow(STRINGS.api.networkError);
+  });
+
+  it('throws on 400 error response', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(400, { message: 'Nom d\'utilisateur déjà pris' }));
+    await expect(
+      register({ email: 'a@b.com', username: 'taken', firstName: 'A', lastName: 'B', password: 'p' }),
+    ).rejects.toThrow('Nom d\'utilisateur déjà pris');
+  });
+
   it('resolves on 201', async () => {
     const payload = {
       userId: 'uid',
@@ -100,6 +114,11 @@ describe('register', () => {
 describe('refreshToken', () => {
   beforeEach(() => mockFetch.mockClear());
 
+  it('throws networkError on network failure', async () => {
+    mockFetch.mockRejectedValueOnce(new Error('Failed to fetch'));
+    await expect(refreshToken('token')).rejects.toThrow(STRINGS.api.networkError);
+  });
+
   it('resolves with new tokens on 200', async () => {
     mockFetch.mockResolvedValueOnce(makeResponse(200, validLoginResponse));
     await expect(refreshToken('old-refresh')).resolves.toEqual(validLoginResponse);
@@ -113,6 +132,11 @@ describe('refreshToken', () => {
 
 describe('getMe', () => {
   beforeEach(() => mockFetch.mockClear());
+
+  it('throws networkError on network failure', async () => {
+    mockFetch.mockRejectedValueOnce(new Error('Failed to fetch'));
+    await expect(getMe('token')).rejects.toThrow(STRINGS.api.networkError);
+  });
 
   it('resolves with user data on 200', async () => {
     const me = {

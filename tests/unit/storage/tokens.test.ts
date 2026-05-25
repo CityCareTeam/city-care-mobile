@@ -1,4 +1,4 @@
-import { isTokenExpired, getValidToken } from '@/storage/tokens';
+import { isTokenExpired, getValidToken, saveTokens, getAccessToken, getRefreshToken, clearTokens } from '@/storage/tokens';
 import * as SecureStore from 'expo-secure-store';
 import { refreshToken as apiRefreshToken } from '@/services/auth';
 
@@ -19,6 +19,56 @@ function makeJwt(expSeconds: number): string {
   const payload = Buffer.from(JSON.stringify({ exp: expSeconds, sub: 'test' })).toString('base64');
   return `header.${payload}.sig`;
 }
+
+describe('saveTokens', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('writes access and refresh tokens to SecureStore', async () => {
+    await saveTokens('acc-123', 'ref-456');
+    expect(mockStore.setItemAsync).toHaveBeenCalledWith('auth_access_token', 'acc-123');
+    expect(mockStore.setItemAsync).toHaveBeenCalledWith('auth_refresh_token', 'ref-456');
+  });
+});
+
+describe('getAccessToken', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('returns the stored access token', async () => {
+    mockStore.getItemAsync.mockResolvedValueOnce('acc-abc');
+    await expect(getAccessToken()).resolves.toBe('acc-abc');
+    expect(mockStore.getItemAsync).toHaveBeenCalledWith('auth_access_token');
+  });
+
+  it('returns null when no token is stored', async () => {
+    mockStore.getItemAsync.mockResolvedValueOnce(null);
+    await expect(getAccessToken()).resolves.toBeNull();
+  });
+});
+
+describe('getRefreshToken', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('returns the stored refresh token', async () => {
+    mockStore.getItemAsync.mockResolvedValueOnce('ref-xyz');
+    await expect(getRefreshToken()).resolves.toBe('ref-xyz');
+    expect(mockStore.getItemAsync).toHaveBeenCalledWith('auth_refresh_token');
+  });
+
+  it('returns null when no token is stored', async () => {
+    mockStore.getItemAsync.mockResolvedValueOnce(null);
+    await expect(getRefreshToken()).resolves.toBeNull();
+  });
+});
+
+describe('clearTokens', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('deletes both tokens from SecureStore', async () => {
+    await clearTokens();
+    expect(mockStore.deleteItemAsync).toHaveBeenCalledWith('auth_access_token');
+    expect(mockStore.deleteItemAsync).toHaveBeenCalledWith('auth_refresh_token');
+  });
+});
 
 describe('isTokenExpired', () => {
   it('returns false for a token valid for 1 hour', () => {
