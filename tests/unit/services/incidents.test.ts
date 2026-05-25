@@ -59,6 +59,25 @@ describe('createIncident — type mapping', () => {
     expect(mockFetch.mock.calls[0][1].headers.Authorization).toBe('Bearer my-token');
   });
 
+  it('throws plain error message when body has message field (no errors array)', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(400, { message: 'Quota dépassé' }));
+    await expect(
+      createIncident({ type: 'Road', latitude: 0, longitude: 0, description: 'test' }, 'token'),
+    ).rejects.toThrow('Quota dépassé');
+  });
+
+  it('throws raw text when body is not JSON', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 503,
+      text: () => Promise.resolve('Service unavailable'),
+      json: () => Promise.reject(new Error('not json')),
+    } as unknown as Response);
+    await expect(
+      createIncident({ type: 'Road', latitude: 0, longitude: 0, description: 'test' }, 'token'),
+    ).rejects.toThrow('Service unavailable');
+  });
+
   it('throws on error response with ASP.NET validation errors', async () => {
     mockFetch.mockResolvedValueOnce(makeResponse(422, {
       errors: { Description: ['La description est requise'] },
@@ -139,6 +158,16 @@ describe('updateIncidentStatus', () => {
   it('throws on error', async () => {
     mockFetch.mockResolvedValueOnce(makeResponse(404, { error: 'Not found' }));
     await expect(updateIncidentStatus('bad-id', 'resolved', 'token')).rejects.toThrow();
+  });
+
+  it('throws plain text when error body is not JSON', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      text: () => Promise.resolve('Internal Server Error'),
+      json: () => Promise.reject(new Error('not json')),
+    } as unknown as Response);
+    await expect(updateIncidentStatus('id', 'resolved', 'token')).rejects.toThrow('Internal Server Error');
   });
 });
 
