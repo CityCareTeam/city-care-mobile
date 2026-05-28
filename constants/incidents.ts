@@ -21,7 +21,7 @@ export const TYPE_LABEL: Record<string, string> = {
 
 /** Transitions de statut valides côté client (le back re-valide). */
 export const NEXT_STATUSES: Record<string, string[]> = {
-  reported: ["in_progress", "resolved"],
+  reported: ["in_progress"],
   in_progress: ["resolved"],
   resolved: [],
 };
