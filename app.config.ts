@@ -37,6 +37,7 @@ export default ({ config }: ConfigContext) => ({
   },
   plugins: [
     "expo-router",
+    "expo-font",
     [
       "expo-splash-screen",
       {
@@ -52,10 +53,9 @@ export default ({ config }: ConfigContext) => ({
     ],
     "expo-secure-store",
     [
-      "expo-maps",
+      "expo-location",
       {
-        requestLocationPermission: true,
-        locationPermission: "Autoriser $(PRODUCT_NAME) à utiliser votre localisation",
+        locationWhenInUsePermission: "Autoriser $(PRODUCT_NAME) à utiliser votre localisation",
       },
     ],
   ],

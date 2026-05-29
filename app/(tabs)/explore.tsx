@@ -20,6 +20,7 @@ import { getValidToken } from "@/storage/tokens";
 import type { IncidentResponse } from "@/types/incidents";
 import { useFocusEffect } from "@react-navigation/native";
 import { router, useLocalSearchParams } from "expo-router";
+import { useUserLocation } from "@/hooks/use-user-location";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
     ActivityIndicator,
@@ -30,8 +31,9 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
+import { MapPin } from "@/components/ui/MapPin";
 import ClusteredMapView from "react-native-map-clustering";
-import { Marker, Region } from "react-native-maps";
+import MapView, { Marker, Region } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const LYON: Region = {
@@ -43,6 +45,7 @@ const LYON: Region = {
 
 export default function SignalementsScreen() {
   const [incidents, setIncidents] = useState<IncidentResponse[]>([]);
+  const { region: userRegion } = useUserLocation(0.05);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<IncidentResponse | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
@@ -63,22 +66,26 @@ export default function SignalementsScreen() {
 
   const markers = useMemo(
     () =>
-      filteredIncidents.map((inc) => (
-        <Marker
-          key={inc.id}
-          coordinate={{ latitude: inc.latitude, longitude: inc.longitude }}
-          pinColor={STATUS_COLOR[inc.status] ?? colors.primary}
-          tracksViewChanges={false}
-          onPress={() => {
-            markerJustPressed.current = true;
-            setSelected(inc);
-            setTimeout(() => {
-              markerJustPressed.current = false;
-            }, 350);
-          }}
-        />
-      )),
-    [filteredIncidents, colors.primary],
+      filteredIncidents.map((inc) => {
+        const isActive = selected?.id === inc.id;
+        const color = STATUS_COLOR[inc.status] ?? colors.primary;
+        return (
+          <Marker
+            key={isActive ? `${inc.id}-active` : inc.id}
+            coordinate={{ latitude: inc.latitude, longitude: inc.longitude }}
+            tracksViewChanges={false}
+            anchor={{ x: 0.5, y: 1 }}
+            onPress={() => {
+              markerJustPressed.current = true;
+              setSelected(inc);
+              setTimeout(() => { markerJustPressed.current = false; }, 350);
+            }}
+          >
+            <MapPin color={color} active={isActive} />
+          </Marker>
+        );
+      }),
+    [filteredIncidents, colors.primary, selected?.id],
   );
   const { selectId } = useLocalSearchParams<{ selectId?: string }>();
   const pendingSelectRef = useRef<string | null>(null);
@@ -95,24 +102,46 @@ export default function SignalementsScreen() {
     }
   }, []);
 
-  // Auto-sélection depuis le dashboard
+  const selectIncident = useCallback((inc: IncidentResponse) => {
+    setSelected(inc);
+    setTimeout(() => {
+      (mapRef.current as unknown as MapView)?.animateToRegion(
+        {
+          latitude: inc.latitude - 0.002,
+          longitude: inc.longitude,
+          latitudeDelta: 0.008,
+          longitudeDelta: 0.008,
+        },
+        800,
+      );
+    }, 400);
+  }, []);
+
+  // Quand selectId change, réinitialise et prépare la sélection
+  useEffect(() => {
+    if (!selectId) return;
+    setSelected(null);
+    pendingSelectRef.current = selectId;
+    loadIncidents();
+  }, [selectId, loadIncidents]);
+
+  // Quand les incidents chargent, consomme le pending select
   useEffect(() => {
     if (!pendingSelectRef.current || incidents.length === 0) return;
     const inc = incidents.find((i) => i.id === pendingSelectRef.current);
     if (inc) {
-      setSelected(inc);
       pendingSelectRef.current = null;
-      mapRef.current?.animateToRegion(
-        { latitude: inc.latitude, longitude: inc.longitude, latitudeDelta: 0.005, longitudeDelta: 0.005 },
-        800,
-      );
+      selectIncident(inc);
     }
-  }, [incidents]);
+  }, [incidents, selectIncident]);
 
+  // Rechargement à chaque focus (sans logique de sélection)
   useFocusEffect(
     useCallback(() => {
-      if (selectId) pendingSelectRef.current = selectId;
-      loadIncidents();
+      if (!selectId) loadIncidents();
+      return () => {
+        pendingSelectRef.current = null;
+      };
     }, [loadIncidents, selectId]),
   );
 
@@ -178,7 +207,7 @@ export default function SignalementsScreen() {
       <ClusteredMapView
         ref={mapRef}
         style={styles.map}
-        initialRegion={LYON}
+        initialRegion={userRegion}
         showsUserLocation
         clusterColor={colors.primary}
         onPress={() => {
