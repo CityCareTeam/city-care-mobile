@@ -624,7 +624,7 @@ export default function HomeScreen() {
             </Text>
             <Text style={styles.headerDate}>{TODAY}</Text>
           </View>
-          <Logo size={48} />
+          <Logo size={78} />
         </View>
         {role && (
           <View style={styles.rolePill}>

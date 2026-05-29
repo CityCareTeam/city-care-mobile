@@ -1,14 +1,14 @@
-import { ConfigContext, ExpoConfig } from "expo/config";
+import { ConfigContext } from "expo/config";
 import { version } from "./package.json";
 
-export default ({ config }: ConfigContext): ExpoConfig => ({
+export default ({ config }: ConfigContext) => ({
   ...config,
   name: "city-care-mobile",
   slug: "city-care-mobile",
   owner: "citycare",
   version,
   orientation: "portrait",
-  icon: "./assets/images/icon.png",
+  icon: "./assets/images/logo-city-care.png",
   scheme: "citycaremobile",
   userInterfaceStyle: "automatic",
   newArchEnabled: true,
@@ -18,13 +18,13 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   android: {
     package: "com.citycare.mobile",
     adaptiveIcon: {
-      backgroundColor: "#E6F4FE",
-      foregroundImage: "./assets/images/android-icon-foreground.png",
-      backgroundImage: "./assets/images/android-icon-background.png",
+      backgroundColor: "#f6aa54",
+      foregroundImage: "./assets/images/logo-city-care.png",
       monochromeImage: "./assets/images/android-icon-monochrome.png",
     },
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
+    usesCleartextTraffic: true,
     config: {
       googleMaps: {
         apiKey: process.env.GOOGLE_MAPS_API_KEY ?? "",
@@ -40,16 +40,24 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       "expo-splash-screen",
       {
-        image: "./assets/images/splash-icon.png",
-        imageWidth: 200,
-        resizeMode: "contain",
-        backgroundColor: "#ffffff",
+        image: "./assets/images/fond-splash.png",
+        imageWidth: 1284,
+        resizeMode: "cover",
+        backgroundColor: "#f6aa54",
         dark: {
-          backgroundColor: "#000000",
+          image: "./assets/images/fond-splash.png",
+          backgroundColor: "#f6aa54",
         },
       },
     ],
     "expo-secure-store",
+    [
+      "expo-maps",
+      {
+        requestLocationPermission: true,
+        locationPermission: "Autoriser $(PRODUCT_NAME) à utiliser votre localisation",
+      },
+    ],
   ],
   experiments: {
     typedRoutes: true,
