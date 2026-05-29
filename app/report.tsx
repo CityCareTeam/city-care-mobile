@@ -124,7 +124,7 @@ export default function ReportScreen() {
     (t) => t.value === selectedType,
   )?.label;
   const initialRegion: Region = {
-    ...DEFAULT_COORDS,
+    ...coords,
     latitudeDelta: 0.005,
     longitudeDelta: 0.005,
   };
