@@ -1,3 +1,4 @@
+import { STRINGS } from '@/constants/strings';
 import { login, register, getMe, logout, refreshToken } from '@/services/auth';
 
 const mockFetch = jest.fn();
@@ -39,7 +40,7 @@ describe('login', () => {
   it('throws "Serveur inaccessible" on network failure', async () => {
     mockFetch.mockRejectedValueOnce(new Error('Failed to fetch'));
     await expect(login({ username: 'user', password: 'pass' }))
-      .rejects.toThrow('Serveur inaccessible. Vérifiez votre connexion.');
+      .rejects.toThrow(STRINGS.api.networkError);
   });
 
   it('parses ASP.NET Core validation error format', async () => {
@@ -72,6 +73,20 @@ describe('login', () => {
 describe('register', () => {
   beforeEach(() => mockFetch.mockClear());
 
+  it('throws networkError on network failure', async () => {
+    mockFetch.mockRejectedValueOnce(new Error('Failed to fetch'));
+    await expect(
+      register({ email: 'a@b.com', username: 'a', firstName: 'A', lastName: 'B', password: 'p' }),
+    ).rejects.toThrow(STRINGS.api.networkError);
+  });
+
+  it('throws on 400 error response', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(400, { message: 'Nom d\'utilisateur déjà pris' }));
+    await expect(
+      register({ email: 'a@b.com', username: 'taken', firstName: 'A', lastName: 'B', password: 'p' }),
+    ).rejects.toThrow('Nom d\'utilisateur déjà pris');
+  });
+
   it('resolves on 201', async () => {
     const payload = {
       userId: 'uid',
@@ -99,6 +114,11 @@ describe('register', () => {
 describe('refreshToken', () => {
   beforeEach(() => mockFetch.mockClear());
 
+  it('throws networkError on network failure', async () => {
+    mockFetch.mockRejectedValueOnce(new Error('Failed to fetch'));
+    await expect(refreshToken('token')).rejects.toThrow(STRINGS.api.networkError);
+  });
+
   it('resolves with new tokens on 200', async () => {
     mockFetch.mockResolvedValueOnce(makeResponse(200, validLoginResponse));
     await expect(refreshToken('old-refresh')).resolves.toEqual(validLoginResponse);
@@ -106,12 +126,17 @@ describe('refreshToken', () => {
 
   it('throws "Session expirée" on 401', async () => {
     mockFetch.mockResolvedValueOnce(makeResponse(401, { title: 'Session expirée.' }));
-    await expect(refreshToken('bad-token')).rejects.toThrow('Session expirée.');
+    await expect(refreshToken('bad-token')).rejects.toThrow(STRINGS.api.sessionExpired);
   });
 });
 
 describe('getMe', () => {
   beforeEach(() => mockFetch.mockClear());
+
+  it('throws networkError on network failure', async () => {
+    mockFetch.mockRejectedValueOnce(new Error('Failed to fetch'));
+    await expect(getMe('token')).rejects.toThrow(STRINGS.api.networkError);
+  });
 
   it('resolves with user data on 200', async () => {
     const me = {
@@ -135,7 +160,7 @@ describe('getMe', () => {
 
   it('throws "Non autorisé" on 401', async () => {
     mockFetch.mockResolvedValueOnce(makeResponse(401, {}));
-    await expect(getMe('expired-token')).rejects.toThrow('Non autorisé.');
+    await expect(getMe('expired-token')).rejects.toThrow(STRINGS.api.unauthorized);
   });
 });
 

@@ -6,9 +6,11 @@ import {
     STATUS_LABEL,
     TYPE_LABEL,
 } from "@/constants/incidents";
-import { CityCareColors } from "@/constants/theme";
+import { useAuth } from "@/context/AuthContext";
+import { STRINGS } from "@/constants/strings";
+import type { AppColors } from "@/hooks/use-app-colors";
+import { useAppColors } from "@/hooks/use-app-colors";
 import { useIncidentFilters } from "@/hooks/use-incident-filters";
-import { useRole } from "@/hooks/use-role";
 import {
     deleteIncident,
     getIncidents,
@@ -18,7 +20,7 @@ import { getValidToken } from "@/storage/tokens";
 import type { IncidentResponse } from "@/types/incidents";
 import { useFocusEffect } from "@react-navigation/native";
 import { router, useLocalSearchParams } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
@@ -43,7 +45,9 @@ export default function SignalementsScreen() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<IncidentResponse | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
-  const { isStaff, isAdmin } = useRole();
+  const { isStaff, isAdmin } = useAuth();
+  const { colors } = useAppColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const {
     filterType,
@@ -92,7 +96,7 @@ export default function SignalementsScreen() {
       setUpdatingStatus(true);
       try {
         const token = await getValidToken();
-        if (!token) throw new Error("Non authentifié");
+        if (!token) throw new Error(STRINGS.api.unauthenticated);
         await updateIncidentStatus(selected.id, newStatus, token);
         // Mise à jour locale immédiate
         const updated = { ...selected, status: newStatus } as IncidentResponse;
@@ -102,8 +106,8 @@ export default function SignalementsScreen() {
         setSelected(updated);
       } catch (e) {
         Alert.alert(
-          "Erreur",
-          e instanceof Error ? e.message : "Erreur inconnue",
+          STRINGS.alert.errorTitle,
+          e instanceof Error ? e.message : STRINGS.api.unknownError,
         );
       } finally {
         setUpdatingStatus(false);
@@ -115,8 +119,8 @@ export default function SignalementsScreen() {
   const handleDelete = useCallback(() => {
     if (!selected) return;
     Alert.alert(
-      "Supprimer l'incident",
-      "Cette action est irréversible. Confirmer la suppression ?",
+      STRINGS.alert.deleteIncidentTitle,
+      STRINGS.alert.deleteIncidentMsg,
       [
         { text: "Annuler", style: "cancel" },
         {
@@ -125,7 +129,7 @@ export default function SignalementsScreen() {
           onPress: async () => {
             try {
               const token = await getValidToken();
-              if (!token) throw new Error("Non authentifié");
+              if (!token) throw new Error(STRINGS.api.unauthenticated);
               await deleteIncident(selected.id, token);
               setIncidents((prev) =>
                 prev.filter((inc) => inc.id !== selected.id),
@@ -134,7 +138,7 @@ export default function SignalementsScreen() {
             } catch (e) {
               Alert.alert(
                 "Erreur",
-                e instanceof Error ? e.message : "Erreur inconnue",
+                e instanceof Error ? e.message : STRINGS.api.unknownError,
               );
             }
           },
@@ -157,7 +161,7 @@ export default function SignalementsScreen() {
           <Marker
             key={inc.id}
             coordinate={{ latitude: inc.latitude, longitude: inc.longitude }}
-            pinColor={STATUS_COLOR[inc.status] ?? CityCareColors.primary}
+            pinColor={STATUS_COLOR[inc.status] ?? colors.primary}
             tracksViewChanges={false}
             onPress={() => {
               markerJustPressed.current = true;
@@ -185,7 +189,7 @@ export default function SignalementsScreen() {
 
       {loading && (
         <View style={styles.loader}>
-          <ActivityIndicator color={CityCareColors.primary} size="large" />
+          <ActivityIndicator color={colors.primary} size="large" />
         </View>
       )}
 
@@ -247,7 +251,7 @@ export default function SignalementsScreen() {
                   <Text
                     style={[
                       styles.infoValue,
-                      { color: CityCareColors.statusGreen },
+                      { color: colors.statusGreen },
                     ]}
                   >
                     {formatIncidentDateTime(selected.resolvedAt)}
@@ -293,7 +297,7 @@ export default function SignalementsScreen() {
                 activeOpacity={0.8}
               >
                 <Text style={styles.deleteBtnText}>
-                  {"Supprimer l'incident"}
+                  {STRINGS.alert.deleteIncidentTitle}
                 </Text>
               </TouchableOpacity>
             )}
@@ -316,176 +320,130 @@ export default function SignalementsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  map: { flex: 1 },
-  loader: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(249,247,233,0.6)",
-  },
-  fab: {
-    position: "absolute",
-    bottom: 32,
-    right: 24,
-    backgroundColor: CityCareColors.primary,
-    borderRadius: 28,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  fabIcon: { fontSize: 24, color: "#fff", fontWeight: "700", marginRight: 8 },
-  fabLabel: { fontSize: 15, fontWeight: "700", color: "#fff" },
-  // Bottom sheet
-  sheet: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: CityCareColors.background,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 20,
-    paddingBottom: 36,
-    paddingTop: 10,
-    maxHeight: "62%",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 12,
-  },
-  sheetHandle: {
-    width: 44,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: CityCareColors.secondary,
-    alignSelf: "center",
-    marginBottom: 14,
-  },
-  sheetHeader: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    marginBottom: 14,
-  },
-  sheetTitleRow: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  sheetType: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: CityCareColors.text,
-  },
-  statusBadge: {
-    borderRadius: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  statusBadgeText: { color: "#fff", fontWeight: "700", fontSize: 12 },
-  closeBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: CityCareColors.secondary,
-    alignItems: "center",
-    justifyContent: "center",
-    marginLeft: 8,
-  },
-  closeBtnText: { fontSize: 13, color: CityCareColors.text, fontWeight: "700" },
-  descBlock: {
-    backgroundColor: CityCareColors.white,
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 12,
-    borderLeftWidth: 3,
-    borderLeftColor: CityCareColors.primary,
-  },
-  sheetDesc: {
-    fontSize: 14,
-    color: CityCareColors.text,
-    lineHeight: 21,
-  },
-  infoCard: {
-    backgroundColor: CityCareColors.white,
-    borderRadius: 12,
-    overflow: "hidden",
-    marginBottom: 14,
-  },
-  infoRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-  },
-  infoRowBorder: {
-    borderTopWidth: 1,
-    borderTopColor: CityCareColors.background,
-  },
-  infoLabel: {
-    fontSize: 13,
-    color: CityCareColors.text,
-    opacity: 0.5,
-    flex: 1,
-  },
-  infoValue: {
-    fontSize: 13,
-    color: CityCareColors.text,
-    fontWeight: "600",
-    flex: 2,
-    textAlign: "right",
-  },
-  // Status actions (agent/admin)
-  statusActions: {
-    marginBottom: 4,
-  },
-  statusActionsLabel: {
-    fontSize: 11,
-    color: CityCareColors.text,
-    opacity: 0.45,
-    marginBottom: 10,
-    textTransform: "uppercase",
-    letterSpacing: 0.6,
-    fontWeight: "600",
-  },
-  statusActionsRow: { flexDirection: "row", gap: 10 },
-  statusActionBtn: {
-    flex: 1,
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  statusActionBtnText: { fontWeight: "700", fontSize: 14, color: "#fff" },
-  deleteBtn: {
-    marginTop: 12,
-    borderRadius: 12,
-    paddingVertical: 13,
-    alignItems: "center",
-    backgroundColor: "#fdecea",
-    borderWidth: 1,
-    borderColor: CityCareColors.statusRed,
-  },
-  deleteBtnText: {
-    fontWeight: "700",
-    fontSize: 14,
-    color: CityCareColors.statusRed,
-  },
-  filterBarOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-  },
-});
+function makeStyles(c: AppColors) {
+  return StyleSheet.create({
+    container: { flex: 1 },
+    map: { flex: 1 },
+    loader: {
+      ...StyleSheet.absoluteFillObject,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: c.loaderOverlay,
+    },
+    fab: {
+      position: "absolute",
+      bottom: 32,
+      right: 24,
+      backgroundColor: c.primary,
+      borderRadius: 28,
+      paddingHorizontal: 20,
+      paddingVertical: 14,
+      flexDirection: "row",
+      alignItems: "center",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.25,
+      shadowRadius: 8,
+      elevation: 6,
+    },
+    fabIcon: { fontSize: 24, color: "#fff", fontWeight: "700", marginRight: 8 },
+    fabLabel: { fontSize: 15, fontWeight: "700", color: "#fff" },
+    sheet: {
+      position: "absolute",
+      bottom: 0,
+      left: 0,
+      right: 0,
+      backgroundColor: c.background,
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
+      paddingHorizontal: 20,
+      paddingBottom: 36,
+      paddingTop: 10,
+      maxHeight: "62%",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: -4 },
+      shadowOpacity: 0.1,
+      shadowRadius: 12,
+      elevation: 12,
+    },
+    sheetHandle: {
+      width: 44,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: c.secondary,
+      alignSelf: "center",
+      marginBottom: 14,
+    },
+    sheetHeader: { flexDirection: "row", alignItems: "flex-start", marginBottom: 14 },
+    sheetTitleRow: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      flexWrap: "wrap",
+      gap: 8,
+    },
+    sheetType: { fontSize: 18, fontWeight: "800", color: c.text },
+    statusBadge: { borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
+    statusBadgeText: { color: "#fff", fontWeight: "700", fontSize: 12 },
+    closeBtn: {
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+      backgroundColor: c.secondary,
+      alignItems: "center",
+      justifyContent: "center",
+      marginLeft: 8,
+    },
+    closeBtnText: { fontSize: 13, color: c.text, fontWeight: "700" },
+    descBlock: {
+      backgroundColor: c.white,
+      borderRadius: 12,
+      padding: 14,
+      marginBottom: 12,
+      borderLeftWidth: 3,
+      borderLeftColor: c.primary,
+    },
+    sheetDesc: { fontSize: 14, color: c.text, lineHeight: 21 },
+    infoCard: { backgroundColor: c.white, borderRadius: 12, overflow: "hidden", marginBottom: 14 },
+    infoRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      paddingVertical: 12,
+      paddingHorizontal: 14,
+    },
+    infoRowBorder: { borderTopWidth: 1, borderTopColor: c.background },
+    infoLabel: { fontSize: 13, color: c.text, opacity: 0.5, flex: 1 },
+    infoValue: { fontSize: 13, color: c.text, fontWeight: "600", flex: 2, textAlign: "right" },
+    statusActions: { marginBottom: 4 },
+    statusActionsLabel: {
+      fontSize: 11,
+      color: c.text,
+      opacity: 0.45,
+      marginBottom: 10,
+      textTransform: "uppercase",
+      letterSpacing: 0.6,
+      fontWeight: "600",
+    },
+    statusActionsRow: { flexDirection: "row", gap: 10 },
+    statusActionBtn: {
+      flex: 1,
+      borderRadius: 12,
+      paddingVertical: 12,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    statusActionBtnText: { fontWeight: "700", fontSize: 14, color: "#fff" },
+    deleteBtn: {
+      marginTop: 12,
+      borderRadius: 12,
+      paddingVertical: 13,
+      alignItems: "center",
+      backgroundColor: c.statusRed + "1a",
+      borderWidth: 1,
+      borderColor: c.statusRed,
+    },
+    deleteBtnText: { fontWeight: "700", fontSize: 14, color: c.statusRed },
+    filterBarOverlay: { position: "absolute", top: 0, left: 0, right: 0 },
+  });
+}

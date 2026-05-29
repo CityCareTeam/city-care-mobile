@@ -3,13 +3,32 @@ import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Logo } from "@/components/ui/Logo";
 import { Toast } from "@/components/ui/ToastMessage";
-import { CityCareColors } from "@/constants/theme";
+import { STRINGS } from "@/constants/strings";
+import type { AppColors } from "@/hooks/use-app-colors";
+import { useAppColors } from "@/hooks/use-app-colors";
 import { register } from "@/services/auth";
 import { router } from "expo-router";
-import { useState } from "react";
-import { KeyboardAvoidingView, Platform, StyleSheet, Text } from "react-native";
+import { useMemo, useState } from "react";
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text } from "react-native";
+
+function makeStyles(c: AppColors) {
+  return StyleSheet.create({
+    screen: { flex: 1, backgroundColor: c.background },
+    scrollContent: {
+      flexGrow: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 24,
+    },
+    logo: { marginBottom: 16 },
+    title: { fontSize: 24, fontWeight: "800", color: c.text, marginBottom: 28 },
+    btnTop: { marginTop: 8, marginBottom: 12 },
+  });
+}
 
 export default function RegisterScreen() {
+  const { colors } = useAppColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -29,16 +48,16 @@ export default function RegisterScreen() {
     ) {
       Toast.show({
         type: "error",
-        text1: "Champs manquants",
-        text2: "Veuillez remplir tous les champs.",
+        text1: STRINGS.toast.missingFieldsTitle,
+        text2: STRINGS.toast.missingFields,
       });
       return;
     }
     if (password !== confirm) {
       Toast.show({
         type: "error",
-        text1: "Mots de passe différents",
-        text2: "Les mots de passe ne correspondent pas.",
+        text1: STRINGS.toast.passwordMismatchTitle,
+        text2: STRINGS.toast.passwordMismatch,
       });
       return;
     }
@@ -53,15 +72,15 @@ export default function RegisterScreen() {
       });
       Toast.show({
         type: "success",
-        text1: "Compte créé !",
-        text2: "Vous pouvez maintenant vous connecter.",
+        text1: STRINGS.toast.registerSuccessTitle,
+        text2: STRINGS.toast.registerSuccess,
       });
       router.replace("/login");
     } catch (e: unknown) {
       Toast.show({
         type: "error",
-        text1: "Inscription échouée",
-        text2: e instanceof Error ? e.message : "Une erreur est survenue.",
+        text1: STRINGS.toast.registerFailedTitle,
+        text2: e instanceof Error ? e.message : STRINGS.api.genericError,
       });
     } finally {
       setLoading(false);
@@ -71,8 +90,13 @@ export default function RegisterScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.screen}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      behavior={Platform.OS === "ios" ? "padding" : "padding"}
     >
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
       <Card>
         <Logo style={styles.logo} />
         <Text style={styles.title}>Créer un compte</Text>
@@ -138,29 +162,8 @@ export default function RegisterScreen() {
           disabled={loading}
         />
       </Card>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: CityCareColors.background,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 24,
-  },
-  logo: {
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "800",
-    color: CityCareColors.text,
-    marginBottom: 28,
-  },
-  btnTop: {
-    marginTop: 8,
-    marginBottom: 12,
-  },
-});

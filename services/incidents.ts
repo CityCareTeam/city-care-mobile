@@ -1,4 +1,5 @@
 import { API_ENDPOINTS } from "@/constants/api";
+import { STRINGS } from "@/constants/strings";
 import { fetchWithTimeout } from "@/services/api-client";
 import type {
     CreateIncidentPayload,
@@ -101,7 +102,7 @@ export async function getIncidents(params?: {
     url.searchParams.set("pageSize", String(params.pageSize));
 
   const response = await fetch(url.toString());
-  if (!response.ok) throw new Error("Impossible de charger les signalements.");
+  if (!response.ok) throw new Error(STRINGS.api.incidentsLoadError);
   return response.json() as Promise<IncidentListResponse>;
 }
 

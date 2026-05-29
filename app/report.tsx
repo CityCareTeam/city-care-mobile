@@ -1,12 +1,14 @@
 import { Button } from "@/components/ui/Button";
 import { Toast } from "@/components/ui/ToastMessage";
-import { CityCareColors } from "@/constants/theme";
+import { STRINGS } from "@/constants/strings";
 import { createIncident, reverseGeocode } from "@/services/incidents";
 import { getValidToken } from "@/storage/tokens";
 import type { IncidentType } from "@/types/incidents";
+import type { AppColors } from "@/hooks/use-app-colors";
+import { useAppColors } from "@/hooks/use-app-colors";
 import * as Location from "expo-location";
 import { router } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
@@ -30,10 +32,12 @@ const INCIDENT_TYPES: { value: IncidentType; label: string }[] = [
   { value: "Other", label: "Autre" },
 ];
 
-// Centre par défaut : Lyon
 const DEFAULT_COORDS = { latitude: 45.748, longitude: 4.847 };
 
 export default function ReportScreen() {
+  const { colors, isDark } = useAppColors();
+  const styles = useMemo(() => makeStyles(colors, isDark), [colors, isDark]);
+
   const mapRef = useRef<MapView>(null);
   const [coords, setCoords] = useState(DEFAULT_COORDS);
   const [address, setAddress] = useState("");
@@ -89,7 +93,7 @@ export default function ReportScreen() {
     try {
       const token = await getValidToken();
       if (!token) {
-        Alert.alert("Session expirée", "Reconnectez-vous pour continuer.");
+        Alert.alert(STRINGS.alert.sessionExpiredTitle, STRINGS.alert.sessionExpiredMsg);
         router.replace("/login");
         return;
       }
@@ -104,13 +108,13 @@ export default function ReportScreen() {
       );
       Toast.show({
         type: "success",
-        text1: "Signalement envoyé",
-        text2: "Votre incident a été enregistré.",
+        text1: STRINGS.toast.reportSuccessTitle,
+        text2: STRINGS.toast.reportSuccess,
       });
       router.back();
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Erreur inconnue.";
-      Alert.alert("Erreur", msg);
+      const msg = e instanceof Error ? e.message : STRINGS.api.unknownError;
+      Alert.alert(STRINGS.alert.errorTitle, msg);
     } finally {
       setSubmitting(false);
     }
@@ -136,7 +140,7 @@ export default function ReportScreen() {
       <View style={styles.mapContainer}>
         {locLoading ? (
           <View style={styles.mapLoader}>
-            <ActivityIndicator color={CityCareColors.primary} />
+            <ActivityIndicator color={colors.primary} />
           </View>
         ) : (
           <MapView
@@ -148,7 +152,7 @@ export default function ReportScreen() {
           >
             <Marker
               coordinate={coords}
-              pinColor={CityCareColors.primary}
+              pinColor={colors.primary}
               tracksViewChanges={false}
             />
           </MapView>
@@ -165,7 +169,7 @@ export default function ReportScreen() {
         multiline
         numberOfLines={4}
         placeholder="Décrivez brièvement l'incident..."
-        placeholderTextColor={CityCareColors.text + "66"}
+        placeholderTextColor={colors.text + "66"}
         value={description}
         onChangeText={setDescription}
         textAlignVertical="top"
@@ -191,7 +195,7 @@ export default function ReportScreen() {
         value={address}
         editable={false}
         placeholder="Appuyez sur la carte pour définir le lieu"
-        placeholderTextColor={CityCareColors.text + "55"}
+        placeholderTextColor={colors.text + "55"}
       />
 
       <Button
@@ -253,112 +257,114 @@ export default function ReportScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: CityCareColors.background,
-    padding: 20,
-    paddingBottom: 48,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: CityCareColors.text,
-    textAlign: "center",
-    marginBottom: 20,
-  },
-  mapContainer: {
-    height: 180,
-    borderRadius: 14,
-    overflow: "hidden",
-    marginBottom: 6,
-  },
-  map: { flex: 1 },
-  mapLoader: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#e8e6db",
-  },
-  hint: {
-    fontSize: 12,
-    color: CityCareColors.text,
-    opacity: 0.45,
-    textAlign: "center",
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: CityCareColors.text,
-    marginBottom: 6,
-  },
-  textarea: {
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#e0ddd0",
-    padding: 12,
-    fontSize: 14,
-    color: CityCareColors.text,
-    minHeight: 90,
-    marginBottom: 16,
-  },
-  input: {
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#e0ddd0",
-    padding: 12,
-    height: 46,
-    fontSize: 14,
-    color: CityCareColors.text,
-    marginBottom: 24,
-  },
-  inputReadonly: { backgroundColor: "#f4f2ea", color: CityCareColors.text },
-  select: {
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#e0ddd0",
-    paddingHorizontal: 12,
-    height: 46,
-    marginBottom: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  selectText: { fontSize: 14, color: CityCareColors.text },
-  placeholder: { color: CityCareColors.text + "66" },
-  arrow: { fontSize: 16, color: CityCareColors.text + "88" },
-  overlay: { flex: 1, backgroundColor: "#0006", justifyContent: "flex-end" },
-  sheet: {
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    paddingBottom: 40,
-  },
-  sheetTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: CityCareColors.text,
-    textAlign: "center",
-    marginBottom: 12,
-  },
-  option: {
-    paddingVertical: 14,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    marginBottom: 4,
-  },
-  optionActive: { backgroundColor: CityCareColors.primary + "22" },
-  optionText: { fontSize: 15, color: CityCareColors.text },
-  optionTextActive: { fontWeight: "700", color: CityCareColors.primary },
-  validationHint: {
-    fontSize: 13,
-    color: CityCareColors.statusRed ?? "#e53935",
-    textAlign: "center",
-    marginTop: 8,
-    opacity: 0.8,
-  },
-});
+function makeStyles(c: AppColors, isDark: boolean) {
+  return StyleSheet.create({
+    container: {
+      backgroundColor: c.background,
+      padding: 20,
+      paddingBottom: 48,
+    },
+    title: {
+      fontSize: 22,
+      fontWeight: "800",
+      color: c.text,
+      textAlign: "center",
+      marginBottom: 20,
+    },
+    mapContainer: {
+      height: 180,
+      borderRadius: 14,
+      overflow: "hidden",
+      marginBottom: 6,
+    },
+    map: { flex: 1 },
+    mapLoader: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: isDark ? c.secondary : "#e8e6db",
+    },
+    hint: {
+      fontSize: 12,
+      color: c.text,
+      opacity: 0.45,
+      textAlign: "center",
+      marginBottom: 20,
+    },
+    label: {
+      fontSize: 14,
+      fontWeight: "500",
+      color: c.text,
+      marginBottom: 6,
+    },
+    textarea: {
+      backgroundColor: c.inputBg,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: c.inputBorder,
+      padding: 12,
+      fontSize: 14,
+      color: c.text,
+      minHeight: 90,
+      marginBottom: 16,
+    },
+    input: {
+      backgroundColor: c.inputBg,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: c.inputBorder,
+      padding: 12,
+      height: 46,
+      fontSize: 14,
+      color: c.text,
+      marginBottom: 24,
+    },
+    inputReadonly: { backgroundColor: isDark ? c.secondary : "#f4f2ea", color: c.text },
+    select: {
+      backgroundColor: c.inputBg,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: c.inputBorder,
+      paddingHorizontal: 12,
+      height: 46,
+      marginBottom: 16,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    selectText: { fontSize: 14, color: c.text },
+    placeholder: { color: c.text + "66" },
+    arrow: { fontSize: 16, color: c.text + "88" },
+    overlay: { flex: 1, backgroundColor: "#0006", justifyContent: "flex-end" },
+    sheet: {
+      backgroundColor: c.white,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      padding: 20,
+      paddingBottom: 40,
+    },
+    sheetTitle: {
+      fontSize: 16,
+      fontWeight: "700",
+      color: c.text,
+      textAlign: "center",
+      marginBottom: 12,
+    },
+    option: {
+      paddingVertical: 14,
+      paddingHorizontal: 12,
+      borderRadius: 8,
+      marginBottom: 4,
+    },
+    optionActive: { backgroundColor: c.primary + "22" },
+    optionText: { fontSize: 15, color: c.text },
+    optionTextActive: { fontWeight: "700", color: c.primary },
+    validationHint: {
+      fontSize: 13,
+      color: c.statusRed,
+      textAlign: "center",
+      marginTop: 8,
+      opacity: 0.8,
+    },
+  });
+}

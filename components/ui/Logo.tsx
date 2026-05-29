@@ -1,36 +1,16 @@
-import { CityCareColors } from "@/constants/theme";
-import { StyleSheet, Text, View, ViewStyle } from "react-native";
+import { Image, type ImageStyle } from "react-native";
 
 type LogoProps = {
   size?: number;
-  style?: ViewStyle;
+  style?: ImageStyle;
 };
 
-export function Logo({ size = 72, style }: LogoProps) {
-  const radius = size * 0.22;
-  const fontSize = size * 0.3;
-
+export function Logo({ size = 102, style }: LogoProps) {
   return (
-    <View
-      style={[
-        styles.container,
-        { width: size, height: size, borderRadius: radius },
-        style,
-      ]}
-    >
-      <Text style={[styles.text, { fontSize }]}>CC+</Text>
-    </View>
+    <Image
+      source={require("@/assets/images/logo-city-care.png")}
+      style={[{ width: size, height: size }, style]}
+      resizeMode="contain"
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: CityCareColors.accent,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  text: {
-    fontWeight: "700",
-    color: CityCareColors.text,
-  },
-});

@@ -1,5 +1,5 @@
 import { ToastMessage } from "@/components/ui/ToastMessage";
-import { CityCareColors } from "@/constants/theme";
+import { CityCareColors, CityCareColorsDark } from "@/constants/theme";
 import {
     DarkTheme,
     DefaultTheme,
@@ -17,6 +17,7 @@ export const unstable_settings = {
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+  const c = colorScheme === "dark" ? CityCareColorsDark : CityCareColors;
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
@@ -29,9 +30,9 @@ export default function RootLayout() {
           options={{
             presentation: "modal",
             title: "Signaler un incident",
-            headerStyle: { backgroundColor: CityCareColors.background },
-            headerTintColor: CityCareColors.primary,
-            headerTitleStyle: { fontWeight: "700", color: CityCareColors.text },
+            headerStyle: { backgroundColor: c.background },
+            headerTintColor: c.primary,
+            headerTitleStyle: { fontWeight: "700", color: c.text },
           }}
         />
         <Stack.Screen

@@ -1,5 +1,7 @@
 import { STATUS_COLOR, STATUS_LABEL, TYPE_LABEL } from "@/constants/incidents";
-import { CityCareColors } from "@/constants/theme";
+import type { AppColors } from "@/hooks/use-app-colors";
+import { useAppColors } from "@/hooks/use-app-colors";
+import { useMemo } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 type Props = {
@@ -10,8 +12,34 @@ type Props = {
   onPress: (id: string) => void;
 };
 
+function makeStyles(c: AppColors) {
+  return StyleSheet.create({
+    row: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: 13,
+      paddingHorizontal: 14,
+      gap: 12,
+    },
+    dot: { width: 10, height: 10, borderRadius: 5 },
+    content: { flex: 1 },
+    type: {
+      fontSize: 14,
+      fontWeight: "700",
+      color: c.text,
+      marginBottom: 2,
+    },
+    address: { fontSize: 12, color: c.text, opacity: 0.55 },
+    badge: { borderRadius: 12, paddingHorizontal: 9, paddingVertical: 4 },
+    badgeText: { fontSize: 11, fontWeight: "700" },
+  });
+}
+
 export function IncidentRow({ id, type, status, address, onPress }: Props) {
+  const { colors } = useAppColors();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const color = STATUS_COLOR[status] ?? "#999";
+
   return (
     <TouchableOpacity
       style={styles.row}
@@ -33,24 +61,3 @@ export function IncidentRow({ id, type, status, address, onPress }: Props) {
     </TouchableOpacity>
   );
 }
-
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 13,
-    paddingHorizontal: 14,
-    gap: 12,
-  },
-  dot: { width: 10, height: 10, borderRadius: 5 },
-  content: { flex: 1 },
-  type: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: CityCareColors.text,
-    marginBottom: 2,
-  },
-  address: { fontSize: 12, color: CityCareColors.text, opacity: 0.55 },
-  badge: { borderRadius: 12, paddingHorizontal: 9, paddingVertical: 4 },
-  badgeText: { fontSize: 11, fontWeight: "700" },
-});
