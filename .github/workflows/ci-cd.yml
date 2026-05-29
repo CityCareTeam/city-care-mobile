@@ -155,4 +155,49 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
       - run: npm ci
       - name: Build production APK
-        run: eas build --platform android --profile production --non-interactive
+        id: eas_build
+        run: eas build --platform android --profile production --non-interactive --clear-cache
+
+      - name: Get APK URL
+        id: apk_url
+        if: success()
+        run: |
+          APK_URL=$(eas build:list --platform android --limit 1 --non-interactive --json 2>/dev/null | node -e "const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'));console.log(d[0]?.artifacts?.buildUrl??'N/A')")
+          echo "url=${APK_URL}" >> $GITHUB_OUTPUT
+
+      - name: Notify Discord (success)
+        if: success()
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          curl -s -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"embeds\": [{
+                \"title\": \"✅ Build réussi — v${VERSION}\",
+                \"description\": \"Le build production Android est terminé.\",
+                \"color\": 3066993,
+                \"fields\": [
+                  { \"name\": \"Branche\", \"value\": \"\`main\`\", \"inline\": true },
+                  { \"name\": \"Commit\", \"value\": \"\`${{ github.sha }}\`\", \"inline\": true },
+                  { \"name\": \"APK\", \"value\": \"[${{ steps.apk_url.outputs.url }}](${{ steps.apk_url.outputs.url }})\", \"inline\": false }
+                ]
+              }]
+            }"
+
+      - name: Notify Discord (failure)
+        if: failure()
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          curl -s -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"embeds\": [{
+                \"title\": \"❌ Build échoué — v${VERSION}\",
+                \"description\": \"Le build production Android a échoué.\",
+                \"color\": 15158332,
+                \"fields\": [
+                  { \"name\": \"Branche\", \"value\": \"\`main\`\", \"inline\": true },
+                  { \"name\": \"Commit\", \"value\": \"\`${{ github.sha }}\`\", \"inline\": true }
+                ]
+              }]
+            }"
