@@ -30,7 +30,8 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
-import MapView, { Marker, Region } from "react-native-maps";
+import ClusteredMapView from "react-native-map-clustering";
+import { Marker, Region } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const LYON: Region = {
@@ -58,6 +59,27 @@ export default function SignalementsScreen() {
   } = useIncidentFilters(incidents);
 
   const markerJustPressed = useRef(false);
+  const mapRef = useRef<ClusteredMapView>(null);
+
+  const markers = useMemo(
+    () =>
+      filteredIncidents.map((inc) => (
+        <Marker
+          key={inc.id}
+          coordinate={{ latitude: inc.latitude, longitude: inc.longitude }}
+          pinColor={STATUS_COLOR[inc.status] ?? colors.primary}
+          tracksViewChanges={false}
+          onPress={() => {
+            markerJustPressed.current = true;
+            setSelected(inc);
+            setTimeout(() => {
+              markerJustPressed.current = false;
+            }, 350);
+          }}
+        />
+      )),
+    [filteredIncidents, colors.primary],
+  );
   const { selectId } = useLocalSearchParams<{ selectId?: string }>();
   const pendingSelectRef = useRef<string | null>(null);
 
@@ -80,6 +102,10 @@ export default function SignalementsScreen() {
     if (inc) {
       setSelected(inc);
       pendingSelectRef.current = null;
+      mapRef.current?.animateToRegion(
+        { latitude: inc.latitude, longitude: inc.longitude, latitudeDelta: 0.005, longitudeDelta: 0.005 },
+        800,
+      );
     }
   }, [incidents]);
 
@@ -149,30 +175,18 @@ export default function SignalementsScreen() {
 
   return (
     <View style={styles.container}>
-      <MapView
+      <ClusteredMapView
+        ref={mapRef}
         style={styles.map}
         initialRegion={LYON}
         showsUserLocation
+        clusterColor={colors.primary}
         onPress={() => {
           if (!markerJustPressed.current) setSelected(null);
         }}
       >
-        {filteredIncidents.map((inc) => (
-          <Marker
-            key={inc.id}
-            coordinate={{ latitude: inc.latitude, longitude: inc.longitude }}
-            pinColor={STATUS_COLOR[inc.status] ?? colors.primary}
-            tracksViewChanges={false}
-            onPress={() => {
-              markerJustPressed.current = true;
-              setSelected(inc);
-              setTimeout(() => {
-                markerJustPressed.current = false;
-              }, 350);
-            }}
-          />
-        ))}
-      </MapView>
+        {markers}
+      </ClusteredMapView>
 
       {/* Barre de filtres (overlay) */}
       <View style={styles.filterBarOverlay}>
