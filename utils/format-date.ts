@@ -15,3 +15,11 @@ export function formatDate(dateStr: string): string {
     year: "numeric",
   });
 }
+
+export function formatDateShort(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("fr-FR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}

@@ -6,7 +6,7 @@ import { getValidToken } from "@/storage/tokens";
 import type { IncidentType } from "@/types/incidents";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
-import * as Location from "expo-location";
+import { useUserLocation } from "@/hooks/use-user-location";
 import { router } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -32,48 +32,25 @@ const INCIDENT_TYPES: { value: IncidentType; label: string }[] = [
   { value: "Other", label: "Autre" },
 ];
 
-const DEFAULT_COORDS = { latitude: 45.748, longitude: 4.847 };
-
 export default function ReportScreen() {
   const { colors, isDark } = useAppColors();
   const styles = useMemo(() => makeStyles(colors, isDark), [colors, isDark]);
 
   const mapRef = useRef<MapView>(null);
-  const [coords, setCoords] = useState(DEFAULT_COORDS);
+  const { coords, setCoords, loading: locLoading } = useUserLocation(0.005);
   const [address, setAddress] = useState("");
   const [description, setDescription] = useState("");
   const [selectedType, setSelectedType] = useState<IncidentType | null>(null);
   const [pickerVisible, setPickerVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [locLoading, setLocLoading] = useState(true);
 
   useEffect(() => {
-    async function initLocation() {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status === "granted") {
-        try {
-          const pos = await Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.Balanced,
-          });
-          const c = {
-            latitude: pos.coords.latitude,
-            longitude: pos.coords.longitude,
-          };
-          setCoords(c);
-          mapRef.current?.animateToRegion(
-            { ...c, latitudeDelta: 0.005, longitudeDelta: 0.005 },
-            800,
-          );
-          const result = await reverseGeocode(c.latitude, c.longitude);
-          if (result) setAddress(result.address_label);
-        } catch {
-          // garde les coords par défaut
-        }
-      }
-      setLocLoading(false);
+    if (!locLoading) {
+      reverseGeocode(coords.latitude, coords.longitude).then((result) => {
+        if (result) setAddress(result.address_label);
+      });
     }
-    initLocation();
-  }, []);
+  }, [locLoading]);
 
   async function handleMapPress(coordinate: {
     latitude: number;
