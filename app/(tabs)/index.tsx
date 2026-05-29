@@ -98,6 +98,7 @@ function IncidentList({
     type: string;
     status: string;
     address: string | null;
+    createdAt: string;
   }[];
   onPress: (id: string) => void;
   pageSize?: number;
@@ -118,6 +119,7 @@ function IncidentList({
             type={inc.type}
             status={inc.status}
             address={inc.address}
+            createdAt={inc.createdAt}
             onPress={onPress}
           />
         </View>
@@ -260,6 +262,7 @@ function CitizenView({
             type: i.type,
             status: i.status,
             address: i.address_label,
+            createdAt: i.created_at,
           }))}
           onPress={onPress}
         />
@@ -284,6 +287,7 @@ function CitizenView({
             type: i.type,
             status: i.status,
             address: i.addressLabel,
+            createdAt: i.createdAt,
           }))}
           onPress={onPress}
         />
@@ -407,6 +411,7 @@ function AgentView({
             type: i.type,
             status: i.status,
             address: i.addressLabel,
+            createdAt: i.createdAt,
           }))}
           onPress={onPress}
         />
@@ -532,6 +537,7 @@ function AdminView({
             type: i.type,
             status: i.status,
             address: i.addressLabel,
+            createdAt: i.createdAt,
           }))}
           onPress={onPress}
         />

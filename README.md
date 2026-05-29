@@ -31,15 +31,16 @@ CityCare+ connecte les citoyens à leur mairie. Les signalements remontent en te
 
 ## Stack technique
 
-| Technologie       | Version  |
-| ----------------- | -------- |
-| Expo SDK          | ~54.0.33 |
-| expo-router       | ~6.0.23  |
-| React Native      | 0.81.5   |
-| React             | 19.1.0   |
-| TypeScript        | 5        |
-| expo-maps         | ~0.12.10 |
-| expo-secure-store | ~15.0.8  |
+| Technologie                 | Version  |
+| --------------------------- | -------- |
+| Expo SDK                    | ~54.0.35 |
+| expo-router                 | ~6.0.24  |
+| React Native                | 0.81.5   |
+| React                       | 19.1.0   |
+| TypeScript                  | 5        |
+| expo-maps                   | ~0.12.10 |
+| expo-secure-store           | ~15.0.8  |
+| react-native-map-clustering | latest   |
 
 ---
 
@@ -68,40 +69,67 @@ npm run ios
 app/
   (tabs)/
     index.tsx        # Dashboard rôle-adaptatif (Citoyen / Agent / Admin)
-    explore.tsx      # Carte plein écran + filtres overlay + bottom sheet
+    explore.tsx      # Carte plein écran + clustering + filtres overlay + bottom sheet
     profile.tsx      # Profil utilisateur & déconnexion
   login.tsx          # Authentification (Keycloak)
   register.tsx       # Création de compte
-  report.tsx         # Formulaire de signalement
+  report.tsx         # Formulaire de signalement avec géolocalisation
 
 components/
   incident-filter-bar.tsx  # Barre de filtres chips (overlay carte)
-  incident-row.tsx         # Ligne d'incident réutilisable
+  incident-row.tsx         # Ligne d'incident réutilisable (type, statut, date, adresse)
   ui/                      # Button, Card, Input, Logo, Toast…
 
 constants/
   incidents.ts   # STATUS_COLOR, STATUS_LABEL, TYPE_LABEL, NEXT_STATUSES
+  strings.ts     # Toutes les chaînes UI centralisées
   theme.ts       # CityCareColors
 
 hooks/
-  use-role.ts                 # Rôle utilisateur (Admin / Agent / Citizen)
-  use-incident-filters.ts     # Filtres type + statut réutilisables
+  use-user-location.ts     # Géolocalisation partagée (explore + report)
+  use-incident-filters.ts  # Filtres type + statut réutilisables
+  use-app-colors.ts        # Thème clair/sombre
   use-color-scheme.ts
 
 services/          # Appels API REST (auth, incidents, users)
 storage/           # Tokens JWT (expo-secure-store)
 types/             # Types TypeScript (incidents, auth, users)
+utils/             # format-date (formatDateShort, formatIncidentDateTime…)
 ```
+
+---
+
+## Configuration
+
+La config Expo est centralisée dans `app.config.ts`. La version de l'app est lue depuis `package.json` — c'est le seul fichier à modifier pour bumper la version.
 
 ---
 
 ## Variables d'environnement
 
-Créer un fichier `.env` à la racine :
+Créer un fichier `.env` à la racine pour le développement local :
 
 ```env
-GOOGLE_MAPS_API_KEY=your_google_maps_key_here
+EXPO_PUBLIC_API_URL=http://localhost:3000
 ```
+
+La clé Google Maps (`GOOGLE_MAPS_API_KEY`) est gérée comme secret EAS — pas besoin dans `.env`.
+
+---
+
+## CI/CD
+
+La pipeline GitHub Actions (`ci-cd.yml`) tourne sur chaque push/PR :
+
+| Job               | Déclencheur          | Action                                              |
+| ----------------- | -------------------- | --------------------------------------------------- |
+| `lint`            | push / PR            | ESLint                                              |
+| `type-check`      | push / PR            | `tsc --noEmit`                                      |
+| `audit`           | push / PR            | `npm audit --audit-level=high`                      |
+| `test`            | push / PR            | Jest + upload Codecov                               |
+| `version-check`   | PR vers `main`       | Bloque si version non bumpée dans `package.json`    |
+| `tag`             | merge sur `main`     | Maj badge README + création tag `vX.Y.Z`            |
+| `build`           | merge sur `main`     | EAS build production Android + notif Discord        |
 
 ---
 
@@ -120,11 +148,11 @@ npm run test:coverage
 ## Build EAS
 
 ```bash
-# Build preview (TestFlight / APK interne)
-eas build --profile preview --platform ios
+# Build preview (APK interne)
+eas build --profile preview --platform android
 
 # Build production
-eas build --profile production --platform all
+eas build --profile production --platform android --clear-cache
 ```
 
 ---
