@@ -25,6 +25,22 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint
+      - name: Notify Discord (failure)
+        if: failure()
+        run: |
+          curl -s -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"embeds\": [{
+                \"title\": \"❌ Lint échoué\",
+                \"color\": 15158332,
+                \"fields\": [
+                  { \"name\": \"Branche\", \"value\": \"\`${{ github.ref_name }}\`\", \"inline\": true },
+                  { \"name\": \"Commit\", \"value\": \"\`${{ github.sha }}\`\", \"inline\": true },
+                  { \"name\": \"Détails\", \"value\": \"[Voir les logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\", \"inline\": false }
+                ]
+              }]
+            }"
 
   type-check:
     name: Type check
@@ -37,6 +53,22 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx tsc --noEmit
+      - name: Notify Discord (failure)
+        if: failure()
+        run: |
+          curl -s -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"embeds\": [{
+                \"title\": \"❌ Type check échoué\",
+                \"color\": 15158332,
+                \"fields\": [
+                  { \"name\": \"Branche\", \"value\": \"\`${{ github.ref_name }}\`\", \"inline\": true },
+                  { \"name\": \"Commit\", \"value\": \"\`${{ github.sha }}\`\", \"inline\": true },
+                  { \"name\": \"Détails\", \"value\": \"[Voir les logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\", \"inline\": false }
+                ]
+              }]
+            }"
 
   # ── Security ──────────────────────────────────────────────────────────
   audit:
@@ -50,6 +82,22 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm audit --audit-level=high
+      - name: Notify Discord (failure)
+        if: failure()
+        run: |
+          curl -s -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"embeds\": [{
+                \"title\": \"❌ Security audit échoué\",
+                \"color\": 15158332,
+                \"fields\": [
+                  { \"name\": \"Branche\", \"value\": \"\`${{ github.ref_name }}\`\", \"inline\": true },
+                  { \"name\": \"Commit\", \"value\": \"\`${{ github.sha }}\`\", \"inline\": true },
+                  { \"name\": \"Détails\", \"value\": \"[Voir les logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\", \"inline\": false }
+                ]
+              }]
+            }"
 
   # ── Tests ─────────────────────────────────────────────────────────────
   test:
@@ -63,12 +111,36 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run test:coverage
+      - name: Check coverage threshold (50%)
+        run: |
+          node -e "
+            const s = require('./coverage/coverage-summary.json').total;
+            const pct = s.lines.pct;
+            console.log('Coverage: ' + pct + '%');
+            if (pct < 50) { console.error('FAIL: global coverage ' + pct + '% is below 50%'); process.exit(1); }
+          "
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage/lcov.info
           fail_ci_if_error: false
+      - name: Notify Discord (failure)
+        if: failure()
+        run: |
+          curl -s -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"embeds\": [{
+                \"title\": \"❌ Tests échoués\",
+                \"color\": 15158332,
+                \"fields\": [
+                  { \"name\": \"Branche\", \"value\": \"\`${{ github.ref_name }}\`\", \"inline\": true },
+                  { \"name\": \"Commit\", \"value\": \"\`${{ github.sha }}\`\", \"inline\": true },
+                  { \"name\": \"Détails\", \"value\": \"[Voir les logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\", \"inline\": false }
+                ]
+              }]
+            }"
 
   # ── Conventional Commits check (toutes les PR) ────────────────────────
   conventional-commits:
