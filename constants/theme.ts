@@ -60,6 +60,9 @@ export const Colors = {
   },
 };
 
+// Espace à réserver en bas de page pour ne pas être caché par la tab bar flottante
+export const TAB_BAR_SCROLL_PADDING = 60 + (Platform.OS === "ios" ? 28 : 16) + 16;
+
 export const Fonts = Platform.select({
   ios: {
     /** iOS `UIFontDescriptorSystemDesignDefault` */
