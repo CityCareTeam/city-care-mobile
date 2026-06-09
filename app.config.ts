@@ -3,7 +3,7 @@ import { version } from "./package.json";
 
 export default ({ config }: ConfigContext) => ({
   ...config,
-  name: "city-care-mobile",
+  name: "City Care +",
   slug: "city-care-mobile",
   owner: "citycare",
   version,
