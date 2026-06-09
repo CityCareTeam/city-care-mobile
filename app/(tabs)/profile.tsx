@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ROLE_COLORS, ROLE_LABELS } from "@/constants/roles";
+import { TAB_BAR_SCROLL_PADDING } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
@@ -31,6 +32,7 @@ function makeStyles(c: AppColors) {
       alignItems: "center",
       padding: 24,
       paddingTop: 48,
+      paddingBottom: TAB_BAR_SCROLL_PADDING,
     },
     avatarWrapper: { alignItems: "center", marginBottom: 28 },
     avatar: {

@@ -25,6 +25,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
+    Modal,
+    Platform,
     ScrollView,
     StyleSheet,
     Text,
@@ -236,117 +238,132 @@ export default function SignalementsScreen() {
         </View>
       )}
 
-      {/* Bottom sheet détail */}
-      {selected && (
-        <View style={styles.sheet}>
-          <View style={styles.sheetHandle} />
+      {/* Bottom sheet détail — via Modal pour passer au-dessus de la tab bar */}
+      <Modal
+        visible={!!selected}
+        transparent
+        animationType="slide"
+        statusBarTranslucent
+        onRequestClose={() => setSelected(null)}
+      >
+        <View style={styles.modalContainer}>
+          <TouchableOpacity
+            style={styles.modalDismiss}
+            activeOpacity={1}
+            onPress={() => setSelected(null)}
+          />
+          {selected && (
+            <View style={styles.sheet}>
+              <View style={styles.sheetHandle} />
 
-          {/* En-tête */}
-          <View style={styles.sheetHeader}>
-            <View style={styles.sheetTitleRow}>
-              <Text style={styles.sheetType}>
-                {TYPE_LABEL[selected.type] ?? selected.type}
-              </Text>
-              <View
-                style={[
-                  styles.statusBadge,
-                  { backgroundColor: STATUS_COLOR[selected.status] ?? "#999" },
-                ]}
-              >
-                <Text style={styles.statusBadgeText}>
-                  {STATUS_LABEL[selected.status] ?? selected.status}
-                </Text>
-              </View>
-            </View>
-            <TouchableOpacity
-              onPress={() => setSelected(null)}
-              style={styles.closeBtn}
-            >
-              <Text style={styles.closeBtnText}>✕</Text>
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView showsVerticalScrollIndicator={false}>
-            {/* Description */}
-            <View style={styles.descBlock}>
-              <Text style={styles.sheetDesc}>{selected.description}</Text>
-            </View>
-
-            {/* Infos */}
-            <View style={styles.infoCard}>
-              {selected.addressLabel ? (
-                <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Adresse</Text>
-                  <Text style={styles.infoValue} numberOfLines={2}>
-                    {selected.addressLabel}
+              {/* En-tête */}
+              <View style={styles.sheetHeader}>
+                <View style={styles.sheetTitleRow}>
+                  <Text style={styles.sheetType}>
+                    {TYPE_LABEL[selected.type] ?? selected.type}
                   </Text>
-                </View>
-              ) : null}
-              <View style={[styles.infoRow, styles.infoRowBorder]}>
-                <Text style={styles.infoLabel}>Signalé le</Text>
-                <Text style={styles.infoValue}>
-                  {formatIncidentDateTime(selected.createdAt)}
-                </Text>
-              </View>
-              {selected.resolvedAt ? (
-                <View style={[styles.infoRow, styles.infoRowBorder]}>
-                  <Text style={styles.infoLabel}>Résolu le</Text>
-                  <Text
+                  <View
                     style={[
-                      styles.infoValue,
-                      { color: colors.statusGreen },
+                      styles.statusBadge,
+                      { backgroundColor: STATUS_COLOR[selected.status] ?? "#999" },
                     ]}
                   >
-                    {formatIncidentDateTime(selected.resolvedAt)}
-                  </Text>
+                    <Text style={styles.statusBadgeText}>
+                      {STATUS_LABEL[selected.status] ?? selected.status}
+                    </Text>
+                  </View>
                 </View>
-              ) : null}
-            </View>
-
-            {/* Boutons statut — agents / admins */}
-            {isStaff && NEXT_STATUSES[selected.status]?.length > 0 && (
-              <View style={styles.statusActions}>
-                <Text style={styles.statusActionsLabel}>Changer le statut</Text>
-                <View style={styles.statusActionsRow}>
-                  {NEXT_STATUSES[selected.status].map((s) => (
-                    <TouchableOpacity
-                      key={s}
-                      style={[
-                        styles.statusActionBtn,
-                        { backgroundColor: STATUS_COLOR[s] ?? "#999" },
-                      ]}
-                      onPress={() => handleStatusChange(s)}
-                      disabled={updatingStatus}
-                      activeOpacity={0.8}
-                    >
-                      {updatingStatus ? (
-                        <ActivityIndicator size="small" color="#fff" />
-                      ) : (
-                        <Text style={styles.statusActionBtnText}>
-                          {STATUS_LABEL[s]}
-                        </Text>
-                      )}
-                    </TouchableOpacity>
-                  ))}
-                </View>
+                <TouchableOpacity
+                  onPress={() => setSelected(null)}
+                  style={styles.closeBtn}
+                >
+                  <Text style={styles.closeBtnText}>✕</Text>
+                </TouchableOpacity>
               </View>
-            )}
 
-            {/* Bouton suppression — admin uniquement */}
-            {isAdmin && (
-              <TouchableOpacity
-                style={styles.deleteBtn}
-                onPress={handleDelete}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.deleteBtnText}>
-                  {STRINGS.alert.deleteIncidentTitle}
-                </Text>
-              </TouchableOpacity>
-            )}
-          </ScrollView>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {/* Description */}
+                <View style={styles.descBlock}>
+                  <Text style={styles.sheetDesc}>{selected.description}</Text>
+                </View>
+
+                {/* Infos */}
+                <View style={styles.infoCard}>
+                  {selected.addressLabel ? (
+                    <View style={styles.infoRow}>
+                      <Text style={styles.infoLabel}>Adresse</Text>
+                      <Text style={styles.infoValue} numberOfLines={2}>
+                        {selected.addressLabel}
+                      </Text>
+                    </View>
+                  ) : null}
+                  <View style={[styles.infoRow, styles.infoRowBorder]}>
+                    <Text style={styles.infoLabel}>Signalé le</Text>
+                    <Text style={styles.infoValue}>
+                      {formatIncidentDateTime(selected.createdAt)}
+                    </Text>
+                  </View>
+                  {selected.resolvedAt ? (
+                    <View style={[styles.infoRow, styles.infoRowBorder]}>
+                      <Text style={styles.infoLabel}>Résolu le</Text>
+                      <Text
+                        style={[
+                          styles.infoValue,
+                          { color: colors.statusGreen },
+                        ]}
+                      >
+                        {formatIncidentDateTime(selected.resolvedAt)}
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+
+                {/* Boutons statut — agents / admins */}
+                {isStaff && NEXT_STATUSES[selected.status]?.length > 0 && (
+                  <View style={styles.statusActions}>
+                    <Text style={styles.statusActionsLabel}>Changer le statut</Text>
+                    <View style={styles.statusActionsRow}>
+                      {NEXT_STATUSES[selected.status].map((s) => (
+                        <TouchableOpacity
+                          key={s}
+                          style={[
+                            styles.statusActionBtn,
+                            { backgroundColor: STATUS_COLOR[s] ?? "#999" },
+                          ]}
+                          onPress={() => handleStatusChange(s)}
+                          disabled={updatingStatus}
+                          activeOpacity={0.8}
+                        >
+                          {updatingStatus ? (
+                            <ActivityIndicator size="small" color="#fff" />
+                          ) : (
+                            <Text style={styles.statusActionBtnText}>
+                              {STATUS_LABEL[s]}
+                            </Text>
+                          )}
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                )}
+
+                {/* Bouton suppression — admin uniquement */}
+                {isAdmin && (
+                  <TouchableOpacity
+                    style={styles.deleteBtn}
+                    onPress={handleDelete}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.deleteBtnText}>
+                      {STRINGS.alert.deleteIncidentTitle}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </ScrollView>
+            </View>
+          )}
         </View>
-      )}
+      </Modal>
 
       {/* FAB Signaler — citoyens uniquement, masqué quand le sheet est ouvert */}
       {!selected && !isStaff && (
@@ -375,7 +392,7 @@ function makeStyles(c: AppColors) {
     },
     fab: {
       position: "absolute",
-      bottom: 32,
+      bottom: 60 + (Platform.OS === "ios" ? 28 : 16) + 16,
       right: 24,
       backgroundColor: c.primary,
       borderRadius: 28,
@@ -391,11 +408,14 @@ function makeStyles(c: AppColors) {
     },
     fabIcon: { fontSize: 24, color: "#fff", fontWeight: "700", marginRight: 8 },
     fabLabel: { fontSize: 15, fontWeight: "700", color: "#fff" },
+    modalContainer: {
+      flex: 1,
+      justifyContent: "flex-end",
+    },
+    modalDismiss: {
+      flex: 1,
+    },
     sheet: {
-      position: "absolute",
-      bottom: 0,
-      left: 0,
-      right: 0,
       backgroundColor: c.background,
       borderTopLeftRadius: 24,
       borderTopRightRadius: 24,
@@ -407,7 +427,7 @@ function makeStyles(c: AppColors) {
       shadowOffset: { width: 0, height: -4 },
       shadowOpacity: 0.1,
       shadowRadius: 12,
-      elevation: 12,
+      elevation: 20,
     },
     sheetHandle: {
       width: 44,
