@@ -111,6 +111,16 @@ jobs:
         id: version
         run: echo "version=v$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
 
+      - name: Update README version badge
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          sed -i "s|version-[0-9]*\.[0-9]*\.[0-9]*-f6aa54|version-${VERSION}-f6aa54|g" README.md
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add README.md
+          git diff --cached --quiet || git commit -m "chore: bump README version badge to ${VERSION}"
+          git push origin main
+
       - name: Check if tag already exists
         id: tag_exists
         run: |
