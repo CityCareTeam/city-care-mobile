@@ -2,7 +2,7 @@
 
 > Application mobile citoyenne de signalement d'incidents urbains — voirie, éclairage, déchets, graffiti et plus.
 
-[![Version](https://img.shields.io/badge/version-1.1.2-f6aa54?style=flat-square)](https://github.com/CityCareTeam/city-care-mobile/releases)
+[![Version](https://img.shields.io/github/v/release/CityCareTeam/city-care-mobile?style=flat-square&color=f6aa54)](https://github.com/CityCareTeam/city-care-mobile/releases)
 [![Last Commit](https://img.shields.io/github/last-commit/CityCareTeam/city-care-mobile?style=flat-square)](https://github.com/CityCareTeam/city-care-mobile/commits)
 [![Issues](https://img.shields.io/github/issues/CityCareTeam/city-care-mobile?style=flat-square)](https://github.com/CityCareTeam/city-care-mobile/issues)
 [![Pull Requests](https://img.shields.io/github/issues-pr/CityCareTeam/city-care-mobile?style=flat-square)](https://github.com/CityCareTeam/city-care-mobile/pulls)
