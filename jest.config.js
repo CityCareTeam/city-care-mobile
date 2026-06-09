@@ -8,7 +8,7 @@ module.exports = {
     'storage/**/*.{ts,tsx}',
     '!**/*.d.ts',
   ],
-  coverageReporters: ['lcov', 'text', 'text-summary'],
+  coverageReporters: ['lcov', 'text', 'text-summary', 'json-summary'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
   },
