@@ -2,7 +2,8 @@ import { IncidentRow } from "@/components/incident-row";
 import { Logo } from "@/components/ui/Logo";
 import { STATUS_COLOR, STATUS_LABEL, TYPE_LABEL } from "@/constants/incidents";
 import { ROLE_LABELS } from "@/constants/roles";
-import { CityCareColors, CityCareColorsDark } from "@/constants/theme";
+import { CityCareColors, CityCareColorsDark, TAB_BAR_SCROLL_PADDING } from "@/constants/theme";
+import { GlassPillSelector, PillOption } from "@/components/ui/GlassPillSelector";
 import { STRINGS } from "@/constants/strings";
 import { useAuth } from "@/context/AuthContext";
 import type { AppColors } from "@/hooks/use-app-colors";
@@ -26,6 +27,19 @@ import {
     View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+const STATUS_OPTIONS_4: PillOption<string | null>[] = [
+  { label: "Tous",                    value: null },
+  { label: STATUS_LABEL.reported,     value: "reported",    dotColor: STATUS_COLOR.reported },
+  { label: STATUS_LABEL.in_progress,  value: "in_progress", dotColor: STATUS_COLOR.in_progress },
+  { label: STATUS_LABEL.resolved,     value: "resolved",    dotColor: STATUS_COLOR.resolved },
+];
+
+const STATUS_OPTIONS_3: PillOption<string | null>[] = [
+  { label: "Tous",                    value: null },
+  { label: STATUS_LABEL.reported,     value: "reported",    dotColor: STATUS_COLOR.reported },
+  { label: STATUS_LABEL.in_progress,  value: "in_progress", dotColor: STATUS_COLOR.in_progress },
+];
 
 const TODAY = (() => {
   const s = new Date().toLocaleDateString("fr-FR", {
@@ -153,7 +167,7 @@ function CitizenView({
   allIncidents: IncidentResponse[];
   onPress: (id: string) => void;
 }) {
-  const { isDark, colors } = useAppColors();
+  const { isDark } = useAppColors();
   const styles = isDark ? darkStyles : lightStyles;
   const reported = incidents.filter((i) => i.status === "reported").length;
   const inProgress = incidents.filter((i) => i.status === "in_progress").length;
@@ -189,59 +203,23 @@ function CitizenView({
               onPress={() => setFilterType(active ? null : type)}
               activeOpacity={0.75}
             >
-              <Text
-                style={[
-                  styles.typeChipCount,
-                  active && styles.typeChipActiveText,
-                ]}
-              >
+              <Text style={[styles.typeChipCount, active && styles.typeChipActiveText]}>
                 {count}
               </Text>
-              <Text
-                style={[
-                  styles.typeChipLabel,
-                  active && styles.typeChipActiveText,
-                ]}
-              >
+              <Text style={[styles.typeChipLabel, active && styles.typeChipActiveText]}>
                 {TYPE_LABEL[type] ?? type}
               </Text>
             </TouchableOpacity>
           );
         })}
       </View>
-      <View style={styles.statusFilterRow}>
-        {(
-          [null, "reported", "in_progress", "resolved"] as (string | null)[]
-        ).map((s) => {
-          const active = filterStatus === s;
-          const color = s
-            ? (STATUS_COLOR[s] ?? "#999")
-            : colors.primary;
-          return (
-            <TouchableOpacity
-              key={s ?? "all"}
-              style={[
-                styles.statusPill,
-                active && { backgroundColor: color, borderColor: color },
-              ]}
-              onPress={() => setFilterStatus(filterStatus === s ? null : s)}
-              activeOpacity={0.75}
-            >
-              {s ? (
-                <View
-                  style={[
-                    styles.pillDot,
-                    { backgroundColor: active ? "#fff" : color },
-                  ]}
-                />
-              ) : null}
-              <Text style={[styles.pillText, active && { color: "#fff" }]}>
-                {s ? STATUS_LABEL[s] : "Tous"}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+
+      <GlassPillSelector
+        options={STATUS_OPTIONS_4}
+        activeValue={filterStatus}
+        onSelect={setFilterStatus}
+        style={{ marginBottom: 16 }}
+      />
 
       <SectionHeader
         title="Mes signalements"
@@ -305,7 +283,7 @@ function AgentView({
   incidents: IncidentResponse[];
   onPress: (id: string) => void;
 }) {
-  const { isDark, colors } = useAppColors();
+  const { isDark } = useAppColors();
   const styles = isDark ? darkStyles : lightStyles;
   const toHandle = incidents.filter(
     (i) => i.status === "reported" || i.status === "in_progress",
@@ -340,20 +318,10 @@ function AgentView({
               onPress={() => setFilterType(active ? null : type)}
               activeOpacity={0.75}
             >
-              <Text
-                style={[
-                  styles.typeChipCount,
-                  active && styles.typeChipActiveText,
-                ]}
-              >
+              <Text style={[styles.typeChipCount, active && styles.typeChipActiveText]}>
                 {count}
               </Text>
-              <Text
-                style={[
-                  styles.typeChipLabel,
-                  active && styles.typeChipActiveText,
-                ]}
-              >
+              <Text style={[styles.typeChipLabel, active && styles.typeChipActiveText]}>
                 {TYPE_LABEL[type] ?? type}
               </Text>
             </TouchableOpacity>
@@ -361,41 +329,17 @@ function AgentView({
         })}
       </View>
 
+      <GlassPillSelector
+        options={STATUS_OPTIONS_3}
+        activeValue={filterStatus}
+        onSelect={setFilterStatus}
+        style={{ marginBottom: 16 }}
+      />
+
       <SectionHeader
         title="Incidents à traiter"
         count={filteredToHandle.length}
       />
-      <View style={styles.statusFilterRow}>
-        {([null, "reported", "in_progress"] as (string | null)[]).map((s) => {
-          const active = filterStatus === s;
-          const color = s
-            ? (STATUS_COLOR[s] ?? "#999")
-            : colors.primary;
-          return (
-            <TouchableOpacity
-              key={s ?? "all"}
-              style={[
-                styles.statusPill,
-                active && { backgroundColor: color, borderColor: color },
-              ]}
-              onPress={() => setFilterStatus(filterStatus === s ? null : s)}
-              activeOpacity={0.75}
-            >
-              {s ? (
-                <View
-                  style={[
-                    styles.pillDot,
-                    { backgroundColor: active ? "#fff" : color },
-                  ]}
-                />
-              ) : null}
-              <Text style={[styles.pillText, active && { color: "#fff" }]}>
-                {s ? STATUS_LABEL[s] : "Tous"}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
       {filteredToHandle.length === 0 ? (
         <EmptyState
           text={
@@ -429,7 +373,7 @@ function AdminView({
   incidents: IncidentResponse[];
   onPress: (id: string) => void;
 }) {
-  const { isDark, colors } = useAppColors();
+  const { isDark } = useAppColors();
   const styles = isDark ? darkStyles : lightStyles;
   const reported = incidents.filter((i) => i.status === "reported").length;
   const inProgress = incidents.filter((i) => i.status === "in_progress").length;
@@ -488,40 +432,14 @@ function AdminView({
         })}
       </View>
 
+      <GlassPillSelector
+        options={STATUS_OPTIONS_4}
+        activeValue={filterStatus}
+        onSelect={setFilterStatus}
+        style={{ marginBottom: 16 }}
+      />
+
       <SectionHeader title="Signalements" count={filteredIncidents.length} />
-      <View style={styles.statusFilterRow}>
-        {(
-          [null, "reported", "in_progress", "resolved"] as (string | null)[]
-        ).map((s) => {
-          const active = filterStatus === s;
-          const color = s
-            ? (STATUS_COLOR[s] ?? "#999")
-            : colors.primary;
-          return (
-            <TouchableOpacity
-              key={s ?? "all"}
-              style={[
-                styles.statusPill,
-                active && { backgroundColor: color, borderColor: color },
-              ]}
-              onPress={() => setFilterStatus(filterStatus === s ? null : s)}
-              activeOpacity={0.75}
-            >
-              {s ? (
-                <View
-                  style={[
-                    styles.pillDot,
-                    { backgroundColor: active ? "#fff" : color },
-                  ]}
-                />
-              ) : null}
-              <Text style={[styles.pillText, active && { color: "#fff" }]}>
-                {s ? STATUS_LABEL[s] : "Tous"}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
       {filteredIncidents.length === 0 ? (
         <EmptyState
           text={
@@ -611,7 +529,7 @@ export default function HomeScreen() {
   return (
     <ScrollView
       style={styles.scroll}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: TAB_BAR_SCROLL_PADDING }]}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
@@ -724,41 +642,22 @@ function makeStyles(c: AppColors) {
       textTransform: "uppercase",
       letterSpacing: 0.8,
     },
-    typeRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 24 },
+    typeRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 },
     typeChip: {
-      backgroundColor: c.white,
       borderRadius: 20,
       paddingHorizontal: 12,
       paddingVertical: 6,
       flexDirection: "row",
       alignItems: "center",
       gap: 6,
-      borderWidth: 1.5,
-      borderColor: "transparent",
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.05,
-      shadowRadius: 2,
-      elevation: 1,
+      backgroundColor: c.white,
+      borderWidth: 1,
+      borderColor: c.chipBorder,
     },
     typeChipActive: { backgroundColor: c.primary, borderColor: c.primary },
     typeChipActiveText: { color: "#fff" },
     typeChipCount: { fontSize: 14, fontWeight: "800", color: c.primary },
     typeChipLabel: { fontSize: 13, color: c.text, fontWeight: "500" },
-    statusFilterRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 },
-    statusPill: {
-      flexDirection: "row",
-      alignItems: "center",
-      borderRadius: 16,
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      backgroundColor: c.white,
-      borderWidth: 1.5,
-      borderColor: c.chipBorder,
-      gap: 5,
-    },
-    pillDot: { width: 7, height: 7, borderRadius: 4 },
-    pillText: { fontSize: 12, fontWeight: "600", color: c.text },
     incCard: {
       backgroundColor: c.white,
       borderRadius: 12,
