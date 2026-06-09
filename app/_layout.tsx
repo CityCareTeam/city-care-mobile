@@ -35,10 +35,6 @@ export default function RootLayout() {
             headerTitleStyle: { fontWeight: "700", color: c.text },
           }}
         />
-        <Stack.Screen
-          name="modal"
-          options={{ presentation: "modal", title: "Modal" }}
-        />
       </Stack>
       <StatusBar style="auto" />
       <ToastMessage />
