@@ -70,90 +70,94 @@ jobs:
           files: ./coverage/lcov.info
           fail_ci_if_error: false
 
-  # ── Version bump check (PR vers main uniquement) ─────────────────────
-  version-check:
-    name: Version bump check
+  # ── Conventional Commits check (toutes les PR) ────────────────────────
+  conventional-commits:
+    name: Conventional commits check
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Check version bumped
-        run: |
-          BRANCH_VERSION=$(node -p "require('./package.json').version")
-          git fetch origin main
-          MAIN_VERSION=$(git show origin/main:package.json | node -p "JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')).version")
-          echo "Branch: $BRANCH_VERSION | Main: $MAIN_VERSION"
-          if [ "$BRANCH_VERSION" = "$MAIN_VERSION" ]; then
-            echo "❌ La version dans package.json n'a pas été bumpée ($BRANCH_VERSION)"
-            echo "Mets à jour la version avant de merger sur main."
-            exit 1
-          fi
-          echo "✅ Version bumpée: $MAIN_VERSION → $BRANCH_VERSION"
+      - name: Check PR title follows conventional commits
+        uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            chore
+            docs
+            style
+            refactor
+            perf
+            test
+            ci
+            build
+            revert
 
-  # ── Tag automatique (merge sur main uniquement) ───────────────────────
-  tag:
-    name: Auto tag
+  # ── Release automatique (merge sur main uniquement) ───────────────────
+  release:
+    name: Semantic Release
     runs-on: ubuntu-latest
     needs: [lint, type-check, audit, test]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     permissions:
       contents: write
+      issues: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           token: ${{ secrets.GH_PAT }}
 
-      - name: Get version from package.json
-        id: version
-        run: echo "version=v$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
-
-      - name: Update README version badge
-        run: |
-          VERSION=$(node -p "require('./package.json').version")
-          sed -i "s|version-[0-9]*\.[0-9]*\.[0-9]*-f6aa54|version-${VERSION}-f6aa54|g" README.md
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add README.md
-          git diff --cached --quiet || git commit -m "chore: bump README version badge to ${VERSION}"
-          git push origin main
-
-      - name: Check if tag already exists
-        id: tag_exists
-        run: |
-          if git rev-parse "${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Create and push tag
-        if: steps.tag_exists.outputs.exists == 'false'
-        run: |
-          git tag ${{ steps.version.outputs.version }}
-          git push origin ${{ steps.version.outputs.version }}
-
-  # ── Build APK (tag v* uniquement) ─────────────────────────────────────
-  build:
-    name: EAS Build (production)
-    runs-on: ubuntu-latest
-    needs: [lint, type-check, audit, test]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    steps:
-      - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
+
+      - run: npm ci
+
+      - name: Install semantic-release plugins
+        run: npm install --save-dev semantic-release @semantic-release/git @semantic-release/github @semantic-release/npm @semantic-release/commit-analyzer @semantic-release/release-notes-generator
+
+      - name: Semantic Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          GIT_AUTHOR_NAME: github-ci
+          GIT_AUTHOR_EMAIL: ci@github.com
+          GIT_COMMITTER_NAME: github-ci
+          GIT_COMMITTER_EMAIL: ci@github.com
+        run: npx semantic-release
+
+  # ── Build APK (après release, main uniquement) ────────────────────────
+  build:
+    name: EAS Build (production)
+    runs-on: ubuntu-latest
+    needs: [release]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GH_PAT }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
       - uses: expo/expo-github-action@v8
         with:
           expo-version: latest
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
+
       - run: npm ci
+
       - name: Build production APK
         id: eas_build
         run: eas build --platform android --profile production --non-interactive --clear-cache
