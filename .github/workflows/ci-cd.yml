@@ -205,7 +205,7 @@ jobs:
         run: |
          git fetch origin
          git checkout dev
-         git merge origin/main --ff-only
+         git merge origin/main --no-edit -X theirs
          git push origin dev
         env:
          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
