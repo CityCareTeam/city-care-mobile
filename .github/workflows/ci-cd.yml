@@ -160,15 +160,20 @@ jobs:
 
       - name: Get APK URL
         id: apk_url
-        if: success()
+        continue-on-error: true
         run: |
-          APK_URL=$(eas build:list --platform android --limit 1 --non-interactive --json 2>/dev/null | node -e "const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'));console.log(d[0]?.artifacts?.buildUrl??'N/A')")
+          APK_URL=$(eas build:list --platform android --limit 1 --non-interactive --json 2>/dev/null | node -e "const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'));console.log(d[0]?.artifacts?.buildUrl??'')")
           echo "url=${APK_URL}" >> $GITHUB_OUTPUT
 
       - name: Notify Discord (success)
-        if: success()
+        if: steps.eas_build.outcome == 'success'
         run: |
           VERSION=$(node -p "require('./package.json').version")
+          APK_URL="${{ steps.apk_url.outputs.url }}"
+          APK_FIELD=""
+          if [ -n "$APK_URL" ]; then
+            APK_FIELD=", { \"name\": \"APK\", \"value\": \"[Télécharger](${APK_URL})\", \"inline\": false }"
+          fi
           curl -s -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
             -H "Content-Type: application/json" \
             -d "{
@@ -178,14 +183,14 @@ jobs:
                 \"color\": 3066993,
                 \"fields\": [
                   { \"name\": \"Branche\", \"value\": \"\`main\`\", \"inline\": true },
-                  { \"name\": \"Commit\", \"value\": \"\`${{ github.sha }}\`\", \"inline\": true },
-                  { \"name\": \"APK\", \"value\": \"[${{ steps.apk_url.outputs.url }}](${{ steps.apk_url.outputs.url }})\", \"inline\": false }
+                  { \"name\": \"Commit\", \"value\": \"\`${{ github.sha }}\`\", \"inline\": true }
+                  ${APK_FIELD}
                 ]
               }]
             }"
 
       - name: Notify Discord (failure)
-        if: failure()
+        if: steps.eas_build.outcome == 'failure'
         run: |
           VERSION=$(node -p "require('./package.json').version")
           curl -s -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
