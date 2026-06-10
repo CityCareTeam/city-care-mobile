@@ -17,8 +17,8 @@ export async function login(payload: LoginPayload): Promise<LoginResponse> {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-  } catch (e) {
-    throw new Error(e instanceof Error ? e.message : STRINGS.api.networkError);
+  } catch {
+    throw new Error(STRINGS.api.networkError);
   }
 
   if (!response.ok)

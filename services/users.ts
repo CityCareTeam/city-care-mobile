@@ -19,7 +19,12 @@ async function authFetch(
 }
 
 export async function getUserMe(accessToken: string): Promise<UserMeResponse> {
-  const response = await authFetch(API_ENDPOINTS.userMe, accessToken);
+  let response: Response;
+  try {
+    response = await authFetch(API_ENDPOINTS.userMe, accessToken);
+  } catch {
+    throw new Error(STRINGS.api.networkError);
+  }
   if (!response.ok) throw new Error(STRINGS.api.profileLoadError);
   return response.json() as Promise<UserMeResponse>;
 }
@@ -27,7 +32,13 @@ export async function getUserMe(accessToken: string): Promise<UserMeResponse> {
 export async function getMyIncidents(
   accessToken: string,
 ): Promise<MyIncidentsResponse> {
-  const response = await authFetch(API_ENDPOINTS.userMyIncidents, accessToken);
+  let response: Response;
+  try {
+    response = await authFetch(API_ENDPOINTS.userMyIncidents, accessToken);
+  } catch {
+    throw new Error(STRINGS.api.networkError);
+  }
   if (!response.ok) throw new Error(STRINGS.api.incidentsLoadError);
   return response.json() as Promise<MyIncidentsResponse>;
 }
+
