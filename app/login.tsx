@@ -8,6 +8,7 @@ import { useAppColors } from "@/hooks/use-app-colors";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { login } from "@/services/auth";
 import { saveTokens } from "@/storage/tokens";
+import { API_BASE_URL } from "@/constants/api";
 import Constants from "expo-constants";
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
@@ -26,6 +27,7 @@ function makeStyles(c: AppColors) {
     title: { fontSize: 28, fontWeight: "800", color: c.text, marginBottom: 28 },
     btnTop: { marginTop: 8, marginBottom: 12 },
     version: { marginTop: 20, fontSize: 12, color: c.text, opacity: 0.35 },
+    debug: { marginTop: 4, fontSize: 10, color: c.text, opacity: 0.4, fontFamily: "monospace" },
   });
 }
 
@@ -108,6 +110,7 @@ export default function LoginScreen() {
       <Text style={styles.version}>
         v {Constants.expoConfig?.version ?? "1.0.0"}
       </Text>
+      <Text style={styles.debug}>API: {API_BASE_URL}</Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );
