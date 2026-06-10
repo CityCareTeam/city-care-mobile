@@ -8,6 +8,7 @@ import { useAppColors } from "@/hooks/use-app-colors";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { login } from "@/services/auth";
 import { saveTokens } from "@/storage/tokens";
+import { API_ENDPOINTS } from "@/constants/api";
 import { API_BASE_URL } from "@/constants/api";
 import Constants from "expo-constants";
 import { router } from "expo-router";
@@ -111,6 +112,7 @@ export default function LoginScreen() {
         v {Constants.expoConfig?.version ?? "1.0.0"}
       </Text>
       <Text style={styles.debug}>API: {API_BASE_URL}</Text>
+      <Text style={styles.debug}>{API_ENDPOINTS.login}</Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );
