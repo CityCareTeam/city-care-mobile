@@ -30,7 +30,11 @@ export async function clearTokens() {
 
 export function isTokenExpired(token: string): boolean {
   try {
-    const payload = JSON.parse(atob(token.split(".")[1]));
+    const base64url = token.split(".")[1];
+    // JWT utilise base64url (- et _ au lieu de + et /) — atob requiert du base64 standard
+    const base64 = base64url.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64.padEnd(base64.length + (4 - (base64.length % 4)) % 4, "=");
+    const payload = JSON.parse(atob(padded));
     // exp est en secondes, on ajoute 30s de marge
     return payload.exp * 1000 < Date.now() + 30_000;
   } catch {

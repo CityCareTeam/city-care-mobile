@@ -2,7 +2,7 @@ import { IncidentRow } from "@/components/incident-row";
 import { Logo } from "@/components/ui/Logo";
 import { STATUS_COLOR, STATUS_LABEL, TYPE_LABEL } from "@/constants/incidents";
 import { ROLE_LABELS } from "@/constants/roles";
-import { CityCareColors, CityCareColorsDark, TAB_BAR_SCROLL_PADDING } from "@/constants/theme";
+import { CityCareColors, CityCareColorsDark, getTabBarScrollPadding } from "@/constants/theme";
 import { GlassPillSelector, PillOption } from "@/components/ui/GlassPillSelector";
 import { STRINGS } from "@/constants/strings";
 import { useAuth } from "@/context/AuthContext";
@@ -529,7 +529,7 @@ export default function HomeScreen() {
   return (
     <ScrollView
       style={styles.scroll}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: TAB_BAR_SCROLL_PADDING }]}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: getTabBarScrollPadding(insets.bottom) }]}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}

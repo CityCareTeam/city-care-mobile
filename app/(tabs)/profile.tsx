@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ROLE_COLORS, ROLE_LABELS } from "@/constants/roles";
-import { TAB_BAR_SCROLL_PADDING } from "@/constants/theme";
+import { getTabBarScrollPadding } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
@@ -16,9 +16,10 @@ import {
     Text,
     View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 
-function makeStyles(c: AppColors) {
+function makeStyles(c: AppColors, bottomInset: number) {
   return StyleSheet.create({
     center: {
       flex: 1,
@@ -32,7 +33,7 @@ function makeStyles(c: AppColors) {
       alignItems: "center",
       padding: 24,
       paddingTop: 48,
-      paddingBottom: TAB_BAR_SCROLL_PADDING,
+      paddingBottom: getTabBarScrollPadding(bottomInset),
     },
     avatarWrapper: { alignItems: "center", marginBottom: 28 },
     avatar: {
@@ -71,15 +72,16 @@ function makeStyles(c: AppColors) {
 }
 
 export default function ProfileScreen() {
-  const { keycloakUser, dbUser, loading, logout } = useAuth();
+  const { keycloakUser, dbUser, loading, logout, isAuthenticated } = useAuth();
   const { colors } = useAppColors();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { bottom: bottomInset } = useSafeAreaInsets();
+  const styles = useMemo(() => makeStyles(colors, bottomInset), [colors, bottomInset]);
 
   useEffect(() => {
-    if (!loading && !keycloakUser) {
+    if (!loading && !isAuthenticated) {
       router.replace("/login");
     }
-  }, [loading, keycloakUser]);
+  }, [loading, isAuthenticated]);
 
   if (loading) {
     return (

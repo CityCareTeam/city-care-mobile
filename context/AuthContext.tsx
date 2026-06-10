@@ -21,6 +21,7 @@ type AuthContextValue = {
   isStaff: boolean;
   isAdmin: boolean;
   loading: boolean;
+  isAuthenticated: boolean;
   logout: () => Promise<void>;
 };
 
@@ -32,6 +33,7 @@ const AuthContext = createContext<AuthContextValue>({
   isStaff: false,
   isAdmin: false,
   loading: true,
+  isAuthenticated: false,
   logout: async () => {},
 });
 
@@ -39,20 +41,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [keycloakUser, setKeycloakUser] = useState<MeResponse | null>(null);
   const [dbUser, setDbUser] = useState<UserMeResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
         const token = await getValidToken();
-        if (!token || cancelled) return;
+        if (cancelled) return;
+        if (!token) {
+          // Pas de token valide → session terminée, redirection login
+          router.replace("/login");
+          return;
+        }
+        if (!cancelled) setIsAuthenticated(true);
         const [kc, db] = await Promise.all([getMe(token), getUserMe(token)]);
         if (!cancelled) {
           setKeycloakUser(kc);
           setDbUser(db);
         }
       } catch {
-        // silencieux
+        // Erreur réseau temporaire : on garde l'état courant sans déconnecter
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -81,6 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isStaff: role === "Admin" || role === "Agent",
         isAdmin: role === "Admin",
         loading,
+        isAuthenticated,
         logout,
       }}
     >
