@@ -15,7 +15,8 @@
     },
     "production": {
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://172.20.10.245/api"
+        "EXPO_PUBLIC_API_URL": "http://172.20.10.245/api",
+        "EXPO_PUBLIC_DEBUG_NETWORK": "true"
       },
       "android": {
         "buildType": "apk"

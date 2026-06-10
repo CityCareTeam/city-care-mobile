@@ -36,6 +36,7 @@ export default ({ config }: ConfigContext) => ({
     favicon: "./assets/images/favicon.png",
   },
   plugins: [
+    "./plugins/withNetworkSecurityConfig",
     "expo-router",
     "expo-font",
     [
