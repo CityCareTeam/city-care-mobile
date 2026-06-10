@@ -13,6 +13,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { CityCareColors, CityCareColorsDark } from "@/constants/theme";
@@ -26,13 +27,14 @@ const TABS = [
 
 const TAB_BAR_HEIGHT = 60;
 const MARGIN_H = 20;
-const MARGIN_BOTTOM = Platform.OS === "ios" ? 28 : 16;
 const PAD = 6;
 
 function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const colors = isDark ? CityCareColorsDark : CityCareColors;
+  const { bottom: bottomInset } = useSafeAreaInsets();
+  const marginBottom = bottomInset + (Platform.OS === "ios" ? 0 : 8);
 
   const screenWidth = Dimensions.get("window").width;
   const barWidth = screenWidth - MARGIN_H * 2;
@@ -64,7 +66,7 @@ function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
   return (
     <View
       pointerEvents="box-none"
-      style={[styles.wrapper, { bottom: MARGIN_BOTTOM }]}
+      style={[styles.wrapper, { bottom: marginBottom }]}
     >
       <View
         style={[

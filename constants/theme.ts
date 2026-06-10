@@ -37,4 +37,8 @@ export const CityCareColorsDark: typeof CityCareColors = {
 };
 
 // Espace à réserver en bas de page pour ne pas être caché par la tab bar flottante
-export const TAB_BAR_SCROLL_PADDING = 60 + (Platform.OS === "ios" ? 28 : 16) + 16;
+export const TAB_BAR_HEIGHT = 60;
+export const TAB_BAR_EXTRA_PADDING = 16;
+export function getTabBarScrollPadding(bottomInset: number): number {
+  return TAB_BAR_HEIGHT + bottomInset + (Platform.OS === "ios" ? 0 : 8) + TAB_BAR_EXTRA_PADDING;
+}

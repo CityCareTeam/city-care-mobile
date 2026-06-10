@@ -16,8 +16,14 @@ const mockStore = SecureStore as jest.Mocked<typeof SecureStore>;
 const mockRefreshToken = apiRefreshToken as jest.Mock;
 
 function makeJwt(expSeconds: number): string {
-  const payload = Buffer.from(JSON.stringify({ exp: expSeconds, sub: 'test' })).toString('base64');
-  return `header.${payload}.sig`;
+  const json = JSON.stringify({ exp: expSeconds, sub: 'test' });
+  // Encode en base64url comme le font les vrais JWT (remplace +→- /→_ et retire =)
+  const base64url = Buffer.from(json)
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=/g, '');
+  return `header.${base64url}.sig`;
 }
 
 describe('saveTokens', () => {
@@ -94,6 +100,19 @@ describe('isTokenExpired', () => {
   it('returns true for a malformed token', () => {
     expect(isTokenExpired('not-a-jwt')).toBe(true);
     expect(isTokenExpired('')).toBe(true);
+  });
+
+  it('handles base64url characters (- and _) correctly', () => {
+    // Construit un payload base64url qui contient - et _ pour vérifier la conversion
+    const exp = Math.floor(Date.now() / 1000) + 3600;
+    const json = JSON.stringify({ exp, sub: 'test' });
+    const base64url = Buffer.from(json)
+      .toString('base64')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=/g, '');
+    const token = `header.${base64url}.sig`;
+    expect(isTokenExpired(token)).toBe(false);
   });
 });
 
