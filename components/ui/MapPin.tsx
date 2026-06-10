@@ -15,12 +15,18 @@ export function MapPin({ color, active = false }: Props) {
   const ringPad = active ? 8 : 0;
 
   const svgW = head + ringPad * 2;
-  const svgH = head + ringPad * 2 + tailH;
+  // svgH must equal the y-coordinate of the pin tip so that
+  // Marker anchor={{ x: 0.5, y: 1 }} lands exactly on the tip.
+  // = 2r + ringPad + tailH  (NOT 2r + 2*ringPad + tailH)
+  const svgH = head + ringPad + tailH;
   const cx   = svgW / 2;
-  const cy   = r + ringPad;
+  const cy   = r + ringPad;  // circle centre
 
   return (
+    // collapsable={false} gives the View its own native layer so Android
+    // doesn't merge it away before the SVG has rendered.
     <View
+      collapsable={false}
       style={{
         elevation: active ? 10 : 5,
         shadowColor: "#000",
@@ -39,12 +45,12 @@ export function MapPin({ color, active = false }: Props) {
             strokeWidth={2}
           />
         )}
-        {/* Triangle tail — drawn first so the circle head covers the base */}
+        {/* Tail drawn first — circle head covers the base seam */}
         <Polygon
-          points={`${cx - tailW},${cy + r} ${cx + tailW},${cy + r} ${cx},${cy + r + tailH}`}
+          points={`${cx - tailW},${cy + r} ${cx + tailW},${cy + r} ${cx},${svgH}`}
           fill={color}
         />
-        {/* Circle head */}
+        {/* Head */}
         <Circle
           cx={cx} cy={cy}
           r={r}
@@ -52,7 +58,7 @@ export function MapPin({ color, active = false }: Props) {
           stroke="white"
           strokeWidth={active ? 3 : 2}
         />
-        {/* Center dot */}
+        {/* Centre dot */}
         <Circle cx={cx} cy={cy} r={dot / 2} fill="white" opacity={0.9} />
       </Svg>
     </View>
