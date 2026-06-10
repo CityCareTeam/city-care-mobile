@@ -37,10 +37,10 @@ describe('login', () => {
     expect(body).toEqual({ username: 'alice', password: 'secret' });
   });
 
-  it('throws "Serveur inaccessible" on network failure', async () => {
+  it('throws the original error message on network failure', async () => {
     mockFetch.mockRejectedValueOnce(new Error('Failed to fetch'));
     await expect(login({ username: 'user', password: 'pass' }))
-      .rejects.toThrow(STRINGS.api.networkError);
+      .rejects.toThrow('Failed to fetch');
   });
 
   it('parses ASP.NET Core validation error format', async () => {
