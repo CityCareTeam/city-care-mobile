@@ -23,9 +23,10 @@ export async function throwFromResponse(
       if (Array.isArray(first) && first.length > 0) throw new Error(first[0]);
     }
     if (json.error_description) throw new Error(json.error_description);
-    throw new Error(json.message ?? json.error ?? json.title ?? fallback);
+    const msg = json.message ?? json.error ?? json.title;
+    throw new Error(msg ?? fallback);
   } catch (e) {
-    if (e instanceof Error && e.message !== fallback) throw e;
+    if (e instanceof Error && !(e instanceof SyntaxError)) throw e;
     throw new Error(text || fallback);
   }
 }

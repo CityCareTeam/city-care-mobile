@@ -53,8 +53,8 @@ export default function SignalementsScreen() {
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const { isStaff, isAdmin } = useAuth();
   const { colors } = useAppColors();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
+  const styles = useMemo(() => makeStyles(colors, insets.bottom), [colors, insets.bottom]);
   const {
     filterType,
     setFilterType,
@@ -380,7 +380,7 @@ export default function SignalementsScreen() {
   );
 }
 
-function makeStyles(c: AppColors) {
+function makeStyles(c: AppColors, bottomInset: number) {
   return StyleSheet.create({
     container: { flex: 1 },
     map: { flex: 1 },
@@ -392,7 +392,7 @@ function makeStyles(c: AppColors) {
     },
     fab: {
       position: "absolute",
-      bottom: 60 + (Platform.OS === "ios" ? 28 : 16) + 16,
+      bottom: 60 + bottomInset + (Platform.OS === "ios" ? 0 : 8) + 16,
       right: 24,
       backgroundColor: c.primary,
       borderRadius: 28,

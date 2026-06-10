@@ -22,6 +22,7 @@ type AuthContextValue = {
   isAdmin: boolean;
   loading: boolean;
   isAuthenticated: boolean;
+  authError: string | null;
   logout: () => Promise<void>;
 };
 
@@ -34,6 +35,7 @@ const AuthContext = createContext<AuthContextValue>({
   isAdmin: false,
   loading: true,
   isAuthenticated: false,
+  authError: null,
   logout: async () => {},
 });
 
@@ -42,6 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [dbUser, setDbUser] = useState<UserMeResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -60,8 +63,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setKeycloakUser(kc);
           setDbUser(db);
         }
-      } catch {
-        // Erreur réseau temporaire : on garde l'état courant sans déconnecter
+      } catch (e) {
+        if (!cancelled) setAuthError(e instanceof Error ? e.message : String(e));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -91,6 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAdmin: role === "Admin",
         loading,
         isAuthenticated,
+        authError,
         logout,
       }}
     >
