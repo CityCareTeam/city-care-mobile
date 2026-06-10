@@ -53,8 +53,8 @@ export default function SignalementsScreen() {
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const { isStaff, isAdmin } = useAuth();
   const { colors } = useAppColors();
-  const styles = useMemo(() => makeStyles(colors, insets.bottom), [colors, insets.bottom]);
   const insets = useSafeAreaInsets();
+  const styles = useMemo(() => makeStyles(colors, insets.bottom), [colors, insets.bottom]);
   const {
     filterType,
     setFilterType,

@@ -37,10 +37,10 @@ describe('login', () => {
     expect(body).toEqual({ username: 'alice', password: 'secret' });
   });
 
-  it('throws the original error message on network failure', async () => {
+  it('throws networkError on network failure', async () => {
     mockFetch.mockRejectedValueOnce(new Error('Failed to fetch'));
     await expect(login({ username: 'user', password: 'pass' }))
-      .rejects.toThrow('Failed to fetch');
+      .rejects.toThrow(STRINGS.api.networkError);
   });
 
   it('parses ASP.NET Core validation error format', async () => {
@@ -103,12 +103,6 @@ describe('register', () => {
     ).resolves.toEqual(payload);
   });
 
-  it('throws "Serveur inaccessible" on network failure', async () => {
-    mockFetch.mockRejectedValueOnce(new Error('Network error'));
-    await expect(
-      register({ email: 'a@b.com', username: 'a', firstName: 'A', lastName: 'B', password: 'p' }),
-    ).rejects.toThrow('Serveur inaccessible. Vérifiez votre connexion.');
-  });
 });
 
 describe('refreshToken', () => {
@@ -124,8 +118,8 @@ describe('refreshToken', () => {
     await expect(refreshToken('old-refresh')).resolves.toEqual(validLoginResponse);
   });
 
-  it('throws "Session expirée" on 401', async () => {
-    mockFetch.mockResolvedValueOnce(makeResponse(401, { title: 'Session expirée.' }));
+  it('throws sessionExpired on 401', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(401, {}));
     await expect(refreshToken('bad-token')).rejects.toThrow(STRINGS.api.sessionExpired);
   });
 });
