@@ -8,8 +8,8 @@ import { useAppColors } from "@/hooks/use-app-colors";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { login } from "@/services/auth";
 import { saveTokens } from "@/storage/tokens";
-import { API_ENDPOINTS } from "@/constants/api";
-import { API_BASE_URL } from "@/constants/api";
+import { API_BASE_URL, API_ENDPOINTS } from "@/constants/api";
+import { DEBUG_NETWORK } from "@/constants/debug";
 import Constants from "expo-constants";
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
@@ -38,6 +38,8 @@ export default function LoginScreen() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [debugError, setDebugError] = useState("");
+  const [debugInfo, setDebugInfo] = useState<{ status?: number; duration?: number } | null>(null);
 
   async function handleLogin() {
     if (!username.trim() || !password.trim()) {
@@ -49,11 +51,17 @@ export default function LoginScreen() {
       return;
     }
     setLoading(true);
+    setDebugError("");
+    setDebugInfo(null);
+    const t0 = Date.now();
     try {
       const tokens = await login({ username: username.trim(), password });
+      if (DEBUG_NETWORK) setDebugInfo({ status: 200, duration: Date.now() - t0 });
       await saveTokens(tokens.accessToken, tokens.refreshToken);
       router.replace("/(tabs)");
     } catch (e: unknown) {
+      if (DEBUG_NETWORK) setDebugInfo({ duration: Date.now() - t0 });
+      setDebugError(String(e));
       Toast.show({
         type: "error",
         text1: STRINGS.toast.loginFailedTitle,
@@ -111,8 +119,20 @@ export default function LoginScreen() {
       <Text style={styles.version}>
         v {Constants.expoConfig?.version ?? "1.0.0"}
       </Text>
-      <Text style={styles.debug}>API: {API_BASE_URL}</Text>
-      <Text style={styles.debug}>{API_ENDPOINTS.login}</Text>
+      {DEBUG_NETWORK && (
+        <>
+          <Text style={styles.debug}>API: {API_BASE_URL}</Text>
+          <Text style={styles.debug}>POST {API_ENDPOINTS.login}</Text>
+          {debugInfo && (
+            <Text style={styles.debug}>
+              {debugInfo.status ? `HTTP ${debugInfo.status} · ` : ""}{debugInfo.duration}ms
+            </Text>
+          )}
+          {debugError ? (
+            <Text selectable style={[styles.debug, { color: "red", opacity: 1 }]}>{debugError}</Text>
+          ) : null}
+        </>
+      )}
       </ScrollView>
     </KeyboardAvoidingView>
   );
