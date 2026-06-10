@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ROLE_COLORS, ROLE_LABELS } from "@/constants/roles";
+import { DEBUG_NETWORK } from "@/constants/debug";
 import { getTabBarScrollPadding } from "@/constants/theme";
 import { useAuth } from "@/context/AuthContext";
 import type { AppColors } from "@/hooks/use-app-colors";
@@ -72,7 +73,7 @@ function makeStyles(c: AppColors, bottomInset: number) {
 }
 
 export default function ProfileScreen() {
-  const { keycloakUser, dbUser, loading, logout, isAuthenticated } = useAuth();
+  const { keycloakUser, dbUser, loading, logout, isAuthenticated, authError } = useAuth();
   const { colors } = useAppColors();
   const { bottom: bottomInset } = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(colors, bottomInset), [colors, bottomInset]);
@@ -137,6 +138,9 @@ export default function ProfileScreen() {
       <Text style={styles.version}>
         v {Constants.expoConfig?.version ?? "1.0.0"}
       </Text>
+      {DEBUG_NETWORK && authError && (
+        <Text selectable style={[styles.version, { color: "red", opacity: 1 }]}>{authError}</Text>
+      )}
     </ScrollView>
   );
 }
