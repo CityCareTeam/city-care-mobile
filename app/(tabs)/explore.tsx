@@ -38,6 +38,63 @@ import ClusteredMapView from "react-native-map-clustering";
 import MapView, { Marker, Region } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+type IncidentMarkerProps = {
+  incident: IncidentResponse;
+  color: string;
+  active: boolean;
+  onPress: () => void;
+};
+
+function IncidentMarker({ incident, color, active, onPress }: IncidentMarkerProps) {
+  const [tracksViewChanges, setTracksViewChanges] = useState(true);
+
+  useEffect(() => {
+    setTracksViewChanges(true);
+    const t = setTimeout(() => setTracksViewChanges(false), 600);
+    return () => clearTimeout(t);
+  }, [active, color]);
+
+  return (
+    <Marker
+      coordinate={{ latitude: incident.latitude, longitude: incident.longitude }}
+      tracksViewChanges={tracksViewChanges}
+      anchor={{ x: 0.5, y: 1 }}
+      onPress={onPress}
+    >
+      <MapPin color={color} active={active} />
+    </Marker>
+  );
+}
+
+type ClusterMarkerProps = {
+  longitude: number;
+  latitude: number;
+  count: number;
+  color: string;
+  onPress: () => void;
+};
+
+function ClusterMarker({ longitude, latitude, count, color, onPress }: ClusterMarkerProps) {
+  const [tracksViewChanges, setTracksViewChanges] = useState(true);
+
+  useEffect(() => {
+    setTracksViewChanges(true);
+    const t = setTimeout(() => setTracksViewChanges(false), 600);
+    return () => clearTimeout(t);
+  }, [count]);
+
+  return (
+    <Marker
+      coordinate={{ longitude, latitude }}
+      tracksViewChanges={tracksViewChanges}
+      anchor={{ x: 0.5, y: 0.5 }}
+      onPress={onPress}
+    >
+      <ClusterPin count={count} color={color} />
+    </Marker>
+  );
+}
+
 const LYON: Region = {
   latitude: 45.748,
   longitude: 4.847,
@@ -73,15 +130,14 @@ export default function SignalementsScreen() {
       properties: { point_count: number };
       onPress: () => void;
     }) => (
-      <Marker
+      <ClusterMarker
         key={`cluster-${id}`}
-        coordinate={{ longitude: geometry.coordinates[0], latitude: geometry.coordinates[1] }}
+        longitude={geometry.coordinates[0]}
+        latitude={geometry.coordinates[1]}
+        count={properties.point_count}
+        color={colors.primary}
         onPress={onPress}
-        tracksViewChanges={false}
-        anchor={{ x: 0.5, y: 0.5 }}
-      >
-        <ClusterPin count={properties.point_count} color={colors.primary} />
-      </Marker>
+      />
     ),
     [colors.primary],
   );
@@ -92,19 +148,17 @@ export default function SignalementsScreen() {
         const isActive = selected?.id === inc.id;
         const color = STATUS_COLOR[inc.status] ?? colors.primary;
         return (
-          <Marker
-            key={isActive ? `${inc.id}-active` : inc.id}
-            coordinate={{ latitude: inc.latitude, longitude: inc.longitude }}
-            tracksViewChanges={false}
-            anchor={{ x: 0.5, y: 1 }}
+          <IncidentMarker
+            key={inc.id}
+            incident={inc}
+            color={color}
+            active={isActive}
             onPress={() => {
               markerJustPressed.current = true;
               setSelected(inc);
               setTimeout(() => { markerJustPressed.current = false; }, 350);
             }}
-          >
-            <MapPin color={color} active={isActive} />
-          </Marker>
+          />
         );
       }),
     [filteredIncidents, colors.primary, selected?.id],
