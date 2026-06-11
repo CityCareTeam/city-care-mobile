@@ -13,11 +13,13 @@ import { useAppColors } from "@/hooks/use-app-colors";
 import { useIncidentFilters } from "@/hooks/use-incident-filters";
 import {
     deleteIncident,
+    deletePhoto,
     getIncidents,
+    getPhotos,
     updateIncidentStatus,
 } from "@/services/incidents";
 import { getValidToken } from "@/storage/tokens";
-import type { IncidentResponse } from "@/types/incidents";
+import type { IncidentResponse, PhotoResponse } from "@/types/incidents";
 import { useFocusEffect } from "@react-navigation/native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useUserLocation } from "@/hooks/use-user-location";
@@ -34,6 +36,7 @@ import {
     View,
 } from "react-native";
 import { ClusterPin, MapPin } from "@/components/ui/MapPin";
+import { Image } from "expo-image";
 import ClusteredMapView from "react-native-map-clustering";
 import MapView, { Marker, Region } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -108,7 +111,7 @@ export default function SignalementsScreen() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<IncidentResponse | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
-  const { isStaff, isAdmin } = useAuth();
+  const { isStaff, isAdmin, dbUser } = useAuth();
   const { colors } = useAppColors();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(colors, insets.bottom), [colors, insets.bottom]);
@@ -120,8 +123,20 @@ export default function SignalementsScreen() {
     filteredIncidents,
   } = useIncidentFilters(incidents);
 
+  const [photos, setPhotos] = useState<PhotoResponse[]>([]);
+  const [photosLoading, setPhotosLoading] = useState(false);
+
   const markerJustPressed = useRef(false);
   const mapRef = useRef<ClusteredMapView>(null);
+
+  useEffect(() => {
+    if (!selected) { setPhotos([]); return; }
+    setPhotosLoading(true);
+    getPhotos(selected.id)
+      .then((data) => setPhotos(data ?? []))
+      .catch((e) => { console.error("[photos]", e); setPhotos([]); })
+      .finally(() => setPhotosLoading(false));
+  }, [selected?.id]);
 
   const renderCluster = useCallback(
     ({ id, geometry, properties, onPress }: {
@@ -246,6 +261,18 @@ export default function SignalementsScreen() {
     },
     [selected],
   );
+
+  const handleDeletePhoto = useCallback(async (photoId: string) => {
+    if (!selected) return;
+    try {
+      const token = await getValidToken();
+      if (!token) return;
+      await deletePhoto(selected.id, photoId, token);
+      setPhotos((prev) => prev.filter((p) => p.id !== photoId));
+    } catch (e) {
+      Alert.alert(STRINGS.alert.errorTitle, e instanceof Error ? e.message : STRINGS.api.unknownError);
+    }
+  }, [selected]);
 
   const handleDelete = useCallback(() => {
     if (!selected) return;
@@ -391,6 +418,36 @@ export default function SignalementsScreen() {
                       </Text>
                     </View>
                   ) : null}
+                </View>
+
+                {/* Photos */}
+                <View style={styles.photosSection}>
+                  <Text style={styles.photosSectionLabel}>Photos</Text>
+                  {photosLoading ? (
+                    <ActivityIndicator size="small" color={colors.primary} />
+                  ) : photos.length === 0 ? (
+                    <Text style={styles.photosEmpty}>Aucune photo</Text>
+                  ) : (
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                      {photos.map((p) => (
+                        <View key={p.id} style={styles.photoThumb}>
+                          <Image
+                            source={{ uri: p.url }}
+                            style={styles.photoImg}
+                            contentFit="cover"
+                          />
+                          {(isStaff || dbUser?.id === selected?.authorUserId) && (
+                            <TouchableOpacity
+                              style={styles.photoDeleteBtn}
+                              onPress={() => handleDeletePhoto(p.id)}
+                            >
+                              <Text style={styles.photoDeleteBtnText}>✕</Text>
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      ))}
+                    </ScrollView>
+                  )}
                 </View>
 
                 {/* Boutons statut — agents / admins */}
@@ -583,5 +640,36 @@ function makeStyles(c: AppColors, bottomInset: number) {
     },
     deleteBtnText: { fontWeight: "700", fontSize: 14, color: c.statusRed },
     filterBarOverlay: { position: "absolute", top: 0, left: 0, right: 0 },
+    photosSection: { marginBottom: 14 },
+    photosSectionLabel: {
+      fontSize: 11,
+      color: c.text,
+      opacity: 0.45,
+      marginBottom: 10,
+      textTransform: "uppercase",
+      letterSpacing: 0.6,
+      fontWeight: "600",
+    },
+    photosEmpty: { fontSize: 13, color: c.text, opacity: 0.4, fontStyle: "italic" },
+    photoThumb: {
+      width: 88,
+      height: 88,
+      borderRadius: 10,
+      overflow: "hidden",
+      marginRight: 8,
+    },
+    photoImg: { width: 88, height: 88 },
+    photoDeleteBtn: {
+      position: "absolute",
+      top: 4,
+      right: 4,
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      backgroundColor: "#000a",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    photoDeleteBtnText: { color: "#fff", fontSize: 10, fontWeight: "700" },
   });
 }

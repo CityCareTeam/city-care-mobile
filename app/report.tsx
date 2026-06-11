@@ -1,12 +1,14 @@
 import { Button } from "@/components/ui/Button";
 import { Toast } from "@/components/ui/ToastMessage";
 import { STRINGS } from "@/constants/strings";
-import { createIncident, reverseGeocode } from "@/services/incidents";
+import { createIncident, reverseGeocode, uploadPhoto } from "@/services/incidents";
 import { getValidToken } from "@/storage/tokens";
 import type { IncidentType } from "@/types/incidents";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
 import { useUserLocation } from "@/hooks/use-user-location";
+import { Image } from "expo-image";
+import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -22,6 +24,12 @@ import {
     View,
 } from "react-native";
 import MapView, { Marker, Region } from "react-native-maps";
+
+type PickedPhoto = {
+  uri: string;
+  fileName: string;
+  mimeType: string;
+};
 
 const INCIDENT_TYPES: { value: IncidentType; label: string }[] = [
   { value: "Road", label: "Route abîmée" },
@@ -43,6 +51,7 @@ export default function ReportScreen() {
   const [selectedType, setSelectedType] = useState<IncidentType | null>(null);
   const [pickerVisible, setPickerVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [photos, setPhotos] = useState<PickedPhoto[]>([]);
 
   useEffect(() => {
     if (!locLoading) {
@@ -64,6 +73,54 @@ export default function ReportScreen() {
     if (result) setAddress(result.address_label);
   }
 
+  async function handlePickPhoto() {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission refusée", "Autorisez l'accès à vos photos dans les paramètres.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: "images",
+      allowsMultipleSelection: true,
+      quality: 0.8,
+      selectionLimit: 5 - photos.length,
+    });
+    if (result.canceled) return;
+    const picked: PickedPhoto[] = result.assets.map((a) => ({
+      uri: a.uri,
+      fileName: a.fileName ?? `photo_${Date.now()}.jpg`,
+      mimeType: a.mimeType ?? "image/jpeg",
+    }));
+    setPhotos((prev) => [...prev, ...picked].slice(0, 5));
+  }
+
+  async function handleTakePhoto() {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission refusée", "Autorisez l'accès à l'appareil photo dans les paramètres.");
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: "images",
+      quality: 0.8,
+    });
+    if (result.canceled) return;
+    const a = result.assets[0];
+    setPhotos((prev) => [...prev, {
+      uri: a.uri,
+      fileName: a.fileName ?? `photo_${Date.now()}.jpg`,
+      mimeType: a.mimeType ?? "image/jpeg",
+    }].slice(0, 5));
+  }
+
+  function handleAddPhoto() {
+    Alert.alert("Ajouter une photo", undefined, [
+      { text: "Prendre une photo", onPress: handleTakePhoto },
+      { text: "Choisir depuis la galerie", onPress: handlePickPhoto },
+      { text: "Annuler", style: "cancel" },
+    ]);
+  }
+
   async function handleSubmit() {
     if (!selectedType || !description.trim()) return;
     setSubmitting(true);
@@ -74,7 +131,7 @@ export default function ReportScreen() {
         router.replace("/login");
         return;
       }
-      await createIncident(
+      const incident = await createIncident(
         {
           latitude: coords.latitude,
           longitude: coords.longitude,
@@ -83,6 +140,13 @@ export default function ReportScreen() {
         },
         token,
       );
+      for (const photo of photos) {
+        try {
+          await uploadPhoto(incident.id, photo.uri, photo.fileName, photo.mimeType, token);
+        } catch {
+          // une photo en échec ne bloque pas le signalement
+        }
+      }
       Toast.show({
         type: "success",
         text1: STRINGS.toast.reportSuccessTitle,
@@ -151,6 +215,27 @@ export default function ReportScreen() {
         onChangeText={setDescription}
         textAlignVertical="top"
       />
+
+      {/* Photos (optionnel) */}
+      <Text style={styles.label}>Photos (optionnel)</Text>
+      <View style={styles.photosRow}>
+        {photos.map((p, i) => (
+          <View key={p.uri} style={styles.photoThumb}>
+            <Image source={{ uri: p.uri }} style={styles.photoImg} contentFit="cover" />
+            <TouchableOpacity
+              style={styles.photoRemoveBtn}
+              onPress={() => setPhotos((prev) => prev.filter((_, idx) => idx !== i))}
+            >
+              <Text style={styles.photoRemoveBtnText}>✕</Text>
+            </TouchableOpacity>
+          </View>
+        ))}
+        {photos.length < 5 && (
+          <TouchableOpacity style={styles.photoAddBtn} onPress={handleAddPhoto} activeOpacity={0.7}>
+            <Text style={styles.photoAddBtnIcon}>+</Text>
+          </TouchableOpacity>
+        )}
+      </View>
 
       {/* Catégorie */}
       <Text style={styles.label}>Catégorie</Text>
@@ -343,5 +428,45 @@ function makeStyles(c: AppColors, isDark: boolean) {
       marginTop: 8,
       opacity: 0.8,
     },
+    photosRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 8,
+      marginBottom: 20,
+    },
+    photoThumb: {
+      width: 72,
+      height: 72,
+      borderRadius: 10,
+      overflow: "hidden",
+    },
+    photoImg: {
+      width: 72,
+      height: 72,
+    },
+    photoRemoveBtn: {
+      position: "absolute",
+      top: 3,
+      right: 3,
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      backgroundColor: "#000a",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    photoRemoveBtnText: { color: "#fff", fontSize: 10, fontWeight: "700" },
+    photoAddBtn: {
+      width: 72,
+      height: 72,
+      borderRadius: 10,
+      borderWidth: 1.5,
+      borderColor: c.inputBorder,
+      borderStyle: "dashed",
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: c.inputBg,
+    },
+    photoAddBtnIcon: { fontSize: 28, color: c.text, opacity: 0.4 },
   });
 }

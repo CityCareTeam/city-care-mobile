@@ -59,6 +59,13 @@ export default ({ config }: ConfigContext) => ({
         locationWhenInUsePermission: "Autoriser $(PRODUCT_NAME) à utiliser votre localisation",
       },
     ],
+    [
+      "expo-image-picker",
+      {
+        photosPermission: "Autoriser $(PRODUCT_NAME) à accéder à vos photos pour joindre des images à vos signalements.",
+        cameraPermission: "Autoriser $(PRODUCT_NAME) à utiliser l'appareil photo pour photographier un incident.",
+      },
+    ],
   ],
   experiments: {
     typedRoutes: true,

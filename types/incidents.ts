@@ -27,6 +27,17 @@ export type IncidentResponse = {
   resolvedAt: string | null;
 };
 
+export type PhotoResponse = {
+  id: string;
+  incidentId: string;
+  url: string;
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+  uploadedByUserId: string;
+  createdAt: string;
+};
+
 export type IncidentListResponse = {
   data: IncidentResponse[];
   pagination: {
