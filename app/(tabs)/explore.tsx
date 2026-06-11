@@ -33,7 +33,7 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
-import { MapPin } from "@/components/ui/MapPin";
+import { ClusterPin, MapPin } from "@/components/ui/MapPin";
 import ClusteredMapView from "react-native-map-clustering";
 import MapView, { Marker, Region } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -65,6 +65,26 @@ export default function SignalementsScreen() {
 
   const markerJustPressed = useRef(false);
   const mapRef = useRef<ClusteredMapView>(null);
+
+  const renderCluster = useCallback(
+    ({ id, geometry, properties, onPress }: {
+      id: number;
+      geometry: { coordinates: [number, number] };
+      properties: { point_count: number };
+      onPress: () => void;
+    }) => (
+      <Marker
+        key={`cluster-${id}`}
+        coordinate={{ longitude: geometry.coordinates[0], latitude: geometry.coordinates[1] }}
+        onPress={onPress}
+        tracksViewChanges={false}
+        anchor={{ x: 0.5, y: 0.5 }}
+      >
+        <ClusterPin count={properties.point_count} color={colors.primary} />
+      </Marker>
+    ),
+    [colors.primary],
+  );
 
   const markers = useMemo(
     () =>
@@ -212,6 +232,7 @@ export default function SignalementsScreen() {
         initialRegion={userRegion}
         showsUserLocation
         clusterColor={colors.primary}
+        renderCluster={renderCluster}
         onPress={() => {
           if (!markerJustPressed.current) setSelected(null);
         }}
