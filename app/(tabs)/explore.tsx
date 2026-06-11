@@ -75,7 +75,7 @@ export default function SignalementsScreen() {
           <Marker
             key={isActive ? `${inc.id}-active` : inc.id}
             coordinate={{ latitude: inc.latitude, longitude: inc.longitude }}
-            tracksViewChanges={true}
+            tracksViewChanges={false}
             anchor={{ x: 0.5, y: 1 }}
             onPress={() => {
               markerJustPressed.current = true;
