@@ -42,22 +42,13 @@ export default ({ config }: ConfigContext) => ({
     [
       "expo-splash-screen",
       {
-        image: "./assets/images/fond-splash.png",
-        resizeMode: "cover",
+        image: "./assets/images/logo-city-care.png",
+        imageWidth: 180,
+        resizeMode: "contain",
         backgroundColor: "#f6aa54",
-        android: {
-          image: "./assets/images/fond-splash.png",
-          resizeMode: "cover",
-          backgroundColor: "#f6aa54",
-        },
         dark: {
-          image: "./assets/images/fond-splash.png",
+          image: "./assets/images/logo-city-care.png",
           backgroundColor: "#f6aa54",
-          android: {
-            image: "./assets/images/fond-splash.png",
-            resizeMode: "cover",
-            backgroundColor: "#f6aa54",
-          },
         },
       },
     ],

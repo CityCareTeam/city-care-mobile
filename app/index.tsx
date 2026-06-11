@@ -18,19 +18,16 @@ export default function Index() {
     async function checkAuth() {
       const access = await getAccessToken();
 
-      // Pas de token → login
       if (!access) {
         setTarget("/login");
         return;
       }
 
-      // Token valide → tabs
       if (!isTokenExpired(access)) {
         setTarget("/(tabs)");
         return;
       }
 
-      // Access token expiré → essayer le refresh
       const refresh = await getRefreshToken();
       if (!refresh || isTokenExpired(refresh)) {
         await clearTokens();
