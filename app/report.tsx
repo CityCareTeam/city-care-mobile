@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/Button";
 import { Toast } from "@/components/ui/ToastMessage";
+import { MAX_INCIDENT_PHOTOS } from "@/constants/incidents";
 import { STRINGS } from "@/constants/strings";
 import { createIncident, reverseGeocode, uploadPhoto } from "@/services/incidents";
 import { getValidToken } from "@/storage/tokens";
@@ -74,16 +75,20 @@ export default function ReportScreen() {
   }
 
   async function handlePickPhoto() {
+    if (photos.length >= MAX_INCIDENT_PHOTOS) {
+      Alert.alert(STRINGS.alert.errorTitle, STRINGS.photos.limitReached);
+      return;
+    }
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert("Permission refusée", "Autorisez l'accès à vos photos dans les paramètres.");
+      Alert.alert("Permission refusée", STRINGS.photos.permissionDeniedGallery);
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: "images",
       allowsMultipleSelection: true,
       quality: 0.8,
-      selectionLimit: 5 - photos.length,
+      selectionLimit: MAX_INCIDENT_PHOTOS - photos.length,
     });
     if (result.canceled) return;
     const picked: PickedPhoto[] = result.assets.map((a) => ({
@@ -91,13 +96,17 @@ export default function ReportScreen() {
       fileName: a.fileName ?? `photo_${Date.now()}.jpg`,
       mimeType: a.mimeType ?? "image/jpeg",
     }));
-    setPhotos((prev) => [...prev, ...picked].slice(0, 5));
+    setPhotos((prev) => [...prev, ...picked].slice(0, MAX_INCIDENT_PHOTOS));
   }
 
   async function handleTakePhoto() {
+    if (photos.length >= MAX_INCIDENT_PHOTOS) {
+      Alert.alert(STRINGS.alert.errorTitle, STRINGS.photos.limitReached);
+      return;
+    }
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert("Permission refusée", "Autorisez l'accès à l'appareil photo dans les paramètres.");
+      Alert.alert("Permission refusée", STRINGS.photos.permissionDeniedCamera);
       return;
     }
     const result = await ImagePicker.launchCameraAsync({
@@ -110,10 +119,14 @@ export default function ReportScreen() {
       uri: a.uri,
       fileName: a.fileName ?? `photo_${Date.now()}.jpg`,
       mimeType: a.mimeType ?? "image/jpeg",
-    }].slice(0, 5));
+    }].slice(0, MAX_INCIDENT_PHOTOS));
   }
 
   function handleAddPhoto() {
+    if (photos.length >= MAX_INCIDENT_PHOTOS) {
+      Alert.alert(STRINGS.alert.errorTitle, STRINGS.photos.limitReached);
+      return;
+    }
     Alert.alert("Ajouter une photo", undefined, [
       { text: "Prendre une photo", onPress: handleTakePhoto },
       { text: "Choisir depuis la galerie", onPress: handlePickPhoto },
@@ -140,12 +153,16 @@ export default function ReportScreen() {
         },
         token,
       );
+      let uploadFailed = false;
       for (const photo of photos) {
         try {
           await uploadPhoto(incident.id, photo.uri, photo.fileName, photo.mimeType, token);
         } catch {
-          // une photo en échec ne bloque pas le signalement
+          uploadFailed = true;
         }
+      }
+      if (uploadFailed) {
+        Toast.show({ type: "error", text1: STRINGS.alert.errorTitle, text2: STRINGS.photos.uploadError });
       }
       Toast.show({
         type: "success",
@@ -230,7 +247,7 @@ export default function ReportScreen() {
             </TouchableOpacity>
           </View>
         ))}
-        {photos.length < 5 && (
+        {photos.length < MAX_INCIDENT_PHOTOS && (
           <TouchableOpacity style={styles.photoAddBtn} onPress={handleAddPhoto} activeOpacity={0.7}>
             <Text style={styles.photoAddBtnIcon}>+</Text>
           </TouchableOpacity>

@@ -6,6 +6,7 @@ import type {
     IncidentListResponse,
     IncidentResponse,
     PhotoResponse,
+    StatusHistoryEntry,
 } from "@/types/incidents";
 
 export type ReverseGeocodeResult = {
@@ -146,11 +147,10 @@ export async function deleteIncident(
 }
 
 export async function getPhotos(incidentId: string): Promise<PhotoResponse[]> {
-  const response = await fetch(`${API_ENDPOINTS.incidents}/${incidentId}/photos`);
+  const response = await fetch(API_ENDPOINTS.incidentPhotos(incidentId));
   if (!response.ok) throw new Error(`Erreur ${response.status}`);
   const body = await response.json() as PhotoResponse[] | { data: PhotoResponse[] };
   const list = Array.isArray(body) ? body : (body.data ?? []);
-  // MinIO stocke les URLs avec "localhost" — on le remplace par l'hôte réel de l'API
   const apiHost = API_BASE_URL.split("//")[1]?.split(":")[0] ?? "localhost";
   return list.map((p) => ({
     ...p,
@@ -167,14 +167,11 @@ export async function uploadPhoto(
 ): Promise<PhotoResponse> {
   const form = new FormData();
   form.append("file", { uri, name: fileName, type: mimeType } as unknown as Blob);
-  const response = await fetchWithTimeout(
-    `${API_ENDPOINTS.incidents}/${incidentId}/photos`,
-    {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-      body: form,
-    },
-  );
+  const response = await fetchWithTimeout(API_ENDPOINTS.incidentPhotos(incidentId), {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: form,
+  });
   if (!response.ok) {
     throw new Error(await parseErrorMessage(response, `Erreur ${response.status}`));
   }
@@ -186,14 +183,18 @@ export async function deletePhoto(
   photoId: string,
   token: string,
 ): Promise<void> {
-  const response = await fetchWithTimeout(
-    `${API_ENDPOINTS.incidents}/${incidentId}/photos/${photoId}`,
-    {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
-    },
-  );
+  const response = await fetchWithTimeout(API_ENDPOINTS.incidentPhoto(incidentId, photoId), {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
   if (!response.ok) {
     throw new Error(await parseErrorMessage(response, `Erreur ${response.status}`));
   }
+}
+
+export async function getStatusHistory(incidentId: string): Promise<StatusHistoryEntry[]> {
+  const response = await fetch(API_ENDPOINTS.incidentStatusHistory(incidentId));
+  if (!response.ok) throw new Error(`Erreur ${response.status}`);
+  const body = await response.json() as { data: StatusHistoryEntry[] };
+  return body.data ?? [];
 }

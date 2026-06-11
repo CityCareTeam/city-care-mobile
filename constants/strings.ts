@@ -23,6 +23,16 @@ export const STRINGS = {
     reportSuccessTitle: "Signalement envoyé !",
     reportSuccess: "Merci, votre signalement a bien été enregistré.",
   },
+  photos: {
+    permissionDeniedCamera: "Autorisez l'accès à l'appareil photo dans les paramètres.",
+    permissionDeniedGallery: "Autorisez l'accès à vos photos dans les paramètres.",
+    limitReached: "Vous avez atteint la limite de 3 photos par signalement.",
+    uploadError: "Certaines photos n'ont pas pu être envoyées.",
+    deleteError: "Impossible de supprimer la photo. Réessayez.",
+    loadError: "Impossible de charger les photos.",
+    deleteConfirmTitle: "Supprimer la photo",
+    deleteConfirmMsg: "Cette suppression est définitive. Confirmer ?",
+  },
   alert: {
     errorTitle: "Oups, une erreur",
     sessionExpiredTitle: "Session expirée",

@@ -38,6 +38,16 @@ export type PhotoResponse = {
   createdAt: string;
 };
 
+export type StatusHistoryEntry = {
+  id: string;
+  oldStatus: string;
+  newStatus: string;
+  changedByUserId: string;
+  changedByKeycloakId: string;
+  comment: string | null;
+  changedAt: string;
+};
+
 export type IncidentListResponse = {
   data: IncidentResponse[];
   pagination: {
