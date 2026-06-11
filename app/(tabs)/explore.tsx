@@ -128,6 +128,7 @@ export default function SignalementsScreen() {
   const [photosLoading, setPhotosLoading] = useState(false);
   const [photosError, setPhotosError] = useState(false);
   const [statusHistory, setStatusHistory] = useState<StatusHistoryEntry[]>([]);
+  const [zoomedPhoto, setZoomedPhoto] = useState<string | null>(null);
 
   const markerJustPressed = useRef(false);
   const mapRef = useRef<ClusteredMapView>(null);
@@ -372,6 +373,7 @@ export default function SignalementsScreen() {
           />
           {selected && (
             <View style={styles.sheet}>
+
               <View style={styles.sheetHandle} />
 
               {/* En-tête */}
@@ -458,7 +460,9 @@ export default function SignalementsScreen() {
                     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                       {photos.map((p) => (
                         <View key={p.id} style={styles.photoThumb}>
-                          <Image source={{ uri: p.url }} style={styles.photoImg} contentFit="cover" />
+                          <TouchableOpacity activeOpacity={0.85} onPress={() => setZoomedPhoto(p.url)}>
+                            <Image source={{ uri: p.url }} style={styles.photoImg} contentFit="cover" />
+                          </TouchableOpacity>
                           {(isAdmin || dbUser?.id === p.uploadedByUserId) && (
                             <TouchableOpacity style={styles.photoDeleteBtn} onPress={() => handleDeletePhoto(p.id)}>
                               <Text style={styles.photoDeleteBtnText}>✕</Text>
@@ -501,6 +505,25 @@ export default function SignalementsScreen() {
                   </TouchableOpacity>
                 )}
               </ScrollView>
+            </View>
+          )}
+
+          {/* Visionneuse plein écran — dans le même Modal pour éviter les problèmes Android */}
+          {zoomedPhoto && (
+            <View style={styles.zoomOverlay}>
+              <TouchableOpacity
+                style={StyleSheet.absoluteFill}
+                activeOpacity={1}
+                onPress={() => setZoomedPhoto(null)}
+              />
+              <Image
+                source={{ uri: zoomedPhoto }}
+                style={styles.zoomImage}
+                contentFit="contain"
+              />
+              <TouchableOpacity style={styles.zoomClose} onPress={() => setZoomedPhoto(null)}>
+                <Text style={styles.zoomCloseText}>✕</Text>
+              </TouchableOpacity>
             </View>
           )}
         </View>
@@ -694,5 +717,29 @@ function makeStyles(c: AppColors, bottomInset: number) {
     },
     deleteBtnText: { fontWeight: "700", fontSize: 14, color: c.statusRed },
     filterBarOverlay: { position: "absolute", top: 0, left: 0, right: 0 },
+    // Visionneuse plein écran (overlay à l'intérieur du Modal détail)
+    zoomOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: "#000d",
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 10,
+    },
+    zoomImage: {
+      width: "100%",
+      height: "80%",
+    },
+    zoomClose: {
+      position: "absolute",
+      top: 52,
+      right: 20,
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: "#0008",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    zoomCloseText: { color: "#fff", fontSize: 16, fontWeight: "700" },
   });
 }

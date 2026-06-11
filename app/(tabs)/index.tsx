@@ -89,14 +89,17 @@ function EmptyState({ text }: { text: string }) {
 }
 
 function SectionHeader({ title, count }: { title: string; count?: number }) {
-  const { isDark } = useAppColors();
+  const { colors, isDark } = useAppColors();
   const styles = isDark ? darkStyles : lightStyles;
   return (
     <View style={styles.sectionHeader}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+      <View style={styles.sectionTitleRow}>
+        <View style={[styles.sectionAccent, { backgroundColor: colors.primary }]} />
+        <Text style={styles.sectionTitle}>{title}</Text>
+      </View>
       {count !== undefined && (
-        <View style={styles.countBadge}>
-          <Text style={styles.countBadgeText}>{count}</Text>
+        <View style={[styles.countBadge, { backgroundColor: colors.primary + "20" }]}>
+          <Text style={[styles.countBadgeText, { color: colors.primary }]}>{count}</Text>
         </View>
       )}
     </View>
@@ -112,6 +115,7 @@ function IncidentList({
     id: string;
     type: string;
     status: string;
+    description?: string;
     address: string | null;
     createdAt: string;
   }[];
@@ -133,6 +137,7 @@ function IncidentList({
             id={inc.id}
             type={inc.type}
             status={inc.status}
+            description={inc.description}
             address={inc.address}
             createdAt={inc.createdAt}
             onPress={onPress}
@@ -236,13 +241,17 @@ function CitizenView({
         />
       ) : (
         <IncidentList
-          incidents={filteredMyIncidents.map((i) => ({
-            id: i.id,
-            type: i.type,
-            status: i.status,
-            address: i.address_label,
-            createdAt: i.created_at,
-          }))}
+          incidents={filteredMyIncidents.map((i) => {
+            const full = allIncidents.find((a) => a.id === i.id);
+            return {
+              id: i.id,
+              type: i.type,
+              status: i.status,
+              description: full?.description ?? i.description,
+              address: i.address_label,
+              createdAt: i.created_at,
+            };
+          })}
           onPress={onPress}
         />
       )}
@@ -265,6 +274,7 @@ function CitizenView({
             id: i.id,
             type: i.type,
             status: i.status,
+            description: i.description,
             address: i.addressLabel,
             createdAt: i.createdAt,
           }))}
@@ -355,6 +365,7 @@ function AgentView({
             id: i.id,
             type: i.type,
             status: i.status,
+            description: i.description,
             address: i.addressLabel,
             createdAt: i.createdAt,
           }))}
@@ -455,6 +466,7 @@ function AdminView({
             id: i.id,
             type: i.type,
             status: i.status,
+            description: i.description,
             address: i.addressLabel,
             createdAt: i.createdAt,
           }))}
@@ -635,13 +647,20 @@ function makeStyles(c: AppColors) {
       marginTop: -14,
       marginBottom: 20,
     },
+    sectionTitleRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    sectionAccent: {
+      width: 3,
+      height: 18,
+      borderRadius: 2,
+    },
     sectionTitle: {
-      fontSize: 11,
-      fontWeight: "700",
+      fontSize: 16,
+      fontWeight: "800",
       color: c.text,
-      opacity: 0.5,
-      textTransform: "uppercase",
-      letterSpacing: 0.8,
     },
     typeRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 },
     typeChip: {
@@ -682,17 +701,16 @@ function makeStyles(c: AppColors) {
     sectionHeader: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 8,
-      marginBottom: 10,
-      marginTop: 6,
+      justifyContent: "space-between",
+      marginBottom: 12,
+      marginTop: 10,
     },
     countBadge: {
-      backgroundColor: c.primary + "25",
       borderRadius: 10,
-      paddingHorizontal: 7,
-      paddingVertical: 2,
+      paddingHorizontal: 9,
+      paddingVertical: 3,
     },
-    countBadgeText: { fontSize: 11, fontWeight: "700", color: c.primary },
+    countBadgeText: { fontSize: 12, fontWeight: "700" },
     showMore: { paddingVertical: 14, paddingHorizontal: 14, alignItems: "center" },
     showMoreText: { fontSize: 13, fontWeight: "700", color: c.primary },
   });

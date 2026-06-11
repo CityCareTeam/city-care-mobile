@@ -9,6 +9,7 @@ export type MyIncidentItem = {
   id: string;
   type: string;
   status: string;
+  description: string;
   address_label: string;
   created_at: string;
 };
