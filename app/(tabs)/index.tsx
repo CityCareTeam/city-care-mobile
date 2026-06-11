@@ -15,6 +15,8 @@ import { getMyIncidents } from "@/services/users";
 import { getValidToken } from "@/storage/tokens";
 import type { IncidentResponse } from "@/types/incidents";
 import type { MyIncidentItem } from "@/types/users";
+import { EasterEggDog } from "@/components/easter-egg-dog";
+import { useEasterEgg } from "@/hooks/use-easter-egg";
 import { useFocusEffect } from "@react-navigation/native";
 import { router } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
@@ -192,6 +194,7 @@ function CitizenView({
 
   return (
     <>
+      <SectionHeader title="Mes stats" />
       <View style={styles.statRow}>
         <StatCard label="Déclarés" value={reported} color="#2196f3" />
         <StatCard label="En cours" value={inProgress} color="#f0a500" />
@@ -488,6 +491,8 @@ export default function HomeScreen() {
   const [myIncidents, setMyIncidents] = useState<MyIncidentItem[]>([]);
   const [allIncidents, setAllIncidents] = useState<IncidentResponse[]>([]);
 
+  const { active: dogActive, onTap: onLogoTap, dismiss: dismissDog } = useEasterEgg();
+
   const load = useCallback(async (isRefresh = false) => {
     if (role === null) return;
     if (isRefresh) setRefreshing(true);
@@ -540,6 +545,7 @@ export default function HomeScreen() {
   }
 
   return (
+    <>
     <ScrollView
       style={styles.scroll}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: getTabBarScrollPadding(insets.bottom) }]}
@@ -561,7 +567,9 @@ export default function HomeScreen() {
             </Text>
             <Text style={styles.headerDate}>{TODAY}</Text>
           </View>
-          <Logo size={78} />
+          <TouchableOpacity onPress={onLogoTap} activeOpacity={1}>
+            <Logo size={78} />
+          </TouchableOpacity>
         </View>
         {role && (
           <View style={styles.rolePill}>
@@ -584,6 +592,9 @@ export default function HomeScreen() {
         <AdminView incidents={allIncidents} onPress={navigateToIncident} />
       )}
     </ScrollView>
+
+    <EasterEggDog visible={dogActive} onHide={dismissDog} />
+    </>
   );
 }
 

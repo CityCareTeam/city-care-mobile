@@ -24,6 +24,7 @@ type AuthContextValue = {
   isAuthenticated: boolean;
   authError: string | null;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue>({
@@ -37,6 +38,7 @@ const AuthContext = createContext<AuthContextValue>({
   isAuthenticated: false,
   authError: null,
   logout: async () => {},
+  refreshUser: async () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -81,6 +83,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     router.replace("/login");
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    try {
+      const token = await getValidToken();
+      if (!token) return;
+      const [kc, db] = await Promise.all([getMe(token), getUserMe(token)]);
+      setKeycloakUser(kc);
+      setDbUser(db);
+    } catch {
+      // silent — user stays on screen with stale data
+    }
+  }, []);
+
   const role = keycloakUser?.mainRole ?? null;
 
   return (
@@ -96,6 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated,
         authError,
         logout,
+        refreshUser,
       }}
     >
       {children}

@@ -1,11 +1,11 @@
 import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
 import { useMemo } from "react";
-import { StyleSheet, View, ViewStyle } from "react-native";
+import { type StyleProp, StyleSheet, View, type ViewStyle } from "react-native";
 
 type CardProps = {
   children: React.ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 };
 
 function makeStyles(c: AppColors) {

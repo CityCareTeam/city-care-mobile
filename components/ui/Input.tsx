@@ -1,11 +1,13 @@
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
     StyleSheet,
     Text,
     TextInput,
-    TextInputProps,
+    type TextInputProps,
+    TouchableOpacity,
     View,
 } from "react-native";
 
@@ -26,6 +28,9 @@ function makeStyles(c: AppColors) {
       marginBottom: 6,
       fontWeight: "500",
     },
+    inputRow: {
+      position: "relative",
+    },
     input: {
       width: "100%",
       height: 48,
@@ -37,8 +42,20 @@ function makeStyles(c: AppColors) {
       color: c.text,
       backgroundColor: c.inputBg,
     },
+    inputPassword: {
+      paddingRight: 46,
+    },
     inputError: {
       borderColor: c.statusRed,
+    },
+    eyeBtn: {
+      position: "absolute",
+      right: 0,
+      top: 0,
+      bottom: 0,
+      width: 46,
+      alignItems: "center",
+      justifyContent: "center",
     },
     errorText: {
       color: c.statusRed,
@@ -48,18 +65,41 @@ function makeStyles(c: AppColors) {
   });
 }
 
-export function Input({ label, error, style, ...props }: InputProps) {
+export function Input({ label, error, style, secureTextEntry, ...props }: InputProps) {
   const { colors, isDark } = useAppColors();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const [hidden, setHidden] = useState(true);
+  const isPassword = Boolean(secureTextEntry);
 
   return (
     <View style={styles.wrapper} collapsable={false}>
       <Text style={styles.label}>{label}</Text>
-      <TextInput
-        style={[styles.input, !!error && styles.inputError, style]}
-        placeholderTextColor={isDark ? "#888" : "#aaa"}
-        {...props}
-      />
+      <View style={styles.inputRow}>
+        <TextInput
+          style={[
+            styles.input,
+            isPassword && styles.inputPassword,
+            !!error && styles.inputError,
+            style,
+          ]}
+          placeholderTextColor={isDark ? "#888" : "#aaa"}
+          secureTextEntry={isPassword && hidden}
+          {...props}
+        />
+        {isPassword && (
+          <TouchableOpacity
+            style={styles.eyeBtn}
+            onPress={() => setHidden((h) => !h)}
+            hitSlop={8}
+          >
+            <MaterialIcons
+              name={hidden ? "visibility-off" : "visibility"}
+              size={20}
+              color={isDark ? "#888" : "#bbb"}
+            />
+          </TouchableOpacity>
+        )}
+      </View>
       {!!error && <Text style={styles.errorText}>{error}</Text>}
     </View>
   );
