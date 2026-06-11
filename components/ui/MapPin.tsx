@@ -1,11 +1,11 @@
-import { View } from "react-native";
+import { Text, View } from "react-native";
 
-type Props = {
+type PinProps = {
   color: string;
   active?: boolean;
 };
 
-export function MapPin({ color, active = false }: Props) {
+export function MapPin({ color, active = false }: PinProps) {
   const head  = active ? 36 : 28;
   const dot   = active ? 11 : 8;
   const tailW = active ? 13 : 10;
@@ -13,9 +13,10 @@ export function MapPin({ color, active = false }: Props) {
   const ring  = head + 18;
 
   return (
-    <View style={{ alignItems: "center" }}>
+    <View collapsable={false} style={{ alignItems: "center" }}>
       {active && (
         <View
+          collapsable={false}
           style={{
             position: "absolute",
             top: -(ring - head) / 2,
@@ -29,6 +30,7 @@ export function MapPin({ color, active = false }: Props) {
         />
       )}
       <View
+        collapsable={false}
         style={{
           width: head,
           height: head,
@@ -46,6 +48,7 @@ export function MapPin({ color, active = false }: Props) {
         }}
       >
         <View
+          collapsable={false}
           style={{
             width: dot,
             height: dot,
@@ -56,6 +59,7 @@ export function MapPin({ color, active = false }: Props) {
         />
       </View>
       <View
+        collapsable={false}
         style={{
           width: 0,
           height: 0,
@@ -68,6 +72,55 @@ export function MapPin({ color, active = false }: Props) {
           marginTop: -1,
         }}
       />
+    </View>
+  );
+}
+
+type ClusterPinProps = {
+  count: number;
+  color: string;
+};
+
+export function ClusterPin({ count, color }: ClusterPinProps) {
+  const inner = count < 10 ? 32 : count < 50 ? 38 : 46;
+  const outer = inner + 14;
+  const fontSize = count < 10 ? 14 : count < 100 ? 13 : 11;
+
+  return (
+    <View
+      collapsable={false}
+      style={{ width: outer, height: outer, alignItems: "center", justifyContent: "center" }}
+    >
+      <View
+        collapsable={false}
+        style={{
+          position: "absolute",
+          width: outer,
+          height: outer,
+          borderRadius: outer / 2,
+          backgroundColor: color + "33",
+        }}
+      />
+      <View
+        collapsable={false}
+        style={{
+          width: inner,
+          height: inner,
+          borderRadius: inner / 2,
+          backgroundColor: color,
+          alignItems: "center",
+          justifyContent: "center",
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.3,
+          shadowRadius: 4,
+          elevation: 6,
+        }}
+      >
+        <Text style={{ color: "#fff", fontWeight: "700", fontSize }}>
+          {count}
+        </Text>
+      </View>
     </View>
   );
 }
