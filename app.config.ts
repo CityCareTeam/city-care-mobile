@@ -43,12 +43,21 @@ export default ({ config }: ConfigContext) => ({
       "expo-splash-screen",
       {
         image: "./assets/images/fond-splash.png",
-        imageWidth: 1284,
         resizeMode: "cover",
         backgroundColor: "#f6aa54",
+        android: {
+          image: "./assets/images/fond-splash.png",
+          resizeMode: "cover",
+          backgroundColor: "#f6aa54",
+        },
         dark: {
           image: "./assets/images/fond-splash.png",
           backgroundColor: "#f6aa54",
+          android: {
+            image: "./assets/images/fond-splash.png",
+            resizeMode: "cover",
+            backgroundColor: "#f6aa54",
+          },
         },
       },
     ],
