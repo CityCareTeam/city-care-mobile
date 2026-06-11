@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/Button";
 import { Toast } from "@/components/ui/ToastMessage";
+import { MAP_DELTAS } from "@/constants/config";
 import { MAX_INCIDENT_PHOTOS } from "@/constants/incidents";
 import { STRINGS } from "@/constants/strings";
 import { createIncident, reverseGeocode, uploadPhoto } from "@/services/incidents";
@@ -46,7 +47,7 @@ export default function ReportScreen() {
   const styles = useMemo(() => makeStyles(colors, isDark), [colors, isDark]);
 
   const mapRef = useRef<MapView>(null);
-  const { coords, setCoords, loading: locLoading } = useUserLocation(0.005);
+  const { coords, setCoords, loading: locLoading } = useUserLocation(MAP_DELTAS.report);
   const [address, setAddress] = useState("");
   const [description, setDescription] = useState("");
   const [selectedType, setSelectedType] = useState<IncidentType | null>(null);
@@ -183,8 +184,8 @@ export default function ReportScreen() {
   )?.label;
   const initialRegion: Region = {
     ...coords,
-    latitudeDelta: 0.005,
-    longitudeDelta: 0.005,
+    latitudeDelta: MAP_DELTAS.report,
+    longitudeDelta: MAP_DELTAS.report,
   };
 
   return (

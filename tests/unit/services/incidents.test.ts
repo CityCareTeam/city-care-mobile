@@ -5,6 +5,10 @@ import {
   updateIncidentStatus,
   deleteIncident,
   reverseGeocode,
+  getPhotos,
+  uploadPhoto,
+  deletePhoto,
+  getStatusHistory,
 } from '@/services/incidents';
 
 const mockFetch = jest.fn();
@@ -204,5 +208,151 @@ describe('reverseGeocode', () => {
   it('returns null on error response', async () => {
     mockFetch.mockResolvedValueOnce(makeResponse(404, {}));
     await expect(reverseGeocode(0, 0)).resolves.toBeNull();
+  });
+});
+
+const photoResponse = {
+  id: 'photo-1',
+  incidentId: 'inc-1',
+  url: 'http://localhost:9000/citycare-photos/inc-1/photo-1.jpg',
+  fileName: 'photo.jpg',
+  contentType: 'image/jpeg',
+  sizeBytes: 12345,
+  uploadedByUserId: 'user-1',
+  createdAt: '2025-01-01T00:00:00Z',
+};
+
+describe('getPhotos', () => {
+  beforeEach(() => mockFetch.mockClear());
+
+  it('handles { data: [] } wrapper format', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(200, { data: [photoResponse] }));
+    const result = await getPhotos('inc-1');
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('photo-1');
+  });
+
+  it('handles plain array format', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(200, [photoResponse]));
+    const result = await getPhotos('inc-1');
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('photo-1');
+  });
+
+  it('returns empty array when data is empty', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(200, { data: [] }));
+    const result = await getPhotos('inc-1');
+    expect(result).toEqual([]);
+  });
+
+  it('calls correct endpoint with incident id', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(200, { data: [] }));
+    await getPhotos('my-incident-id');
+    expect(mockFetch.mock.calls[0][0]).toContain('my-incident-id');
+    expect(mockFetch.mock.calls[0][0]).toContain('/photos');
+  });
+
+  it('throws on error response', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(404, {}));
+    await expect(getPhotos('inc-1')).rejects.toThrow('Erreur 404');
+  });
+});
+
+describe('uploadPhoto', () => {
+  beforeEach(() => mockFetch.mockClear());
+
+  it('sends POST with auth header', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(201, photoResponse));
+    await uploadPhoto('inc-1', 'file:///photo.jpg', 'photo.jpg', 'image/jpeg', 'my-token');
+    expect(mockFetch.mock.calls[0][1].method).toBe('POST');
+    expect(mockFetch.mock.calls[0][1].headers.Authorization).toBe('Bearer my-token');
+  });
+
+  it('calls correct endpoint', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(201, photoResponse));
+    await uploadPhoto('inc-1', 'file:///photo.jpg', 'photo.jpg', 'image/jpeg', 'token');
+    expect(mockFetch.mock.calls[0][0]).toContain('inc-1');
+    expect(mockFetch.mock.calls[0][0]).toContain('/photos');
+  });
+
+  it('returns photo response on success', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(201, photoResponse));
+    const result = await uploadPhoto('inc-1', 'file:///photo.jpg', 'photo.jpg', 'image/jpeg', 'token');
+    expect(result.id).toBe('photo-1');
+    expect(result.fileName).toBe('photo.jpg');
+  });
+
+  it('throws on error response', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(413, { error: 'Fichier trop volumineux' }));
+    await expect(
+      uploadPhoto('inc-1', 'file:///photo.jpg', 'photo.jpg', 'image/jpeg', 'token'),
+    ).rejects.toThrow();
+  });
+});
+
+describe('deletePhoto', () => {
+  beforeEach(() => mockFetch.mockClear());
+
+  it('sends DELETE with auth header', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(204, null));
+    await deletePhoto('inc-1', 'photo-1', 'my-token');
+    expect(mockFetch.mock.calls[0][1].method).toBe('DELETE');
+    expect(mockFetch.mock.calls[0][1].headers.Authorization).toBe('Bearer my-token');
+  });
+
+  it('calls correct endpoint with both ids', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(204, null));
+    await deletePhoto('inc-1', 'photo-1', 'token');
+    expect(mockFetch.mock.calls[0][0]).toContain('inc-1');
+    expect(mockFetch.mock.calls[0][0]).toContain('photo-1');
+  });
+
+  it('resolves on 204', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(204, null));
+    await expect(deletePhoto('inc-1', 'photo-1', 'token')).resolves.toBeUndefined();
+  });
+
+  it('throws on 403', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(403, { error: 'Forbidden' }));
+    await expect(deletePhoto('inc-1', 'photo-1', 'bad-token')).rejects.toThrow();
+  });
+});
+
+const historyEntry = {
+  id: 'hist-1',
+  oldStatus: 'reported',
+  newStatus: 'in_progress',
+  changedByUserId: 'agent-1',
+  changedByKeycloakId: 'kc-agent-1',
+  comment: 'Prise en charge',
+  changedAt: '2025-01-02T10:00:00Z',
+};
+
+describe('getStatusHistory', () => {
+  beforeEach(() => mockFetch.mockClear());
+
+  it('returns history entries on success', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(200, { data: [historyEntry] }));
+    const result = await getStatusHistory('inc-1');
+    expect(result).toHaveLength(1);
+    expect(result[0].newStatus).toBe('in_progress');
+  });
+
+  it('returns empty array when no history', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(200, { data: [] }));
+    const result = await getStatusHistory('inc-1');
+    expect(result).toEqual([]);
+  });
+
+  it('calls correct endpoint', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(200, { data: [] }));
+    await getStatusHistory('inc-42');
+    expect(mockFetch.mock.calls[0][0]).toContain('inc-42');
+    expect(mockFetch.mock.calls[0][0]).toContain('status-history');
+  });
+
+  it('throws on error response', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(404, {}));
+    await expect(getStatusHistory('bad-id')).rejects.toThrow('Erreur 404');
   });
 });

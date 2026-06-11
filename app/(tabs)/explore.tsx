@@ -1,5 +1,6 @@
 import { IncidentFilterBar } from "@/components/incident-filter-bar";
 import { formatIncidentDateTime } from "@/utils/format-date";
+import { DEFAULT_LOCATION, MAP_ANIMATION_MS, MAP_DELTAS } from "@/constants/config";
 import {
     NEXT_STATUSES,
     STATUS_COLOR,
@@ -54,7 +55,7 @@ function IncidentMarker({ incident, color, active, onPress }: IncidentMarkerProp
 
   useEffect(() => {
     setTracksViewChanges(true);
-    const t = setTimeout(() => setTracksViewChanges(false), 600);
+    const t = setTimeout(() => setTracksViewChanges(false), MAP_ANIMATION_MS.trackViewChange);
     return () => clearTimeout(t);
   }, [active, color]);
 
@@ -83,7 +84,7 @@ function ClusterMarker({ longitude, latitude, count, color, onPress }: ClusterMa
 
   useEffect(() => {
     setTracksViewChanges(true);
-    const t = setTimeout(() => setTracksViewChanges(false), 600);
+    const t = setTimeout(() => setTracksViewChanges(false), MAP_ANIMATION_MS.trackViewChange);
     return () => clearTimeout(t);
   }, [count]);
 
@@ -100,15 +101,14 @@ function ClusterMarker({ longitude, latitude, count, color, onPress }: ClusterMa
 }
 
 const LYON: Region = {
-  latitude: 45.748,
-  longitude: 4.847,
-  latitudeDelta: 0.08,
-  longitudeDelta: 0.08,
+  ...DEFAULT_LOCATION,
+  latitudeDelta: MAP_DELTAS.explore,
+  longitudeDelta: MAP_DELTAS.explore,
 };
 
 export default function SignalementsScreen() {
   const [incidents, setIncidents] = useState<IncidentResponse[]>([]);
-  const { region: userRegion } = useUserLocation(0.05);
+  const { region: userRegion } = useUserLocation(MAP_DELTAS.user);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<IncidentResponse | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
@@ -178,7 +178,7 @@ export default function SignalementsScreen() {
             onPress={() => {
               markerJustPressed.current = true;
               setSelected(inc);
-              setTimeout(() => { markerJustPressed.current = false; }, 350);
+              setTimeout(() => { markerJustPressed.current = false; }, MAP_ANIMATION_MS.markerPress);
             }}
           />
         );
@@ -205,14 +205,14 @@ export default function SignalementsScreen() {
     setTimeout(() => {
       (mapRef.current as unknown as MapView)?.animateToRegion(
         {
-          latitude: inc.latitude - 0.002,
+          latitude: inc.latitude - MAP_DELTAS.incidentOffset,
           longitude: inc.longitude,
-          latitudeDelta: 0.008,
-          longitudeDelta: 0.008,
+          latitudeDelta: MAP_DELTAS.incident,
+          longitudeDelta: MAP_DELTAS.incident,
         },
-        800,
+        MAP_ANIMATION_MS.animateRegion,
       );
-    }, 400);
+    }, MAP_ANIMATION_MS.selectDelay);
   }, []);
 
   // Quand selectId change, réinitialise et prépare la sélection

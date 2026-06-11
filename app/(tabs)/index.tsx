@@ -8,6 +8,7 @@ import { STRINGS } from "@/constants/strings";
 import { useAuth } from "@/context/AuthContext";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
+import { INCIDENTS_PAGE_SIZE } from "@/constants/config";
 import { applyFilters, useIncidentFilters } from "@/hooks/use-incident-filters";
 import { getIncidents } from "@/services/incidents";
 import { getMyIncidents } from "@/services/users";
@@ -105,7 +106,7 @@ function SectionHeader({ title, count }: { title: string; count?: number }) {
 function IncidentList({
   incidents,
   onPress,
-  pageSize = 10,
+  pageSize = INCIDENTS_PAGE_SIZE.list,
 }: {
   incidents: {
     id: string;
@@ -487,12 +488,12 @@ export default function HomeScreen() {
       if (role === "Citizen") {
         const [myRes, allRes] = await Promise.all([
           getMyIncidents(token),
-          getIncidents({ pageSize: 50 }),
+          getIncidents({ pageSize: INCIDENTS_PAGE_SIZE.load }),
         ]);
         setMyIncidents(myRes.data);
         setAllIncidents(allRes.data);
       } else {
-        const res = await getIncidents({ pageSize: 50 });
+        const res = await getIncidents({ pageSize: INCIDENTS_PAGE_SIZE.load });
         setAllIncidents(res.data);
       }
     } catch {
