@@ -1,8 +1,10 @@
 import { getMe, logout as authLogout } from "@/services/auth";
 import { getUserMe } from "@/services/users";
-import { clearTokens, getRefreshToken, getValidToken } from "@/storage/tokens";
+import { clearTokens, getAccessToken, getRefreshToken, getValidToken } from "@/storage/tokens";
 import type { MeResponse } from "@/types/auth";
 import type { UserMeResponse } from "@/types/users";
+import { Toast } from "@/components/ui/ToastMessage";
+import { STRINGS } from "@/constants/strings";
 import { router } from "expo-router";
 import {
   createContext,
@@ -52,10 +54,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     (async () => {
       try {
+        const hadToken = !!(await getAccessToken());
         const token = await getValidToken();
         if (cancelled) return;
         if (!token) {
-          // Pas de token valide → session terminée, redirection login
+          if (hadToken) {
+            Toast.show({
+              type: "error",
+              text1: STRINGS.alert.sessionExpiredTitle,
+              text2: STRINGS.alert.sessionExpiredMsg,
+            });
+          }
           router.replace("/login");
           return;
         }

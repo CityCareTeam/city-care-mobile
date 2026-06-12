@@ -1,7 +1,8 @@
 import { STATUS_COLOR, STATUS_LABEL, TYPE_LABEL } from "@/constants/incidents";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
-import { extractCity, formatDateShort } from "@/utils/format-date";
+import { extractCity } from "@/utils/format-address";
+import { formatDateShort } from "@/utils/format-date";
 import { useMemo } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 

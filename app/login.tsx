@@ -9,7 +9,7 @@ import type { AppColors } from "@/hooks/use-app-colors";
 import { login } from "@/services/auth";
 import { saveTokens } from "@/storage/tokens";
 import { API_BASE_URL, API_ENDPOINTS } from "@/constants/api";
-import { DEBUG_NETWORK } from "@/constants/debug";
+import { DEBUG_NETWORK } from "@/constants/config";
 import Constants from "expo-constants";
 import { router } from "expo-router";
 import { useMemo, useState } from "react";

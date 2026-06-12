@@ -1,3 +1,5 @@
+export const DEBUG_NETWORK = process.env.EXPO_PUBLIC_DEBUG_NETWORK === "true";
+
 export const DEFAULT_LOCATION = {
   latitude: 45.748,
   longitude: 4.847,
