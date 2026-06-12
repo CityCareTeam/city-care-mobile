@@ -136,7 +136,7 @@ export default function ReportScreen() {
   }
 
   async function handleSubmit() {
-    if (!selectedType || !description.trim()) return;
+    if (!selectedType || !description.trim() || description.trim().length > 255) return;
     setSubmitting(true);
     try {
       const token = await getValidToken();
@@ -232,7 +232,11 @@ export default function ReportScreen() {
         value={description}
         onChangeText={setDescription}
         textAlignVertical="top"
+        maxLength={255}
       />
+      <Text style={{ fontSize: 12, color: description.length > 240 ? "orange" : colors.text + "66", textAlign: "right" }}>
+        {255 - description.length} caractère{255 - description.length !== 1 ? "s" : ""} restant{255 - description.length !== 1 ? "s" : ""}
+      </Text>
 
       {/* Photos (optionnel) */}
       <Text style={styles.label}>Photos (optionnel)</Text>

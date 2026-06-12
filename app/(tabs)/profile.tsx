@@ -474,6 +474,19 @@ function EditProfileModal({
       setError(STRINGS.toast.missingFields);
       return;
     }
+    const nameRegex = /^[\p{L}\s\-'.]+$/u;
+    if (firstName.trim().length > 30 || lastName.trim().length > 30) {
+      setError(STRINGS.toast.nameTooLong);
+      return;
+    }
+    if (!nameRegex.test(firstName.trim()) || !nameRegex.test(lastName.trim())) {
+      setError(STRINGS.toast.nameInvalidChars);
+      return;
+    }
+    if (username.trim().length > 30) {
+      setError(STRINGS.toast.usernameTooLong);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
