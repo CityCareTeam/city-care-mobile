@@ -22,6 +22,7 @@ export const STRINGS = {
     nameTooLong: "Le prénom et le nom ne peuvent pas dépasser 30 caractères.",
     usernameTooLong: "Le nom d'utilisateur ne peut pas dépasser 30 caractères.",
     nameInvalidChars: "Le prénom et le nom ne peuvent contenir que des lettres, espaces, tirets ou apostrophes.",
+    usernameInvalidChars: "Le nom d'utilisateur ne peut contenir que des lettres, chiffres, points, tirets ou underscores (pas d'espace).",
     loginFailedTitle: "Connexion échouée",
     registerFailedTitle: "Inscription échouée",
     registerSuccessTitle: "Compte créé !",

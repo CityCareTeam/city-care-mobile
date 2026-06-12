@@ -53,7 +53,8 @@ export default function RegisterScreen() {
       });
       return;
     }
-    const nameRegex = /^[\p{L}\s\-'.]+$/u;
+    const nameRegex = /^[\p{L} \-'.]+$/u;
+    const usernameRegex = /^[\p{L}\p{N}._\-]+$/u;
     if (firstName.trim().length > 30 || lastName.trim().length > 30) {
       Toast.show({ type: "error", text1: "Champs invalides", text2: STRINGS.toast.nameTooLong });
       return;
@@ -64,6 +65,10 @@ export default function RegisterScreen() {
     }
     if (username.trim().length > 30) {
       Toast.show({ type: "error", text1: "Champs invalides", text2: STRINGS.toast.usernameTooLong });
+      return;
+    }
+    if (!usernameRegex.test(username.trim())) {
+      Toast.show({ type: "error", text1: "Champs invalides", text2: STRINGS.toast.usernameInvalidChars });
       return;
     }
     if (password !== confirm) {

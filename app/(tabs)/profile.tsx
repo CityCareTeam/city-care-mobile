@@ -474,7 +474,8 @@ function EditProfileModal({
       setError(STRINGS.toast.missingFields);
       return;
     }
-    const nameRegex = /^[\p{L}\s\-'.]+$/u;
+    const nameRegex = /^[\p{L} \-'.]+$/u;
+    const usernameRegex = /^[\p{L}\p{N}._\-]+$/u;
     if (firstName.trim().length > 30 || lastName.trim().length > 30) {
       setError(STRINGS.toast.nameTooLong);
       return;
@@ -485,6 +486,10 @@ function EditProfileModal({
     }
     if (username.trim().length > 30) {
       setError(STRINGS.toast.usernameTooLong);
+      return;
+    }
+    if (!usernameRegex.test(username.trim())) {
+      setError(STRINGS.toast.usernameInvalidChars);
       return;
     }
     setLoading(true);
