@@ -2,18 +2,22 @@ import { IncidentRow } from "@/components/incident-row";
 import { Logo } from "@/components/ui/Logo";
 import { STATUS_COLOR, STATUS_LABEL, TYPE_LABEL } from "@/constants/incidents";
 import { ROLE_LABELS } from "@/constants/roles";
-import { CityCareColors, CityCareColorsDark, getTabBarScrollPadding } from "@/constants/theme";
+import { CityCareColors, CityCareColorsDark } from "@/constants/theme";
+import { getTabBarScrollPadding } from "@/utils/layout";
 import { GlassPillSelector, PillOption } from "@/components/ui/GlassPillSelector";
 import { STRINGS } from "@/constants/strings";
 import { useAuth } from "@/context/AuthContext";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
+import { INCIDENTS_PAGE_SIZE } from "@/constants/config";
 import { applyFilters, useIncidentFilters } from "@/hooks/use-incident-filters";
 import { getIncidents } from "@/services/incidents";
 import { getMyIncidents } from "@/services/users";
 import { getValidToken } from "@/storage/tokens";
 import type { IncidentResponse } from "@/types/incidents";
 import type { MyIncidentItem } from "@/types/users";
+import { EasterEggDog } from "@/components/easter-egg-dog";
+import { useEasterEgg } from "@/hooks/use-easter-egg";
 import { useFocusEffect } from "@react-navigation/native";
 import { router } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
@@ -88,14 +92,17 @@ function EmptyState({ text }: { text: string }) {
 }
 
 function SectionHeader({ title, count }: { title: string; count?: number }) {
-  const { isDark } = useAppColors();
+  const { colors, isDark } = useAppColors();
   const styles = isDark ? darkStyles : lightStyles;
   return (
     <View style={styles.sectionHeader}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+      <View style={styles.sectionTitleRow}>
+        <View style={[styles.sectionAccent, { backgroundColor: colors.primary }]} />
+        <Text style={styles.sectionTitle}>{title}</Text>
+      </View>
       {count !== undefined && (
-        <View style={styles.countBadge}>
-          <Text style={styles.countBadgeText}>{count}</Text>
+        <View style={[styles.countBadge, { backgroundColor: colors.primary + "20" }]}>
+          <Text style={[styles.countBadgeText, { color: colors.primary }]}>{count}</Text>
         </View>
       )}
     </View>
@@ -105,12 +112,13 @@ function SectionHeader({ title, count }: { title: string; count?: number }) {
 function IncidentList({
   incidents,
   onPress,
-  pageSize = 10,
+  pageSize = INCIDENTS_PAGE_SIZE.list,
 }: {
   incidents: {
     id: string;
     type: string;
     status: string;
+    description?: string;
     address: string | null;
     createdAt: string;
   }[];
@@ -132,6 +140,7 @@ function IncidentList({
             id={inc.id}
             type={inc.type}
             status={inc.status}
+            description={inc.description}
             address={inc.address}
             createdAt={inc.createdAt}
             onPress={onPress}
@@ -186,6 +195,7 @@ function CitizenView({
 
   return (
     <>
+      <SectionHeader title="Mes stats" />
       <View style={styles.statRow}>
         <StatCard label="Déclarés" value={reported} color="#2196f3" />
         <StatCard label="En cours" value={inProgress} color="#f0a500" />
@@ -235,13 +245,17 @@ function CitizenView({
         />
       ) : (
         <IncidentList
-          incidents={filteredMyIncidents.map((i) => ({
-            id: i.id,
-            type: i.type,
-            status: i.status,
-            address: i.address_label,
-            createdAt: i.created_at,
-          }))}
+          incidents={filteredMyIncidents.map((i) => {
+            const full = allIncidents.find((a) => a.id === i.id);
+            return {
+              id: i.id,
+              type: i.type,
+              status: i.status,
+              description: full?.description ?? i.description,
+              address: i.address_label,
+              createdAt: i.created_at,
+            };
+          })}
           onPress={onPress}
         />
       )}
@@ -264,6 +278,7 @@ function CitizenView({
             id: i.id,
             type: i.type,
             status: i.status,
+            description: i.description,
             address: i.addressLabel,
             createdAt: i.createdAt,
           }))}
@@ -354,6 +369,7 @@ function AgentView({
             id: i.id,
             type: i.type,
             status: i.status,
+            description: i.description,
             address: i.addressLabel,
             createdAt: i.createdAt,
           }))}
@@ -454,6 +470,7 @@ function AdminView({
             id: i.id,
             type: i.type,
             status: i.status,
+            description: i.description,
             address: i.addressLabel,
             createdAt: i.createdAt,
           }))}
@@ -475,6 +492,8 @@ export default function HomeScreen() {
   const [myIncidents, setMyIncidents] = useState<MyIncidentItem[]>([]);
   const [allIncidents, setAllIncidents] = useState<IncidentResponse[]>([]);
 
+  const { active: dogActive, onTap: onLogoTap, dismiss: dismissDog } = useEasterEgg();
+
   const load = useCallback(async (isRefresh = false) => {
     if (role === null) return;
     if (isRefresh) setRefreshing(true);
@@ -487,12 +506,12 @@ export default function HomeScreen() {
       if (role === "Citizen") {
         const [myRes, allRes] = await Promise.all([
           getMyIncidents(token),
-          getIncidents({ pageSize: 50 }),
+          getIncidents({ pageSize: INCIDENTS_PAGE_SIZE.load }),
         ]);
         setMyIncidents(myRes.data);
         setAllIncidents(allRes.data);
       } else {
-        const res = await getIncidents({ pageSize: 50 });
+        const res = await getIncidents({ pageSize: INCIDENTS_PAGE_SIZE.load });
         setAllIncidents(res.data);
       }
     } catch {
@@ -527,6 +546,7 @@ export default function HomeScreen() {
   }
 
   return (
+    <>
     <ScrollView
       style={styles.scroll}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: getTabBarScrollPadding(insets.bottom) }]}
@@ -548,7 +568,9 @@ export default function HomeScreen() {
             </Text>
             <Text style={styles.headerDate}>{TODAY}</Text>
           </View>
-          <Logo size={78} />
+          <TouchableOpacity onPress={onLogoTap} activeOpacity={1}>
+            <Logo size={78} />
+          </TouchableOpacity>
         </View>
         {role && (
           <View style={styles.rolePill}>
@@ -571,6 +593,9 @@ export default function HomeScreen() {
         <AdminView incidents={allIncidents} onPress={navigateToIncident} />
       )}
     </ScrollView>
+
+    <EasterEggDog visible={dogActive} onHide={dismissDog} />
+    </>
   );
 }
 
@@ -634,13 +659,20 @@ function makeStyles(c: AppColors) {
       marginTop: -14,
       marginBottom: 20,
     },
+    sectionTitleRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    sectionAccent: {
+      width: 3,
+      height: 18,
+      borderRadius: 2,
+    },
     sectionTitle: {
-      fontSize: 11,
-      fontWeight: "700",
+      fontSize: 16,
+      fontWeight: "800",
       color: c.text,
-      opacity: 0.5,
-      textTransform: "uppercase",
-      letterSpacing: 0.8,
     },
     typeRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 },
     typeChip: {
@@ -660,16 +692,16 @@ function makeStyles(c: AppColors) {
     typeChipLabel: { fontSize: 13, color: c.text, fontWeight: "500" },
     incCard: {
       backgroundColor: c.white,
-      borderRadius: 12,
+      borderRadius: 16,
       overflow: "hidden",
       marginBottom: 20,
       shadowColor: "#000",
       shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.06,
-      shadowRadius: 4,
-      elevation: 2,
+      shadowOpacity: 0.07,
+      shadowRadius: 6,
+      elevation: 3,
     },
-    incDivider: { height: 1, backgroundColor: c.background, marginHorizontal: 14 },
+    incDivider: { height: 1, backgroundColor: c.background, marginHorizontal: 0 },
     empty: {
       backgroundColor: c.white,
       borderRadius: 12,
@@ -681,17 +713,16 @@ function makeStyles(c: AppColors) {
     sectionHeader: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 8,
-      marginBottom: 10,
-      marginTop: 6,
+      justifyContent: "space-between",
+      marginBottom: 12,
+      marginTop: 10,
     },
     countBadge: {
-      backgroundColor: c.primary + "25",
       borderRadius: 10,
-      paddingHorizontal: 7,
-      paddingVertical: 2,
+      paddingHorizontal: 9,
+      paddingVertical: 3,
     },
-    countBadgeText: { fontSize: 11, fontWeight: "700", color: c.primary },
+    countBadgeText: { fontSize: 12, fontWeight: "700" },
     showMore: { paddingVertical: 14, paddingHorizontal: 14, alignItems: "center" },
     showMoreText: { fontSize: 13, fontWeight: "700", color: c.primary },
   });

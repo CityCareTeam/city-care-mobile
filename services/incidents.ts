@@ -1,18 +1,16 @@
-import { API_ENDPOINTS } from "@/constants/api";
+import { API_BASE_URL, API_ENDPOINTS } from "@/constants/api";
 import { STRINGS } from "@/constants/strings";
 import { fetchWithTimeout } from "@/services/api-client";
 import type {
     CreateIncidentPayload,
     IncidentListResponse,
     IncidentResponse,
+    PhotoResponse,
+    ReverseGeocodeResult,
+    StatusHistoryEntry,
 } from "@/types/incidents";
 
-export type ReverseGeocodeResult = {
-  address_label: string;
-  city: string;
-  postcode: string;
-  country: string;
-};
+export type { ReverseGeocodeResult };
 
 async function parseErrorMessage(
   response: Response,
@@ -142,4 +140,57 @@ export async function deleteIncident(
   if (!response.ok) {
     throw new Error(await parseErrorMessage(response, `Erreur ${response.status}`));
   }
+}
+
+export async function getPhotos(incidentId: string): Promise<PhotoResponse[]> {
+  const response = await fetch(API_ENDPOINTS.incidentPhotos(incidentId));
+  if (!response.ok) throw new Error(`Erreur ${response.status}`);
+  const body = await response.json() as PhotoResponse[] | { data: PhotoResponse[] };
+  const list = Array.isArray(body) ? body : (body.data ?? []);
+  const apiHost = API_BASE_URL.split("//")[1]?.split(":")[0] ?? "localhost";
+  return list.map((p) => ({
+    ...p,
+    url: p.url.replace("localhost", apiHost),
+  }));
+}
+
+export async function uploadPhoto(
+  incidentId: string,
+  uri: string,
+  fileName: string,
+  mimeType: string,
+  token: string,
+): Promise<PhotoResponse> {
+  const form = new FormData();
+  form.append("file", { uri, name: fileName, type: mimeType } as unknown as Blob);
+  const response = await fetchWithTimeout(API_ENDPOINTS.incidentPhotos(incidentId), {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: form,
+  });
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response, `Erreur ${response.status}`));
+  }
+  return response.json() as Promise<PhotoResponse>;
+}
+
+export async function deletePhoto(
+  incidentId: string,
+  photoId: string,
+  token: string,
+): Promise<void> {
+  const response = await fetchWithTimeout(API_ENDPOINTS.incidentPhoto(incidentId, photoId), {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response, `Erreur ${response.status}`));
+  }
+}
+
+export async function getStatusHistory(incidentId: string): Promise<StatusHistoryEntry[]> {
+  const response = await fetch(API_ENDPOINTS.incidentStatusHistory(incidentId));
+  if (!response.ok) throw new Error(`Erreur ${response.status}`);
+  const body = await response.json() as { data: StatusHistoryEntry[] };
+  return body.data ?? [];
 }

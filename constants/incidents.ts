@@ -1,3 +1,5 @@
+export const MAX_INCIDENT_PHOTOS = 3;
+
 export const STATUS_COLOR: Record<string, string> = {
   reported: "#2196f3",
   in_progress: "#f0a500",

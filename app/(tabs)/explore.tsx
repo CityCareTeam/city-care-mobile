@@ -1,5 +1,6 @@
 import { IncidentFilterBar } from "@/components/incident-filter-bar";
 import { formatIncidentDateTime } from "@/utils/format-date";
+import { DEFAULT_LOCATION, MAP_ANIMATION_MS, MAP_DELTAS } from "@/constants/config";
 import {
     NEXT_STATUSES,
     STATUS_COLOR,
@@ -13,11 +14,14 @@ import { useAppColors } from "@/hooks/use-app-colors";
 import { useIncidentFilters } from "@/hooks/use-incident-filters";
 import {
     deleteIncident,
+    deletePhoto,
     getIncidents,
+    getPhotos,
+    getStatusHistory,
     updateIncidentStatus,
 } from "@/services/incidents";
 import { getValidToken } from "@/storage/tokens";
-import type { IncidentResponse } from "@/types/incidents";
+import type { IncidentResponse, PhotoResponse, StatusHistoryEntry } from "@/types/incidents";
 import { useFocusEffect } from "@react-navigation/native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useUserLocation } from "@/hooks/use-user-location";
@@ -34,6 +38,7 @@ import {
     View,
 } from "react-native";
 import { ClusterPin, MapPin } from "@/components/ui/MapPin";
+import { Image } from "expo-image";
 import ClusteredMapView from "react-native-map-clustering";
 import MapView, { Marker, Region } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -50,7 +55,7 @@ function IncidentMarker({ incident, color, active, onPress }: IncidentMarkerProp
 
   useEffect(() => {
     setTracksViewChanges(true);
-    const t = setTimeout(() => setTracksViewChanges(false), 600);
+    const t = setTimeout(() => setTracksViewChanges(false), MAP_ANIMATION_MS.trackViewChange);
     return () => clearTimeout(t);
   }, [active, color]);
 
@@ -79,7 +84,7 @@ function ClusterMarker({ longitude, latitude, count, color, onPress }: ClusterMa
 
   useEffect(() => {
     setTracksViewChanges(true);
-    const t = setTimeout(() => setTracksViewChanges(false), 600);
+    const t = setTimeout(() => setTracksViewChanges(false), MAP_ANIMATION_MS.trackViewChange);
     return () => clearTimeout(t);
   }, [count]);
 
@@ -96,19 +101,18 @@ function ClusterMarker({ longitude, latitude, count, color, onPress }: ClusterMa
 }
 
 const LYON: Region = {
-  latitude: 45.748,
-  longitude: 4.847,
-  latitudeDelta: 0.08,
-  longitudeDelta: 0.08,
+  ...DEFAULT_LOCATION,
+  latitudeDelta: MAP_DELTAS.explore,
+  longitudeDelta: MAP_DELTAS.explore,
 };
 
 export default function SignalementsScreen() {
   const [incidents, setIncidents] = useState<IncidentResponse[]>([]);
-  const { region: userRegion } = useUserLocation(0.05);
+  const { region: userRegion } = useUserLocation(MAP_DELTAS.user);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<IncidentResponse | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
-  const { isStaff, isAdmin } = useAuth();
+  const { isStaff, isAdmin, dbUser } = useAuth();
   const { colors } = useAppColors();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(colors, insets.bottom), [colors, insets.bottom]);
@@ -120,8 +124,27 @@ export default function SignalementsScreen() {
     filteredIncidents,
   } = useIncidentFilters(incidents);
 
+  const [photos, setPhotos] = useState<PhotoResponse[]>([]);
+  const [photosLoading, setPhotosLoading] = useState(false);
+  const [photosError, setPhotosError] = useState(false);
+  const [statusHistory, setStatusHistory] = useState<StatusHistoryEntry[]>([]);
+  const [zoomedPhoto, setZoomedPhoto] = useState<string | null>(null);
+
   const markerJustPressed = useRef(false);
   const mapRef = useRef<ClusteredMapView>(null);
+
+  useEffect(() => {
+    if (!selected) { setPhotos([]); setStatusHistory([]); setPhotosError(false); return; }
+    setPhotosLoading(true);
+    setPhotosError(false);
+    Promise.all([
+      getPhotos(selected.id).catch(() => { setPhotosError(true); return []; }),
+      getStatusHistory(selected.id).catch(() => []),
+    ]).then(([p, h]) => {
+      setPhotos(p);
+      setStatusHistory(h);
+    }).finally(() => setPhotosLoading(false));
+  }, [selected?.id]);
 
   const renderCluster = useCallback(
     ({ id, geometry, properties, onPress }: {
@@ -156,7 +179,7 @@ export default function SignalementsScreen() {
             onPress={() => {
               markerJustPressed.current = true;
               setSelected(inc);
-              setTimeout(() => { markerJustPressed.current = false; }, 350);
+              setTimeout(() => { markerJustPressed.current = false; }, MAP_ANIMATION_MS.markerPress);
             }}
           />
         );
@@ -183,14 +206,14 @@ export default function SignalementsScreen() {
     setTimeout(() => {
       (mapRef.current as unknown as MapView)?.animateToRegion(
         {
-          latitude: inc.latitude - 0.002,
+          latitude: inc.latitude - MAP_DELTAS.incidentOffset,
           longitude: inc.longitude,
-          latitudeDelta: 0.008,
-          longitudeDelta: 0.008,
+          latitudeDelta: MAP_DELTAS.incident,
+          longitudeDelta: MAP_DELTAS.incident,
         },
-        800,
+        MAP_ANIMATION_MS.animateRegion,
       );
-    }, 400);
+    }, MAP_ANIMATION_MS.selectDelay);
   }, []);
 
   // Quand selectId change, réinitialise et prépare la sélection
@@ -246,6 +269,27 @@ export default function SignalementsScreen() {
     },
     [selected],
   );
+
+  const handleDeletePhoto = useCallback((photoId: string) => {
+    if (!selected) return;
+    Alert.alert(STRINGS.photos.deleteConfirmTitle, STRINGS.photos.deleteConfirmMsg, [
+      { text: "Annuler", style: "cancel" },
+      {
+        text: "Supprimer",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            const token = await getValidToken();
+            if (!token) return;
+            await deletePhoto(selected.id, photoId, token);
+            setPhotos((prev) => prev.filter((p) => p.id !== photoId));
+          } catch {
+            Alert.alert(STRINGS.alert.errorTitle, STRINGS.photos.deleteError);
+          }
+        },
+      },
+    ]);
+  }, [selected]);
 
   const handleDelete = useCallback(() => {
     if (!selected) return;
@@ -329,82 +373,116 @@ export default function SignalementsScreen() {
           />
           {selected && (
             <View style={styles.sheet}>
+
               <View style={styles.sheetHandle} />
 
               {/* En-tête */}
               <View style={styles.sheetHeader}>
-                <View style={styles.sheetTitleRow}>
+                <View style={styles.sheetTitleBlock}>
                   <Text style={styles.sheetType}>
                     {TYPE_LABEL[selected.type] ?? selected.type}
                   </Text>
-                  <View
-                    style={[
-                      styles.statusBadge,
-                      { backgroundColor: STATUS_COLOR[selected.status] ?? "#999" },
-                    ]}
-                  >
+                  <View style={[styles.statusBadge, { backgroundColor: STATUS_COLOR[selected.status] ?? "#999" }]}>
                     <Text style={styles.statusBadgeText}>
                       {STATUS_LABEL[selected.status] ?? selected.status}
                     </Text>
                   </View>
                 </View>
-                <TouchableOpacity
-                  onPress={() => setSelected(null)}
-                  style={styles.closeBtn}
-                >
+                <TouchableOpacity onPress={() => setSelected(null)} style={styles.closeBtn}>
                   <Text style={styles.closeBtnText}>✕</Text>
                 </TouchableOpacity>
               </View>
 
               <ScrollView showsVerticalScrollIndicator={false}>
+
+                {/* Timeline */}
+                <View style={styles.timeline}>
+                  {(["reported", "in_progress", "resolved"] as const).map((step, i, arr) => {
+                    const isActive = selected.status === "resolved"
+                      || (selected.status === "in_progress" && step !== "resolved")
+                      || step === "reported";
+                    const stepDate = step === "reported"
+                      ? formatIncidentDateTime(selected.createdAt)
+                      : step === "resolved" && selected.resolvedAt
+                        ? formatIncidentDateTime(selected.resolvedAt)
+                        : step === "in_progress"
+                          ? (() => {
+                              const e = statusHistory.find((h) => h.newStatus === "in_progress");
+                              return e ? formatIncidentDateTime(e.changedAt) : null;
+                            })()
+                          : null;
+                    const lineActive = i < arr.length - 1 && (
+                      selected.status === "resolved"
+                      || (selected.status === "in_progress" && i === 0)
+                    );
+                    return (
+                      <View key={step} style={styles.timelineItem}>
+                        <View style={styles.timelineTrack}>
+                          <View style={[styles.timelineDot, isActive && { backgroundColor: STATUS_COLOR[step] ?? colors.primary }]} />
+                          {i < arr.length - 1 && (
+                            <View style={[styles.timelineLine, lineActive && styles.timelineLineActive]} />
+                          )}
+                        </View>
+                        <View style={styles.timelineLabel}>
+                          <Text style={[styles.timelineStepText, isActive && styles.timelineStepTextActive]}>
+                            {STATUS_LABEL[step]}
+                          </Text>
+                          {stepDate && <Text style={styles.timelineDateText}>{stepDate}</Text>}
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+
                 {/* Description */}
                 <View style={styles.descBlock}>
                   <Text style={styles.sheetDesc}>{selected.description}</Text>
                 </View>
 
-                {/* Infos */}
-                <View style={styles.infoCard}>
-                  {selected.addressLabel ? (
-                    <View style={styles.infoRow}>
-                      <Text style={styles.infoLabel}>Adresse</Text>
-                      <Text style={styles.infoValue} numberOfLines={2}>
-                        {selected.addressLabel}
-                      </Text>
-                    </View>
-                  ) : null}
-                  <View style={[styles.infoRow, styles.infoRowBorder]}>
-                    <Text style={styles.infoLabel}>Signalé le</Text>
-                    <Text style={styles.infoValue}>
-                      {formatIncidentDateTime(selected.createdAt)}
-                    </Text>
+                {/* Adresse */}
+                {selected.addressLabel ? (
+                  <View style={styles.addressRow}>
+                    <Text style={styles.addressPin}>◎</Text>
+                    <Text style={styles.addressText} numberOfLines={2}>{selected.addressLabel}</Text>
                   </View>
-                  {selected.resolvedAt ? (
-                    <View style={[styles.infoRow, styles.infoRowBorder]}>
-                      <Text style={styles.infoLabel}>Résolu le</Text>
-                      <Text
-                        style={[
-                          styles.infoValue,
-                          { color: colors.statusGreen },
-                        ]}
-                      >
-                        {formatIncidentDateTime(selected.resolvedAt)}
-                      </Text>
-                    </View>
-                  ) : null}
+                ) : null}
+
+                {/* Photos */}
+                <View style={styles.photosSection}>
+                  <Text style={styles.sectionLabel}>Photos</Text>
+                  {photosLoading ? (
+                    <ActivityIndicator size="small" color={colors.primary} />
+                  ) : photosError ? (
+                    <Text style={styles.photosEmpty}>{STRINGS.photos.loadError}</Text>
+                  ) : photos.length === 0 ? (
+                    <Text style={styles.photosEmpty}>Aucune photo jointe</Text>
+                  ) : (
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                      {photos.map((p) => (
+                        <View key={p.id} style={styles.photoThumb}>
+                          <TouchableOpacity activeOpacity={0.85} onPress={() => setZoomedPhoto(p.url)}>
+                            <Image source={{ uri: p.url }} style={styles.photoImg} contentFit="cover" />
+                          </TouchableOpacity>
+                          {(isAdmin || dbUser?.id === p.uploadedByUserId) && (
+                            <TouchableOpacity style={styles.photoDeleteBtn} onPress={() => handleDeletePhoto(p.id)}>
+                              <Text style={styles.photoDeleteBtnText}>✕</Text>
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      ))}
+                    </ScrollView>
+                  )}
                 </View>
 
                 {/* Boutons statut — agents / admins */}
                 {isStaff && NEXT_STATUSES[selected.status]?.length > 0 && (
                   <View style={styles.statusActions}>
-                    <Text style={styles.statusActionsLabel}>Changer le statut</Text>
+                    <Text style={styles.sectionLabel}>Changer le statut</Text>
                     <View style={styles.statusActionsRow}>
                       {NEXT_STATUSES[selected.status].map((s) => (
                         <TouchableOpacity
                           key={s}
-                          style={[
-                            styles.statusActionBtn,
-                            { backgroundColor: STATUS_COLOR[s] ?? "#999" },
-                          ]}
+                          style={[styles.statusActionBtn, { backgroundColor: STATUS_COLOR[s] ?? "#999" }]}
                           onPress={() => handleStatusChange(s)}
                           disabled={updatingStatus}
                           activeOpacity={0.8}
@@ -412,9 +490,7 @@ export default function SignalementsScreen() {
                           {updatingStatus ? (
                             <ActivityIndicator size="small" color="#fff" />
                           ) : (
-                            <Text style={styles.statusActionBtnText}>
-                              {STATUS_LABEL[s]}
-                            </Text>
+                            <Text style={styles.statusActionBtnText}>{STATUS_LABEL[s]}</Text>
                           )}
                         </TouchableOpacity>
                       ))}
@@ -424,17 +500,30 @@ export default function SignalementsScreen() {
 
                 {/* Bouton suppression — admin uniquement */}
                 {isAdmin && (
-                  <TouchableOpacity
-                    style={styles.deleteBtn}
-                    onPress={handleDelete}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={styles.deleteBtnText}>
-                      {STRINGS.alert.deleteIncidentTitle}
-                    </Text>
+                  <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete} activeOpacity={0.8}>
+                    <Text style={styles.deleteBtnText}>{STRINGS.alert.deleteIncidentTitle}</Text>
                   </TouchableOpacity>
                 )}
               </ScrollView>
+            </View>
+          )}
+
+          {/* Visionneuse plein écran — dans le même Modal pour éviter les problèmes Android */}
+          {zoomedPhoto && (
+            <View style={styles.zoomOverlay}>
+              <TouchableOpacity
+                style={StyleSheet.absoluteFill}
+                activeOpacity={1}
+                onPress={() => setZoomedPhoto(null)}
+              />
+              <Image
+                source={{ uri: zoomedPhoto }}
+                style={styles.zoomImage}
+                contentFit="contain"
+              />
+              <TouchableOpacity style={styles.zoomClose} onPress={() => setZoomedPhoto(null)}>
+                <Text style={styles.zoomCloseText}>✕</Text>
+              </TouchableOpacity>
             </View>
           )}
         </View>
@@ -510,18 +599,12 @@ function makeStyles(c: AppColors, bottomInset: number) {
       borderRadius: 2,
       backgroundColor: c.secondary,
       alignSelf: "center",
-      marginBottom: 14,
+      marginBottom: 16,
     },
-    sheetHeader: { flexDirection: "row", alignItems: "flex-start", marginBottom: 14 },
-    sheetTitleRow: {
-      flex: 1,
-      flexDirection: "row",
-      alignItems: "center",
-      flexWrap: "wrap",
-      gap: 8,
-    },
-    sheetType: { fontSize: 18, fontWeight: "800", color: c.text },
-    statusBadge: { borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
+    sheetHeader: { flexDirection: "row", alignItems: "flex-start", marginBottom: 16 },
+    sheetTitleBlock: { flex: 1, gap: 6 },
+    sheetType: { fontSize: 20, fontWeight: "800", color: c.text },
+    statusBadge: { alignSelf: "flex-start", borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
     statusBadgeText: { color: "#fff", fontWeight: "700", fontSize: 12 },
     closeBtn: {
       width: 30,
@@ -533,28 +616,60 @@ function makeStyles(c: AppColors, bottomInset: number) {
       marginLeft: 8,
     },
     closeBtnText: { fontSize: 13, color: c.text, fontWeight: "700" },
+    // Timeline
+    timeline: {
+      flexDirection: "row",
+      backgroundColor: c.white,
+      borderRadius: 14,
+      padding: 16,
+      marginBottom: 12,
+    },
+    timelineItem: { flex: 1, alignItems: "center" },
+    timelineTrack: { alignItems: "center", width: "100%" },
+    timelineDot: {
+      width: 14,
+      height: 14,
+      borderRadius: 7,
+      backgroundColor: c.secondary,
+      borderWidth: 2,
+      borderColor: c.inputBorder,
+      zIndex: 1,
+    },
+    timelineLine: {
+      position: "absolute",
+      top: 6,
+      left: "50%",
+      right: "-50%",
+      height: 2,
+      backgroundColor: c.inputBorder,
+    },
+    timelineLineActive: { backgroundColor: c.primary },
+    timelineLabel: { alignItems: "center", marginTop: 8, gap: 2 },
+    timelineStepText: { fontSize: 11, color: c.text, opacity: 0.4, fontWeight: "600", textAlign: "center" },
+    timelineStepTextActive: { opacity: 1, color: c.text },
+    timelineDateText: { fontSize: 10, color: c.text, opacity: 0.5, textAlign: "center" },
+    // Description
     descBlock: {
       backgroundColor: c.white,
       borderRadius: 12,
       padding: 14,
-      marginBottom: 12,
+      marginBottom: 10,
       borderLeftWidth: 3,
       borderLeftColor: c.primary,
     },
     sheetDesc: { fontSize: 14, color: c.text, lineHeight: 21 },
-    infoCard: { backgroundColor: c.white, borderRadius: 12, overflow: "hidden", marginBottom: 14 },
-    infoRow: {
+    // Adresse
+    addressRow: {
       flexDirection: "row",
-      justifyContent: "space-between",
       alignItems: "flex-start",
-      paddingVertical: 12,
-      paddingHorizontal: 14,
+      gap: 8,
+      paddingHorizontal: 4,
+      marginBottom: 14,
     },
-    infoRowBorder: { borderTopWidth: 1, borderTopColor: c.background },
-    infoLabel: { fontSize: 13, color: c.text, opacity: 0.5, flex: 1 },
-    infoValue: { fontSize: 13, color: c.text, fontWeight: "600", flex: 2, textAlign: "right" },
-    statusActions: { marginBottom: 4 },
-    statusActionsLabel: {
+    addressPin: { fontSize: 16, color: c.text, opacity: 0.4, marginTop: 1 },
+    addressText: { flex: 1, fontSize: 13, color: c.text, opacity: 0.6, lineHeight: 18 },
+    // Section label commun
+    sectionLabel: {
       fontSize: 11,
       color: c.text,
       opacity: 0.45,
@@ -563,6 +678,25 @@ function makeStyles(c: AppColors, bottomInset: number) {
       letterSpacing: 0.6,
       fontWeight: "600",
     },
+    // Photos
+    photosSection: { marginBottom: 14 },
+    photosEmpty: { fontSize: 13, color: c.text, opacity: 0.4, fontStyle: "italic" },
+    photoThumb: { width: 96, height: 96, borderRadius: 12, overflow: "hidden", marginRight: 8 },
+    photoImg: { width: 96, height: 96 },
+    photoDeleteBtn: {
+      position: "absolute",
+      top: 4,
+      right: 4,
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      backgroundColor: "#000a",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    photoDeleteBtnText: { color: "#fff", fontSize: 10, fontWeight: "700" },
+    // Actions statut
+    statusActions: { marginBottom: 4 },
     statusActionsRow: { flexDirection: "row", gap: 10 },
     statusActionBtn: {
       flex: 1,
@@ -583,5 +717,29 @@ function makeStyles(c: AppColors, bottomInset: number) {
     },
     deleteBtnText: { fontWeight: "700", fontSize: 14, color: c.statusRed },
     filterBarOverlay: { position: "absolute", top: 0, left: 0, right: 0 },
+    // Visionneuse plein écran (overlay à l'intérieur du Modal détail)
+    zoomOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: "#000d",
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 10,
+    },
+    zoomImage: {
+      width: "100%",
+      height: "80%",
+    },
+    zoomClose: {
+      position: "absolute",
+      top: 52,
+      right: 20,
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: "#0008",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    zoomCloseText: { color: "#fff", fontSize: 16, fontWeight: "700" },
   });
 }

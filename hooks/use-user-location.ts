@@ -1,10 +1,9 @@
+import { DEFAULT_LOCATION, MAP_DELTAS } from "@/constants/config";
 import * as Location from "expo-location";
 import { useEffect, useState } from "react";
 
-const LYON = { latitude: 45.748, longitude: 4.847 };
-
-export function useUserLocation(delta = 0.05) {
-  const [coords, setCoords] = useState(LYON);
+export function useUserLocation(delta: number = MAP_DELTAS.user) {
+  const [coords, setCoords] = useState<{ latitude: number; longitude: number }>(DEFAULT_LOCATION);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

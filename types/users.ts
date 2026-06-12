@@ -5,10 +5,19 @@ export type UserMeResponse = {
   updatedAt: string;
 };
 
+export type UpdateMePayload = {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  username?: string;
+  newPassword?: string;
+};
+
 export type MyIncidentItem = {
   id: string;
   type: string;
   status: string;
+  description: string;
   address_label: string;
   created_at: string;
 };

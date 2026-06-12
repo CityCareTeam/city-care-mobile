@@ -1,8 +1,10 @@
 import { getMe, logout as authLogout } from "@/services/auth";
 import { getUserMe } from "@/services/users";
-import { clearTokens, getRefreshToken, getValidToken } from "@/storage/tokens";
+import { clearTokens, getAccessToken, getRefreshToken, getValidToken } from "@/storage/tokens";
 import type { MeResponse } from "@/types/auth";
 import type { UserMeResponse } from "@/types/users";
+import { Toast } from "@/components/ui/ToastMessage";
+import { STRINGS } from "@/constants/strings";
 import { router } from "expo-router";
 import {
   createContext,
@@ -24,6 +26,7 @@ type AuthContextValue = {
   isAuthenticated: boolean;
   authError: string | null;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue>({
@@ -37,6 +40,7 @@ const AuthContext = createContext<AuthContextValue>({
   isAuthenticated: false,
   authError: null,
   logout: async () => {},
+  refreshUser: async () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -50,10 +54,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     (async () => {
       try {
+        const hadToken = !!(await getAccessToken());
         const token = await getValidToken();
         if (cancelled) return;
         if (!token) {
-          // Pas de token valide → session terminée, redirection login
+          if (hadToken) {
+            Toast.show({
+              type: "error",
+              text1: STRINGS.alert.sessionExpiredTitle,
+              text2: STRINGS.alert.sessionExpiredMsg,
+            });
+          }
           router.replace("/login");
           return;
         }
@@ -81,6 +92,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     router.replace("/login");
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    try {
+      const token = await getValidToken();
+      if (!token) return;
+      const [kc, db] = await Promise.all([getMe(token), getUserMe(token)]);
+      setKeycloakUser(kc);
+      setDbUser(db);
+    } catch {
+      // silent — user stays on screen with stale data
+    }
+  }, []);
+
   const role = keycloakUser?.mainRole ?? null;
 
   return (
@@ -96,6 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated,
         authError,
         logout,
+        refreshUser,
       }}
     >
       {children}

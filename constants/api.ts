@@ -12,5 +12,8 @@ export const API_ENDPOINTS = {
   userMyIncidents: `${API_BASE_URL}/users/me/incidents`,
   // Incidents
   incidents: `${API_BASE_URL}/incidents`,
+  incidentPhotos: (id: string) => `${API_BASE_URL}/incidents/${id}/photos`,
+  incidentPhoto: (incidentId: string, photoId: string) => `${API_BASE_URL}/incidents/${incidentId}/photos/${photoId}`,
+  incidentStatusHistory: (id: string) => `${API_BASE_URL}/incidents/${id}/status-history`,
   geocodeReverse: `${API_BASE_URL}/geocode/reverse`,
 };

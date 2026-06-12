@@ -53,6 +53,24 @@ export default function RegisterScreen() {
       });
       return;
     }
+    const nameRegex = /^[\p{L} \-'.]+$/u;
+    const usernameRegex = /^[\p{L}\p{N}._\-]+$/u;
+    if (firstName.trim().length > 30 || lastName.trim().length > 30) {
+      Toast.show({ type: "error", text1: "Champs invalides", text2: STRINGS.toast.nameTooLong });
+      return;
+    }
+    if (!nameRegex.test(firstName.trim()) || !nameRegex.test(lastName.trim())) {
+      Toast.show({ type: "error", text1: "Champs invalides", text2: STRINGS.toast.nameInvalidChars });
+      return;
+    }
+    if (username.trim().length > 30) {
+      Toast.show({ type: "error", text1: "Champs invalides", text2: STRINGS.toast.usernameTooLong });
+      return;
+    }
+    if (!usernameRegex.test(username.trim())) {
+      Toast.show({ type: "error", text1: "Champs invalides", text2: STRINGS.toast.usernameInvalidChars });
+      return;
+    }
     if (password !== confirm) {
       Toast.show({
         type: "error",

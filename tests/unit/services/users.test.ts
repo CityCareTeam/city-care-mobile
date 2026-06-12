@@ -1,5 +1,5 @@
 import { STRINGS } from '@/constants/strings';
-import { getUserMe, getMyIncidents } from '@/services/users';
+import { getUserMe, getMyIncidents, updateMe, deleteAccount } from '@/services/users';
 
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
@@ -59,6 +59,11 @@ describe('getUserMe', () => {
     mockFetch.mockResolvedValueOnce(makeResponse(403, {}));
     await expect(getUserMe('bad-token')).rejects.toThrow(STRINGS.api.profileLoadError);
   });
+
+  it('throws networkError on network failure', async () => {
+    mockFetch.mockRejectedValueOnce(new Error('Failed to fetch'));
+    await expect(getUserMe('token')).rejects.toThrow(STRINGS.api.networkError);
+  });
 });
 
 describe('getMyIncidents', () => {
@@ -85,5 +90,89 @@ describe('getMyIncidents', () => {
   it('throws incidentsLoadError on error response', async () => {
     mockFetch.mockResolvedValueOnce(makeResponse(500, {}));
     await expect(getMyIncidents('token')).rejects.toThrow(STRINGS.api.incidentsLoadError);
+  });
+
+  it('throws networkError on network failure', async () => {
+    mockFetch.mockRejectedValueOnce(new Error('Failed to fetch'));
+    await expect(getMyIncidents('token')).rejects.toThrow(STRINGS.api.networkError);
+  });
+});
+
+describe('updateMe', () => {
+  beforeEach(() => mockFetch.mockClear());
+
+  it('resolves on 204 (no content)', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(204, null));
+    await expect(updateMe('token', { firstName: 'Jean' })).resolves.toBeUndefined();
+  });
+
+  it('sends PATCH method with auth header', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(204, null));
+    await updateMe('my-token', { lastName: 'Dupont' });
+    expect(mockFetch.mock.calls[0][1].method).toBe('PATCH');
+    expect(mockFetch.mock.calls[0][1].headers.Authorization).toBe('Bearer my-token');
+  });
+
+  it('serialises the payload in the request body', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(204, null));
+    await updateMe('token', { firstName: 'Jean', email: 'jean@example.com' });
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body as string);
+    expect(body).toEqual({ firstName: 'Jean', email: 'jean@example.com' });
+  });
+
+  it('supports password update payload', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(204, null));
+    await updateMe('token', { newPassword: 'NewP@ss123' });
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body as string);
+    expect(body.newPassword).toBe('NewP@ss123');
+  });
+
+  it('throws parsed error message on 400', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(400, { message: 'Email déjà utilisé' }));
+    await expect(updateMe('token', { email: 'taken@example.com' }))
+      .rejects.toThrow('Email déjà utilisé');
+  });
+
+  it('throws updateProfileError when body has no known error field', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(500, {}));
+    await expect(updateMe('token', { firstName: 'Jean' }))
+      .rejects.toThrow(STRINGS.api.updateProfileError);
+  });
+
+  it('throws networkError on network failure', async () => {
+    mockFetch.mockRejectedValueOnce(new Error('Failed to fetch'));
+    await expect(updateMe('token', { firstName: 'Jean' }))
+      .rejects.toThrow(STRINGS.api.networkError);
+  });
+});
+
+describe('deleteAccount', () => {
+  beforeEach(() => mockFetch.mockClear());
+
+  it('resolves on 204 (no content)', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(204, null));
+    await expect(deleteAccount('token')).resolves.toBeUndefined();
+  });
+
+  it('sends DELETE method with auth header', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(204, null));
+    await deleteAccount('my-token');
+    expect(mockFetch.mock.calls[0][1].method).toBe('DELETE');
+    expect(mockFetch.mock.calls[0][1].headers.Authorization).toBe('Bearer my-token');
+  });
+
+  it('throws parsed error message on 403', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(403, { error: 'Compte protégé' }));
+    await expect(deleteAccount('token')).rejects.toThrow('Compte protégé');
+  });
+
+  it('throws deleteAccountError when body has no known error field', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(500, {}));
+    await expect(deleteAccount('token')).rejects.toThrow(STRINGS.api.deleteAccountError);
+  });
+
+  it('throws networkError on network failure', async () => {
+    mockFetch.mockRejectedValueOnce(new Error('Failed to fetch'));
+    await expect(deleteAccount('token')).rejects.toThrow(STRINGS.api.networkError);
   });
 });
