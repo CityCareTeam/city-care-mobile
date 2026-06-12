@@ -1,3 +1,10 @@
+export type ReverseGeocodeResult = {
+  address_label: string;
+  city: string;
+  postcode: string;
+  country: string;
+};
+
 export type IncidentType =
   | "Road"
   | "Lighting"

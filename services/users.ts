@@ -22,7 +22,8 @@ async function parseError(response: Response, fallback: string): Promise<string>
   const text = await response.text().catch(() => "");
   try {
     const data = JSON.parse(text) as Record<string, unknown>;
-    return ((data?.error ?? data?.message ?? data?.title ?? text) as string) || fallback;
+    const msg = (data?.error ?? data?.message ?? data?.title) as string | undefined;
+    return msg || fallback;
   } catch {
     return text || fallback;
   }

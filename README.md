@@ -72,7 +72,7 @@ CityCare+ connecte les citoyens à leur mairie. Les signalements remontent en te
 | expo-image-picker           | ~17.0.11   | Capture photo / galerie            |
 | expo-location               | ~19.0.8    | Géolocalisation                    |
 | expo-secure-store           | ~15.0.8    | Stockage sécurisé des tokens JWT   |
-| Jest / jest-expo            | ~29.7 / ~54 | Tests unitaires (120 tests)       |
+| Jest / jest-expo            | ~29.7 / ~54 | Tests unitaires (169 tests)       |
 
 ---
 
@@ -125,25 +125,27 @@ hooks/
   use-app-colors.ts        # Thème clair/sombre
 
 services/
+  api-client.ts  # fetchWithTimeout, throwFromResponse (couche HTTP de base)
   incidents.ts   # getIncidents, createIncident, updateIncidentStatus, deleteIncident,
                  # getPhotos, uploadPhoto, deletePhoto, getStatusHistory, reverseGeocode
-  users.ts       # getUserMe, getMyIncidents
+  users.ts       # getUserMe, getMyIncidents, updateMe, deleteAccount
   auth.ts        # login, register, refresh, logout
 
 storage/
   tokens.ts      # Stockage sécurisé des tokens JWT (access + refresh)
 
 types/
-  incidents.ts   # IncidentResponse, PhotoResponse, StatusHistoryEntry, CreateIncidentPayload…
-  users.ts       # UserMeResponse, MyIncidentItem, MyIncidentsResponse
+  incidents.ts   # IncidentResponse, PhotoResponse, StatusHistoryEntry, CreateIncidentPayload, ReverseGeocodeResult…
+  users.ts       # UserMeResponse, MyIncidentItem, MyIncidentsResponse, UpdateMePayload
+  auth.ts        # LoginPayload, LoginResponse, RegisterPayload, RegisterResponse, MeResponse
 
 utils/
   format-date.ts  # formatDateShort, formatDate, formatIncidentDateTime, extractCity
 
 tests/
   unit/
-    services/    # incidents, users, auth
-    hooks/       # use-incident-filters, use-app-colors
+    services/    # api-client, incidents, users, auth
+    hooks/       # use-incident-filters, use-app-colors, use-easter-egg, use-user-location, use-color-scheme-web
     utils/       # format-date (extractCity, formatDateShort…)
     storage/     # tokens
 ```
@@ -205,7 +207,7 @@ npm test
 npm run test:coverage
 ```
 
-120 tests unitaires couvrant les services, hooks, utilitaires et stockage.
+169 tests unitaires couvrant les services, hooks, utilitaires et stockage.
 
 ---
 

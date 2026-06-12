@@ -6,15 +6,11 @@ import type {
     IncidentListResponse,
     IncidentResponse,
     PhotoResponse,
+    ReverseGeocodeResult,
     StatusHistoryEntry,
 } from "@/types/incidents";
 
-export type ReverseGeocodeResult = {
-  address_label: string;
-  city: string;
-  postcode: string;
-  country: string;
-};
+export type { ReverseGeocodeResult };
 
 async function parseErrorMessage(
   response: Response,
