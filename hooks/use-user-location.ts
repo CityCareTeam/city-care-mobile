@@ -2,8 +2,8 @@ import { DEFAULT_LOCATION, MAP_DELTAS } from "@/constants/config";
 import * as Location from "expo-location";
 import { useEffect, useState } from "react";
 
-export function useUserLocation(delta = MAP_DELTAS.user) {
-  const [coords, setCoords] = useState(DEFAULT_LOCATION);
+export function useUserLocation(delta: number = MAP_DELTAS.user) {
+  const [coords, setCoords] = useState<{ latitude: number; longitude: number }>(DEFAULT_LOCATION);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
