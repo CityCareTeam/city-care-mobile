@@ -24,3 +24,6 @@ export const INCIDENTS_PAGE_SIZE = {
   list: 10,
   load: 50,
 } as const;
+
+export const CLUSTER_ZOOM_THRESHOLD = 15;
+export const CLUSTER_DEBOUNCE_MS = 300;

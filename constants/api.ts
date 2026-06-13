@@ -21,5 +21,6 @@ export const API_ENDPOINTS = {
   incidentPhotos: (id: string) => `${API_BASE_URL}/incidents/${id}/photos`,
   incidentPhoto: (incidentId: string, photoId: string) => `${API_BASE_URL}/incidents/${incidentId}/photos/${photoId}`,
   incidentStatusHistory: (id: string) => `${API_BASE_URL}/incidents/${id}/status-history`,
+  mapSummary: `${API_BASE_URL}/incidents/map-summary`,
   geocodeReverse: `${API_BASE_URL}/geocode/reverse`,
 };
