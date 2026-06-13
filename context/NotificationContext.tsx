@@ -61,8 +61,17 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }
     void fetchCount();
     timerRef.current = setInterval(() => void fetchCount(), POLL_INTERVAL_MS);
+
+    let unsub: (() => void) | undefined;
+    if (!isExpoGo) {
+      const Notifications = require("expo-notifications") as typeof import("expo-notifications");
+      const sub = Notifications.addNotificationReceivedListener(() => void fetchCount());
+      unsub = () => sub.remove();
+    }
+
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
+      unsub?.();
     };
   }, [loading, isAuthenticated, fetchCount]);
 

@@ -35,8 +35,10 @@ function getIconConfig(type: string): NotifIconConfig {
   switch (type) {
     case "new_incident":
       return { name: "add-location-alt", bg: "#f6aa5420", color: "#f6aa54" };
-    case "status_change":
+    case "incident_status_changed":
       return { name: "autorenew",        bg: "#1D9BF020", color: "#1D9BF0" };
+    case "new_message":
+      return { name: "chat-bubble",      bg: "#4caf5020", color: "#4caf50" };
     default:
       return { name: "notifications",    bg: "#AF52DE20", color: "#AF52DE" };
   }
@@ -44,7 +46,7 @@ function getIconConfig(type: string): NotifIconConfig {
 
 // Extrait le statut depuis le body pour les notifications de type status_change
 function extractStatusKey(type: string, body: string): string | null {
-  if (type !== "status_change") return null;
+  if (type !== "incident_status_changed") return null;
   const lower = body.toLowerCase();
   if (lower.includes("en cours"))  return "in_progress";
   if (lower.includes("résolu"))    return "resolved";
@@ -126,6 +128,16 @@ function makeStyles(c: AppColors, bottomInset: number) {
     right: { alignItems: "flex-end", gap: 6 },
     statusBadge: { borderRadius: 12, paddingHorizontal: 9, paddingVertical: 4 },
     statusBadgeText: { fontSize: 11, fontWeight: "700" },
+    msgCountBadge: {
+      backgroundColor: "#4caf50",
+      borderRadius: 10,
+      minWidth: 20,
+      height: 20,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 6,
+    },
+    msgCountText: { fontSize: 11, fontWeight: "700", color: "#fff" },
     chevron: { fontSize: 18, color: c.text, opacity: 0.2, lineHeight: 20 },
 
     // ── Empty ──
@@ -205,7 +217,8 @@ export default function NotificationsScreen() {
       }
     }
     if (item.incident_id) {
-      router.push(`/(tabs)/explore?selectId=${item.incident_id}`);
+      const tab = item.type === "new_message" ? "&tab=chat" : "";
+      router.push(`/(tabs)/explore?selectId=${item.incident_id}${tab}`);
     }
   };
 
@@ -320,6 +333,11 @@ export default function NotificationsScreen() {
                     {statusColor && statusLabel && (
                       <View style={[styles.statusBadge, { backgroundColor: statusColor + "20" }]}>
                         <Text style={[styles.statusBadgeText, { color: statusColor }]}>{statusLabel}</Text>
+                      </View>
+                    )}
+                    {item.type === "new_message" && (item.message_count ?? 0) > 1 && (
+                      <View style={styles.msgCountBadge}>
+                        <Text style={styles.msgCountText}>{item.message_count}</Text>
                       </View>
                     )}
                     {item.incident_id && <Text style={styles.chevron}>›</Text>}

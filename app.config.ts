@@ -24,6 +24,7 @@ export default ({ config }: ConfigContext) => ({
       monochromeImage: "./assets/images/android-icon-monochrome.png",
     },
     edgeToEdgeEnabled: true,
+    softwareKeyboardLayoutMode: "pan",
     predictiveBackGestureEnabled: false,
     usesCleartextTraffic: true,
     config: {

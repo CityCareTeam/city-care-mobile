@@ -38,6 +38,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 type NotifSettings = {
   email_enabled: boolean;
   push_enabled: boolean;
+  in_app_incidents_enabled: boolean;
+  in_app_messages_enabled: boolean;
+  push_messages_enabled: boolean;
   followed_incident_types: string[];
 };
 
@@ -680,6 +683,9 @@ function NotificationSettingsModal({
         setSettings({
           email_enabled: s.email_enabled,
           push_enabled: s.push_enabled,
+          in_app_incidents_enabled: s.in_app_incidents_enabled,
+          in_app_messages_enabled: s.in_app_messages_enabled,
+          push_messages_enabled: s.push_messages_enabled,
           followed_incident_types: s.followed_incident_types,
         });
       } catch {
@@ -712,6 +718,24 @@ function NotificationSettingsModal({
     void savePatch({ push_enabled: val }, prev);
   };
 
+  const handleInAppIncidentsToggle = (val: boolean) => {
+    const prev = settings;
+    setSettings(s => s ? { ...s, in_app_incidents_enabled: val } : s);
+    void savePatch({ in_app_incidents_enabled: val }, prev);
+  };
+
+  const handleInAppMessagesToggle = (val: boolean) => {
+    const prev = settings;
+    setSettings(s => s ? { ...s, in_app_messages_enabled: val } : s);
+    void savePatch({ in_app_messages_enabled: val }, prev);
+  };
+
+  const handlePushMessagesToggle = (val: boolean) => {
+    const prev = settings;
+    setSettings(s => s ? { ...s, push_messages_enabled: val } : s);
+    void savePatch({ push_messages_enabled: val }, prev);
+  };
+
   const handleTypeToggle = (type: string) => {
     if (!settings) return;
     const prev = settings;
@@ -726,115 +750,202 @@ function NotificationSettingsModal({
   const { keycloakUser } = useAuth();
   const isCitizen = keycloakUser?.mainRole === "Citizen";
 
-  const ns = useMemo(() => StyleSheet.create({
-    card: {
-      borderRadius: 14,
-      borderWidth: 1,
-      borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)",
-      backgroundColor: isDark ? "rgba(255,255,255,0.05)" : "#fff",
-      marginBottom: 14,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: isDark ? 0.18 : 0.06,
-      shadowRadius: 8,
-      elevation: 3,
-      overflow: "hidden",
-    },
-    row: {
-      flexDirection: "row",
-      alignItems: "center",
-      paddingVertical: 13,
-      paddingHorizontal: 14,
-      gap: 12,
-    },
-    divider: {
-      height: 1,
-      backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
-      marginLeft: 52,
-    },
-    fullDivider: {
-      height: 1,
-      backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
-    },
-    iconBubble: {
-      width: 34,
-      height: 34,
-      borderRadius: 9,
-      alignItems: "center",
-      justifyContent: "center",
-      flexShrink: 0,
-    },
-    rowText: { flex: 1 },
-    rowLabel: { fontSize: 15, fontWeight: "600", color: colors.text },
-    rowSub: { fontSize: 12, color: colors.text, opacity: 0.45, marginTop: 1 },
-    cardHeader: { paddingHorizontal: 14, paddingTop: 12, paddingBottom: 10 },
-    cardHeaderLabel: { fontSize: 13, fontWeight: "700", color: colors.text, opacity: 0.5 },
-    pillsBody: { paddingHorizontal: 14, paddingTop: 12, paddingBottom: 14 },
-  }), [colors, isDark]);
+  const { bottom: sheetBottom } = useSafeAreaInsets();
+
+  const ns = useMemo(() => {
+    const bg = isDark ? "#1C1C1E" : "#F2F2F7";
+    const groupBg = isDark ? "#2C2C2E" : "#FFFFFF";
+    const sep = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.06)";
+    return StyleSheet.create({
+      backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "flex-end" },
+      sheet: {
+        backgroundColor: bg,
+        borderTopLeftRadius: 28,
+        borderTopRightRadius: 28,
+        paddingBottom: Math.max(sheetBottom, 24),
+        maxHeight: "92%",
+      },
+      handle: {
+        width: 38, height: 4, borderRadius: 2,
+        backgroundColor: isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.15)",
+        alignSelf: "center", marginTop: 12, marginBottom: 4,
+      },
+      header: {
+        flexDirection: "row", alignItems: "center",
+        paddingHorizontal: 20, paddingVertical: 16,
+      },
+      headerTitle: { flex: 1, fontSize: 20, fontWeight: "800", color: colors.text },
+      closeBtn: {
+        width: 32, height: 32, borderRadius: 16,
+        backgroundColor: isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.08)",
+        alignItems: "center", justifyContent: "center",
+      },
+      scroll: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 8 },
+      sectionLabel: {
+        fontSize: 12, fontWeight: "700", letterSpacing: 0.6,
+        textTransform: "uppercase", color: colors.text,
+        opacity: 0.4, marginBottom: 8, marginLeft: 4,
+      },
+      group: {
+        backgroundColor: groupBg,
+        borderRadius: 16, overflow: "hidden", marginBottom: 28,
+      },
+      row: {
+        flexDirection: "row", alignItems: "center",
+        paddingVertical: 13, paddingHorizontal: 14, gap: 13,
+      },
+      divider: { height: 1, backgroundColor: sep, marginLeft: 62 },
+      iconBubble: {
+        width: 36, height: 36, borderRadius: 10,
+        alignItems: "center", justifyContent: "center", flexShrink: 0,
+      },
+      rowText: { flex: 1 },
+      rowLabel: { fontSize: 15, fontWeight: "600", color: colors.text },
+      rowSub: { fontSize: 12, color: colors.text, opacity: 0.4, marginTop: 2, lineHeight: 16 },
+      pillsBody: { paddingHorizontal: 14, paddingTop: 10, paddingBottom: 14 },
+      errorText: { color: "#e53e3e", fontSize: 13, textAlign: "center", marginVertical: 12 },
+    });
+  }, [colors, isDark, sheetBottom]);
 
   return (
-    <ModalShell visible={visible} title="Notifications" onClose={onClose} styles={styles}>
-      {!settings && !loadError && (
-        <View style={{ paddingVertical: 24, alignItems: "center" }}>
-          <ActivityIndicator color={colors.primary} />
-        </View>
-      )}
-      {loadError && (
-        <Text style={styles.errorText}>{STRINGS.api.notifSettingsLoadError}</Text>
-      )}
-      {settings && (
-        <>
-          <View style={ns.card}>
-            <View style={ns.row}>
-              <View style={[ns.iconBubble, { backgroundColor: "#1D9BF020" }]}>
-                <MaterialIcons name="mail" size={17} color="#1D9BF0" />
-              </View>
-              <View style={ns.rowText}>
-                <Text style={ns.rowLabel}>Email</Text>
-                <Text style={ns.rowSub}>Alertes par email</Text>
-              </View>
-              <Switch
-                value={settings.email_enabled}
-                onValueChange={handleEmailToggle}
-                trackColor={{ false: colors.secondary, true: "#1D9BF060" }}
-                thumbColor={settings.email_enabled ? "#1D9BF0" : colors.text + "40"}
-              />
-            </View>
-            <View style={ns.divider} />
-            <View style={ns.row}>
-              <View style={[ns.iconBubble, { backgroundColor: "#AF52DE20" }]}>
-                <MaterialIcons name="notifications" size={17} color="#AF52DE" />
-              </View>
-              <View style={ns.rowText}>
-                <Text style={ns.rowLabel}>Push</Text>
-                <Text style={ns.rowSub}>Notifications sur l&apos;appareil</Text>
-              </View>
-              <Switch
-                value={settings.push_enabled}
-                onValueChange={handlePushToggle}
-                trackColor={{ false: colors.secondary, true: "#AF52DE60" }}
-                thumbColor={settings.push_enabled ? "#AF52DE" : colors.text + "40"}
-              />
-            </View>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
+      <View style={ns.backdrop}>
+        <View style={ns.sheet}>
+          <View style={ns.handle} />
+          <View style={ns.header}>
+            <Text style={ns.headerTitle}>Notifications</Text>
+            <TouchableOpacity style={ns.closeBtn} onPress={onClose} activeOpacity={0.7}>
+              <MaterialIcons name="close" size={16} color={colors.text} />
+            </TouchableOpacity>
           </View>
 
-          {isCitizen && (
-            <View style={ns.card}>
-              <View style={ns.cardHeader}>
-                <Text style={ns.cardHeaderLabel}>Types d&apos;incidents suivis</Text>
+          <ScrollView
+            contentContainerStyle={ns.scroll}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            {!settings && !loadError && (
+              <View style={{ paddingVertical: 32, alignItems: "center" }}>
+                <ActivityIndicator color={colors.primary} />
               </View>
-              <View style={ns.fullDivider} />
-              <View style={ns.pillsBody}>
-                <MultiPillSelector
-                  options={Object.entries(TYPE_LABEL_SNAKE).map(([value, label]) => ({ value, label }))}
-                  selectedValues={settings.followed_incident_types}
-                  onToggle={handleTypeToggle}
-                />
-              </View>
-            </View>
-          )}
-        </>
-      )}
-    </ModalShell>
+            )}
+            {loadError && (
+              <Text style={ns.errorText}>{STRINGS.api.notifSettingsLoadError}</Text>
+            )}
+            {settings && (
+              <>
+                {/* ── In-app ── */}
+                <Text style={ns.sectionLabel}>In-app</Text>
+                <View style={ns.group}>
+                  <View style={ns.row}>
+                    <View style={[ns.iconBubble, { backgroundColor: "#f6aa5420" }]}>
+                      <MaterialIcons name="add-location-alt" size={18} color="#f6aa54" />
+                    </View>
+                    <View style={ns.rowText}>
+                      <Text style={ns.rowLabel}>Signalements</Text>
+                      <Text style={ns.rowSub}>Nouveaux et changements de statut</Text>
+                    </View>
+                    <Switch
+                      value={settings.in_app_incidents_enabled}
+                      onValueChange={handleInAppIncidentsToggle}
+                      trackColor={{ false: colors.secondary, true: "#f6aa5460" }}
+                      thumbColor={settings.in_app_incidents_enabled ? "#f6aa54" : colors.text + "40"}
+                    />
+                  </View>
+                  <View style={ns.divider} />
+                  <View style={ns.row}>
+                    <View style={[ns.iconBubble, { backgroundColor: "#4caf5020" }]}>
+                      <MaterialIcons name="chat-bubble" size={18} color="#4caf50" />
+                    </View>
+                    <View style={ns.rowText}>
+                      <Text style={ns.rowLabel}>Messages</Text>
+                      <Text style={ns.rowSub}>Nouveaux messages dans vos discussions</Text>
+                    </View>
+                    <Switch
+                      value={settings.in_app_messages_enabled}
+                      onValueChange={handleInAppMessagesToggle}
+                      trackColor={{ false: colors.secondary, true: "#4caf5060" }}
+                      thumbColor={settings.in_app_messages_enabled ? "#4caf50" : colors.text + "40"}
+                    />
+                  </View>
+                </View>
+
+                {/* ── Push ── */}
+                <Text style={ns.sectionLabel}>Push</Text>
+                <View style={ns.group}>
+                  <View style={ns.row}>
+                    <View style={[ns.iconBubble, { backgroundColor: "#AF52DE20" }]}>
+                      <MaterialIcons name="notifications" size={18} color="#AF52DE" />
+                    </View>
+                    <View style={ns.rowText}>
+                      <Text style={ns.rowLabel}>Signalements</Text>
+                      <Text style={ns.rowSub}>Nouveaux et changements de statut</Text>
+                    </View>
+                    <Switch
+                      value={settings.push_enabled}
+                      onValueChange={handlePushToggle}
+                      trackColor={{ false: colors.secondary, true: "#AF52DE60" }}
+                      thumbColor={settings.push_enabled ? "#AF52DE" : colors.text + "40"}
+                    />
+                  </View>
+                  <View style={ns.divider} />
+                  <View style={ns.row}>
+                    <View style={[ns.iconBubble, { backgroundColor: "#AF52DE20" }]}>
+                      <MaterialIcons name="notifications-active" size={18} color="#AF52DE" />
+                    </View>
+                    <View style={ns.rowText}>
+                      <Text style={ns.rowLabel}>Messages</Text>
+                      <Text style={ns.rowSub}>Nouveaux messages dans vos discussions</Text>
+                    </View>
+                    <Switch
+                      value={settings.push_messages_enabled}
+                      onValueChange={handlePushMessagesToggle}
+                      trackColor={{ false: colors.secondary, true: "#AF52DE60" }}
+                      thumbColor={settings.push_messages_enabled ? "#AF52DE" : colors.text + "40"}
+                    />
+                  </View>
+                </View>
+
+                {/* ── Email (bientôt) ── */}
+                <Text style={[ns.sectionLabel, { opacity: 0.2 }]}>Email</Text>
+                <View style={[ns.group, { opacity: 0.35 }]}>
+                  <View style={ns.row}>
+                    <View style={[ns.iconBubble, { backgroundColor: "#1D9BF020" }]}>
+                      <MaterialIcons name="mail" size={18} color="#1D9BF0" />
+                    </View>
+                    <View style={ns.rowText}>
+                      <Text style={ns.rowLabel}>Email</Text>
+                      <Text style={ns.rowSub}>Bientôt disponible</Text>
+                    </View>
+                    <Switch
+                      value={false}
+                      disabled
+                      trackColor={{ false: colors.secondary, true: colors.secondary }}
+                      thumbColor={colors.text + "30"}
+                    />
+                  </View>
+                </View>
+
+                {/* ── Types (citoyen) ── */}
+                {isCitizen && (
+                  <>
+                    <Text style={ns.sectionLabel}>Types d&apos;incidents suivis</Text>
+                    <View style={ns.group}>
+                      <View style={ns.pillsBody}>
+                        <MultiPillSelector
+                          options={Object.entries(TYPE_LABEL_SNAKE).map(([value, label]) => ({ value, label }))}
+                          selectedValues={settings.followed_incident_types}
+                          onToggle={handleTypeToggle}
+                        />
+                      </View>
+                    </View>
+                  </>
+                )}
+              </>
+            )}
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
   );
 }
