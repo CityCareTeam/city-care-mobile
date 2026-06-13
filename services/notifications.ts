@@ -1,37 +1,11 @@
 import { API_ENDPOINTS } from "@/constants/api";
 import { STRINGS } from "@/constants/strings";
-import { fetchWithTimeout } from "@/services/api-client";
+import { authFetch, parseApiError } from "@/services/api-client";
 import type {
   NotificationSettingsResponse,
   NotificationsListResponse,
   UpdateNotificationSettingsRequest,
 } from "@/types/notifications";
-
-async function authFetch(
-  url: string,
-  token: string,
-  options: RequestInit = {},
-): Promise<Response> {
-  return fetchWithTimeout(url, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-      ...options.headers,
-    },
-  });
-}
-
-async function parseError(response: Response, fallback: string): Promise<string> {
-  const text = await response.text().catch(() => "");
-  try {
-    const data = JSON.parse(text) as Record<string, unknown>;
-    const msg = (data?.error ?? data?.message ?? data?.title) as string | undefined;
-    return msg || fallback;
-  } catch {
-    return text || fallback;
-  }
-}
 
 export async function getNotifications(
   token: string,
@@ -121,6 +95,6 @@ export async function updateNotificationSettings(
     throw new Error(STRINGS.api.networkError);
   }
   if (!response.ok) {
-    throw new Error(await parseError(response, STRINGS.api.notifSettingsUpdateError));
+    throw new Error(await parseApiError(response, STRINGS.api.notifSettingsUpdateError));
   }
 }

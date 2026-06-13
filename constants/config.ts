@@ -10,7 +10,7 @@ export const MAP_DELTAS = {
   user: 0.05,
   incident: 0.008,
   report: 0.005,
-  incidentOffset: 0.002,
+  incidentOffset: 0.003,
 } as const;
 
 export const MAP_ANIMATION_MS = {

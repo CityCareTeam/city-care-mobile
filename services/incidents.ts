@@ -1,6 +1,6 @@
 import { API_BASE_URL, API_ENDPOINTS } from "@/constants/api";
 import { STRINGS } from "@/constants/strings";
-import { fetchWithTimeout } from "@/services/api-client";
+import { authFetch, fetchWithTimeout, parseApiError } from "@/services/api-client";
 import type {
     CreateIncidentPayload,
     IncidentListResponse,
@@ -12,19 +12,6 @@ import type {
 } from "@/types/incidents";
 
 export type { ReverseGeocodeResult };
-
-async function parseErrorMessage(
-  response: Response,
-  fallback: string,
-): Promise<string> {
-  const text = await response.text().catch(() => "");
-  try {
-    const data = JSON.parse(text) as Record<string, unknown>;
-    return ((data?.error ?? data?.message ?? data?.title ?? text) as string) || fallback;
-  } catch {
-    return text || fallback;
-  }
-}
 
 // Mapping vers les valeurs entières .NET (ordre de l'enum côté backend)
 const INCIDENT_TYPE_INT: Record<string, number> = {
@@ -111,19 +98,13 @@ export async function updateIncidentStatus(
   accessToken: string,
   comment?: string,
 ): Promise<void> {
-  const response = await fetchWithTimeout(
+  const response = await authFetch(
     `${API_ENDPOINTS.incidents}/${id}/status`,
-    {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify({ status, comment }),
-    },
+    accessToken,
+    { method: "PATCH", body: JSON.stringify({ status, comment }) },
   );
   if (!response.ok) {
-    throw new Error(await parseErrorMessage(response, `Erreur ${response.status}`));
+    throw new Error(await parseApiError(response, `Erreur ${response.status}`));
   }
 }
 
@@ -131,15 +112,13 @@ export async function deleteIncident(
   id: string,
   accessToken: string,
 ): Promise<void> {
-  const response = await fetchWithTimeout(
+  const response = await authFetch(
     `${API_ENDPOINTS.incidents}/${id}`,
-    {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${accessToken}` },
-    },
+    accessToken,
+    { method: "DELETE" },
   );
   if (!response.ok) {
-    throw new Error(await parseErrorMessage(response, `Erreur ${response.status}`));
+    throw new Error(await parseApiError(response, `Erreur ${response.status}`));
   }
 }
 
@@ -168,9 +147,9 @@ export async function uploadPhoto(
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
     body: form,
-  });
+  }); // multipart/form-data — pas de Content-Type JSON, authFetch ne convient pas ici
   if (!response.ok) {
-    throw new Error(await parseErrorMessage(response, `Erreur ${response.status}`));
+    throw new Error(await parseApiError(response, `Erreur ${response.status}`));
   }
   return response.json() as Promise<PhotoResponse>;
 }
@@ -180,12 +159,13 @@ export async function deletePhoto(
   photoId: string,
   token: string,
 ): Promise<void> {
-  const response = await fetchWithTimeout(API_ENDPOINTS.incidentPhoto(incidentId, photoId), {
-    method: "DELETE",
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const response = await authFetch(
+    API_ENDPOINTS.incidentPhoto(incidentId, photoId),
+    token,
+    { method: "DELETE" },
+  );
   if (!response.ok) {
-    throw new Error(await parseErrorMessage(response, `Erreur ${response.status}`));
+    throw new Error(await parseApiError(response, `Erreur ${response.status}`));
   }
 }
 
