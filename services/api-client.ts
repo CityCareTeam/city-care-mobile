@@ -1,5 +1,31 @@
 export const TIMEOUT_MS = 8000;
 
+export async function authFetch(
+  url: string,
+  token: string,
+  options: RequestInit = {},
+): Promise<Response> {
+  return fetchWithTimeout(url, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+      ...options.headers,
+    },
+  });
+}
+
+export async function parseApiError(response: Response, fallback: string): Promise<string> {
+  const text = await response.text().catch(() => "");
+  try {
+    const data = JSON.parse(text) as Record<string, unknown>;
+    const msg = (data?.error ?? data?.message ?? data?.title) as string | undefined;
+    return msg || fallback;
+  } catch {
+    return text || fallback;
+  }
+}
+
 export function fetchWithTimeout(
   url: string,
   options: RequestInit = {},

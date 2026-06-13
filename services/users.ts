@@ -1,33 +1,7 @@
 import { API_ENDPOINTS } from "@/constants/api";
 import { STRINGS } from "@/constants/strings";
-import { fetchWithTimeout } from "@/services/api-client";
+import { authFetch, parseApiError } from "@/services/api-client";
 import type { MyIncidentsResponse, UpdateMePayload, UserMeResponse } from "@/types/users";
-
-async function authFetch(
-  url: string,
-  token: string,
-  options: RequestInit = {},
-): Promise<Response> {
-  return fetchWithTimeout(url, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-      ...options.headers,
-    },
-  });
-}
-
-async function parseError(response: Response, fallback: string): Promise<string> {
-  const text = await response.text().catch(() => "");
-  try {
-    const data = JSON.parse(text) as Record<string, unknown>;
-    const msg = (data?.error ?? data?.message ?? data?.title) as string | undefined;
-    return msg || fallback;
-  } catch {
-    return text || fallback;
-  }
-}
 
 export async function getUserMe(accessToken: string): Promise<UserMeResponse> {
   let response: Response;
@@ -67,7 +41,7 @@ export async function updateMe(
     throw new Error(STRINGS.api.networkError);
   }
   if (!response.ok) {
-    throw new Error(await parseError(response, STRINGS.api.updateProfileError));
+    throw new Error(await parseApiError(response, STRINGS.api.updateProfileError));
   }
 }
 
@@ -79,7 +53,7 @@ export async function deleteAccount(accessToken: string): Promise<void> {
     throw new Error(STRINGS.api.networkError);
   }
   if (!response.ok) {
-    throw new Error(await parseError(response, STRINGS.api.deleteAccountError));
+    throw new Error(await parseApiError(response, STRINGS.api.deleteAccountError));
   }
 }
 
