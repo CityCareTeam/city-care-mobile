@@ -21,6 +21,16 @@ export const TYPE_LABEL: Record<string, string> = {
   Other: "Autre",
 };
 
+// snake_case — valeurs attendues par le back (notification-settings)
+export const TYPE_LABEL_SNAKE: Record<string, string> = {
+  road: "Voirie",
+  lighting: "Éclairage",
+  waste: "Déchets",
+  graffiti: "Graffiti",
+  safety: "Sécurité",
+  other: "Autre",
+};
+
 /** Transitions de statut valides côté client (le back re-valide). */
 export const NEXT_STATUSES: Record<string, string[]> = {
   reported: ["in_progress"],

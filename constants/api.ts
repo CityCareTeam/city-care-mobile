@@ -10,6 +10,12 @@ export const API_ENDPOINTS = {
   // Users
   userMe: `${API_BASE_URL}/users/me`,
   userMyIncidents: `${API_BASE_URL}/users/me/incidents`,
+  notificationSettings: `${API_BASE_URL}/users/me/notification-settings`,
+  pushToken: `${API_BASE_URL}/users/me/push-token`,
+  notifications: `${API_BASE_URL}/users/me/notifications`,
+  notificationsUnreadCount: `${API_BASE_URL}/users/me/notifications/unread-count`,
+  notificationRead: (id: string) => `${API_BASE_URL}/users/me/notifications/${id}/read`,
+  notificationsReadAll: `${API_BASE_URL}/users/me/notifications/read-all`,
   // Incidents
   incidents: `${API_BASE_URL}/incidents`,
   incidentPhotos: (id: string) => `${API_BASE_URL}/incidents/${id}/photos`,

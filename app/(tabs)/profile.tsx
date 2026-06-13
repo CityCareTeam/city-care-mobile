@@ -2,6 +2,9 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
+import { MultiPillSelector } from "@/components/ui/MultiPillSelector";
+import { Toast } from "@/components/ui/ToastMessage";
+import { TYPE_LABEL_SNAKE } from "@/constants/incidents";
 import { ROLE_COLORS, ROLE_LABELS } from "@/constants/roles";
 import { DEBUG_NETWORK } from "@/constants/config";
 import { getTabBarScrollPadding } from "@/utils/layout";
@@ -9,8 +12,10 @@ import { useAuth } from "@/context/AuthContext";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
 import { STRINGS } from "@/constants/strings";
+import { getNotificationSettings, updateNotificationSettings } from "@/services/notifications";
 import { deleteAccount, updateMe } from "@/services/users";
 import { getValidToken } from "@/storage/tokens";
+import type { UpdateNotificationSettingsRequest } from "@/types/notifications";
 import { formatDate } from "@/utils/format-date";
 import Constants from "expo-constants";
 import { router } from "expo-router";
@@ -23,11 +28,18 @@ import {
     Platform,
     ScrollView,
     StyleSheet,
+    Switch,
     Text,
     TouchableOpacity,
     View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+type NotifSettings = {
+  email_enabled: boolean;
+  push_enabled: boolean;
+  followed_incident_types: string[];
+};
 
 // ─── Styles ────────────────────────────────────────────────────────────────────
 
@@ -138,6 +150,10 @@ function makeStyles(c: AppColors, bottomInset: number) {
     errorText: { color: "#e53e3e", fontSize: 13, marginBottom: 12 },
 
     version: { marginTop: 20, fontSize: 12, color: c.text, opacity: 0.3 },
+
+    // ── Notifications ──
+    pillsCard: { width: "100%", marginBottom: 8, padding: 16 },
+    pillsLabel: { fontSize: 13, fontWeight: "600", color: c.text, opacity: 0.55, marginBottom: 10 },
   });
 }
 
@@ -151,6 +167,7 @@ export default function ProfileScreen() {
 
   const [editOpen, setEditOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
@@ -253,8 +270,15 @@ export default function ProfileScreen() {
             label="Changer le mot de passe"
             icon="lock"
             color={colors.primary}
-            last
             onPress={() => setPasswordOpen(true)}
+            styles={styles}
+          />
+          <SettingsRow
+            label="Notifications"
+            icon="notifications"
+            color={colors.primary}
+            last
+            onPress={() => setNotifOpen(true)}
             styles={styles}
           />
         </Card>
@@ -293,6 +317,13 @@ export default function ProfileScreen() {
           <Text selectable style={[styles.version, { color: "red", opacity: 1 }]}>{authError}</Text>
         )}
       </ScrollView>
+
+      <NotificationSettingsModal
+        visible={notifOpen}
+        onClose={() => setNotifOpen(false)}
+        styles={styles}
+        colors={colors}
+      />
 
       <EditProfileModal
         visible={editOpen}
@@ -397,6 +428,41 @@ function SettingsRow({
       }
       {showChevron && <Text style={styles.chevron}>›</Text>}
     </TouchableOpacity>
+  );
+}
+
+// ─── Toggle row (switch) ──────────────────────────────────────────────────────
+
+function ToggleRow({
+  label,
+  icon,
+  color,
+  value,
+  onValueChange,
+  last,
+  styles,
+  colors,
+}: {
+  label: string;
+  icon: ComponentProps<typeof MaterialIcons>["name"];
+  color: string;
+  value: boolean;
+  onValueChange: (val: boolean) => void;
+  last?: boolean;
+  styles: ReturnType<typeof makeStyles>;
+  colors: AppColors;
+}) {
+  return (
+    <View style={[styles.settingsRow, !last && styles.rowDivider]}>
+      <MaterialIcons name={icon} size={20} color={color} style={styles.settingsIcon} />
+      <Text style={[styles.settingsLabel, { color: colors.text }]}>{label}</Text>
+      <Switch
+        value={value}
+        onValueChange={onValueChange}
+        trackColor={{ false: colors.secondary, true: color + "60" }}
+        thumbColor={value ? color : colors.text + "40"}
+      />
+    </View>
   );
 }
 
@@ -582,6 +648,193 @@ function ChangePasswordModal({
       <Input label="Confirmer le mot de passe" value={confirm} onChangeText={setConfirm} secureTextEntry />
       {error && <Text style={styles.errorText}>{error}</Text>}
       <Button label="Enregistrer" onPress={handleSave} loading={loading} />
+    </ModalShell>
+  );
+}
+
+// ─── Notification settings modal ──────────────────────────────────────────────
+
+function NotificationSettingsModal({
+  visible,
+  onClose,
+  styles,
+  colors,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  styles: ReturnType<typeof makeStyles>;
+  colors: AppColors;
+}) {
+  const [settings, setSettings] = useState<NotifSettings | null>(null);
+  const [loadError, setLoadError] = useState(false);
+
+  useEffect(() => {
+    if (!visible) return;
+    setSettings(null);
+    setLoadError(false);
+    void (async () => {
+      try {
+        const token = await getValidToken();
+        if (!token) throw new Error();
+        const s = await getNotificationSettings(token);
+        setSettings({
+          email_enabled: s.email_enabled,
+          push_enabled: s.push_enabled,
+          followed_incident_types: s.followed_incident_types,
+        });
+      } catch {
+        setLoadError(true);
+      }
+    })();
+  }, [visible]);
+
+  const savePatch = async (patch: UpdateNotificationSettingsRequest, prev: NotifSettings | null) => {
+    try {
+      const token = await getValidToken();
+      if (!token) throw new Error(STRINGS.api.sessionExpired);
+      await updateNotificationSettings(token, patch);
+      Toast.show({ type: "success", text1: "Préférences enregistrées" });
+    } catch (e) {
+      setSettings(prev);
+      Toast.show({ type: "error", text1: "Erreur", text2: e instanceof Error ? e.message : STRINGS.api.unknownError });
+    }
+  };
+
+  const handleEmailToggle = (val: boolean) => {
+    const prev = settings;
+    setSettings(s => s ? { ...s, email_enabled: val } : s);
+    void savePatch({ email_enabled: val }, prev);
+  };
+
+  const handlePushToggle = (val: boolean) => {
+    const prev = settings;
+    setSettings(s => s ? { ...s, push_enabled: val } : s);
+    void savePatch({ push_enabled: val }, prev);
+  };
+
+  const handleTypeToggle = (type: string) => {
+    if (!settings) return;
+    const prev = settings;
+    const updated = settings.followed_incident_types.includes(type)
+      ? settings.followed_incident_types.filter(t => t !== type)
+      : [...settings.followed_incident_types, type];
+    setSettings(s => s ? { ...s, followed_incident_types: updated } : s);
+    void savePatch({ followed_incident_types: updated }, prev);
+  };
+
+  const { isDark } = useAppColors();
+  const { keycloakUser } = useAuth();
+  const isCitizen = keycloakUser?.mainRole === "Citizen";
+
+  const ns = useMemo(() => StyleSheet.create({
+    card: {
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)",
+      backgroundColor: isDark ? "rgba(255,255,255,0.05)" : "#fff",
+      marginBottom: 14,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: isDark ? 0.18 : 0.06,
+      shadowRadius: 8,
+      elevation: 3,
+      overflow: "hidden",
+    },
+    row: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: 13,
+      paddingHorizontal: 14,
+      gap: 12,
+    },
+    divider: {
+      height: 1,
+      backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
+      marginLeft: 52,
+    },
+    fullDivider: {
+      height: 1,
+      backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
+    },
+    iconBubble: {
+      width: 34,
+      height: 34,
+      borderRadius: 9,
+      alignItems: "center",
+      justifyContent: "center",
+      flexShrink: 0,
+    },
+    rowText: { flex: 1 },
+    rowLabel: { fontSize: 15, fontWeight: "600", color: colors.text },
+    rowSub: { fontSize: 12, color: colors.text, opacity: 0.45, marginTop: 1 },
+    cardHeader: { paddingHorizontal: 14, paddingTop: 12, paddingBottom: 10 },
+    cardHeaderLabel: { fontSize: 13, fontWeight: "700", color: colors.text, opacity: 0.5 },
+    pillsBody: { paddingHorizontal: 14, paddingTop: 12, paddingBottom: 14 },
+  }), [colors, isDark]);
+
+  return (
+    <ModalShell visible={visible} title="Notifications" onClose={onClose} styles={styles}>
+      {!settings && !loadError && (
+        <View style={{ paddingVertical: 24, alignItems: "center" }}>
+          <ActivityIndicator color={colors.primary} />
+        </View>
+      )}
+      {loadError && (
+        <Text style={styles.errorText}>{STRINGS.api.notifSettingsLoadError}</Text>
+      )}
+      {settings && (
+        <>
+          <View style={ns.card}>
+            <View style={ns.row}>
+              <View style={[ns.iconBubble, { backgroundColor: "#1D9BF020" }]}>
+                <MaterialIcons name="mail" size={17} color="#1D9BF0" />
+              </View>
+              <View style={ns.rowText}>
+                <Text style={ns.rowLabel}>Email</Text>
+                <Text style={ns.rowSub}>Alertes par email</Text>
+              </View>
+              <Switch
+                value={settings.email_enabled}
+                onValueChange={handleEmailToggle}
+                trackColor={{ false: colors.secondary, true: "#1D9BF060" }}
+                thumbColor={settings.email_enabled ? "#1D9BF0" : colors.text + "40"}
+              />
+            </View>
+            <View style={ns.divider} />
+            <View style={ns.row}>
+              <View style={[ns.iconBubble, { backgroundColor: "#AF52DE20" }]}>
+                <MaterialIcons name="notifications" size={17} color="#AF52DE" />
+              </View>
+              <View style={ns.rowText}>
+                <Text style={ns.rowLabel}>Push</Text>
+                <Text style={ns.rowSub}>Notifications sur l&apos;appareil</Text>
+              </View>
+              <Switch
+                value={settings.push_enabled}
+                onValueChange={handlePushToggle}
+                trackColor={{ false: colors.secondary, true: "#AF52DE60" }}
+                thumbColor={settings.push_enabled ? "#AF52DE" : colors.text + "40"}
+              />
+            </View>
+          </View>
+
+          {isCitizen && (
+            <View style={ns.card}>
+              <View style={ns.cardHeader}>
+                <Text style={ns.cardHeaderLabel}>Types d&apos;incidents suivis</Text>
+              </View>
+              <View style={ns.fullDivider} />
+              <View style={ns.pillsBody}>
+                <MultiPillSelector
+                  options={Object.entries(TYPE_LABEL_SNAKE).map(([value, label]) => ({ value, label }))}
+                  selectedValues={settings.followed_incident_types}
+                  onToggle={handleTypeToggle}
+                />
+              </View>
+            </View>
+          )}
+        </>
+      )}
     </ModalShell>
   );
 }
