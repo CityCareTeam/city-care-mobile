@@ -1,4 +1,4 @@
-import { formatIncidentDateTime, formatDate, formatDateShort } from '@/utils/format-date';
+import { formatIncidentDateTime, formatDate, formatDateShort, timeAgo } from '@/utils/format-date';
 
 describe('formatDateShort', () => {
   it('formats a date as DD/MM/YYYY', () => {
@@ -42,5 +42,45 @@ describe('formatIncidentDateTime', () => {
 
   it('returns a non-empty string for any valid date', () => {
     expect(formatIncidentDateTime('2020-01-01T00:00:00Z').length).toBeGreaterThan(0);
+  });
+});
+
+describe('timeAgo', () => {
+  const NOW = new Date('2025-06-13T12:00:00Z').getTime();
+  let dateSpy: jest.SpyInstance;
+
+  beforeEach(() => { dateSpy = jest.spyOn(Date, 'now').mockReturnValue(NOW); });
+  afterEach(() => dateSpy.mockRestore());
+
+  it('returns "À l\'instant" for < 1 minute ago', () => {
+    const date = new Date(NOW - 30_000).toISOString();
+    expect(timeAgo(date)).toBe("À l'instant");
+  });
+
+  it('returns "Il y a X min" for minutes ago', () => {
+    const date = new Date(NOW - 5 * 60_000).toISOString();
+    expect(timeAgo(date)).toBe('Il y a 5 min');
+  });
+
+  it('returns "Il y a Xh" for hours ago', () => {
+    const date = new Date(NOW - 3 * 3_600_000).toISOString();
+    expect(timeAgo(date)).toBe('Il y a 3h');
+  });
+
+  it('returns "Hier" for exactly 1 day ago', () => {
+    const date = new Date(NOW - 24 * 3_600_000).toISOString();
+    expect(timeAgo(date)).toBe('Hier');
+  });
+
+  it('returns "Il y a X jours" for 2–6 days ago', () => {
+    const date = new Date(NOW - 3 * 86_400_000).toISOString();
+    expect(timeAgo(date)).toBe('Il y a 3 jours');
+  });
+
+  it('returns a formatted date for >= 7 days ago', () => {
+    const date = new Date(NOW - 10 * 86_400_000).toISOString();
+    const result = timeAgo(date);
+    expect(result).toContain('juin');
+    expect(result).not.toContain('Il y a');
   });
 });

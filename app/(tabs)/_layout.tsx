@@ -1,4 +1,5 @@
 import { AuthProvider } from "@/context/AuthContext";
+import { NotificationProvider, useNotificationContext } from "@/context/NotificationContext";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { Tabs } from "expo-router";
 import * as Haptics from "expo-haptics";
@@ -20,9 +21,10 @@ import { CityCareColors, CityCareColorsDark } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
 const TABS = [
-  { name: "index",   label: "Accueil", icon: "chart.bar.fill" as const },
-  { name: "explore", label: "Carte",   icon: "map.fill" as const },
-  { name: "profile", label: "Profil",  icon: "person.fill" as const },
+  { name: "index",         label: "Accueil", icon: "chart.bar.fill" as const },
+  { name: "explore",       label: "Carte",   icon: "map.fill" as const },
+  { name: "notifications", label: "Notifs",  icon: "bell.fill" as const },
+  { name: "profile",       label: "Profil",  icon: "person.fill" as const },
 ];
 
 const TAB_BAR_HEIGHT = 60;
@@ -30,6 +32,7 @@ const MARGIN_H = 20;
 const PAD = 6;
 
 function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
+  const { unreadCount } = useNotificationContext();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const colors = isDark ? CityCareColorsDark : CityCareColors;
@@ -109,6 +112,7 @@ function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
         />
         {TABS.map((tab, index) => {
           const isFocused = state.index === index;
+          const showBadge = tab.name === "notifications" && unreadCount > 0;
           return (
             <Pressable
               key={tab.name}
@@ -117,11 +121,20 @@ function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
               hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
             >
               <View style={styles.tabContent}>
-                <IconSymbol
-                  name={tab.icon}
-                  size={20}
-                  color={isFocused ? "#ffffff" : isDark ? "#ffffff55" : "#00000040"}
-                />
+                <View>
+                  <IconSymbol
+                    name={tab.icon}
+                    size={20}
+                    color={isFocused ? "#ffffff" : isDark ? "#ffffff55" : "#00000040"}
+                  />
+                  {showBadge && (
+                    <View style={styles.badge}>
+                      <Text style={styles.badgeText}>
+                        {unreadCount > 99 ? "99+" : String(unreadCount)}
+                      </Text>
+                    </View>
+                  )}
+                </View>
                 {isFocused && (
                   <Text style={styles.label}>{tab.label}</Text>
                 )}
@@ -137,6 +150,7 @@ function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
 export default function TabLayout() {
   return (
     <AuthProvider>
+      <NotificationProvider>
       <Tabs
         screenOptions={{ headerShown: false }}
         tabBar={(props) => <LiquidTabBar {...props} />}
@@ -149,6 +163,7 @@ export default function TabLayout() {
           />
         ))}
       </Tabs>
+      </NotificationProvider>
     </AuthProvider>
   );
 }
@@ -198,5 +213,23 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "500",
     color: "#ffffff",
+  },
+  badge: {
+    position: "absolute",
+    top: -5,
+    right: -7,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: "#e53e3e",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 3,
+  },
+  badgeText: {
+    color: "#fff",
+    fontSize: 9,
+    fontWeight: "800",
+    lineHeight: 11,
   },
 });

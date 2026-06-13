@@ -10,6 +10,8 @@ export const STRINGS = {
     incidentsLoadError: "Impossible de charger les signalements. Réessayez.",
     updateProfileError: "Impossible de mettre à jour le profil.",
     deleteAccountError: "Impossible de supprimer le compte.",
+    notifSettingsLoadError: "Impossible de charger les préférences de notifications.",
+    notifSettingsUpdateError: "Impossible de mettre à jour les préférences de notifications.",
     unknownError: "Une erreur inattendue s'est produite.",
     genericError: "Quelque chose s'est mal passé. Réessayez.",
   },

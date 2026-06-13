@@ -24,6 +24,7 @@ const MAPPING = {
   "chevron.right": "chevron-right",
   "map.fill": "map",
   "person.fill": "person",
+  "bell.fill": "notifications",
 } as IconMapping;
 
 /**
