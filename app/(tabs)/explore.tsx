@@ -1,6 +1,6 @@
 import { IncidentFilterBar } from "@/components/incident-filter-bar";
 import { formatIncidentDateTime } from "@/utils/format-date";
-import { DEFAULT_LOCATION, MAP_ANIMATION_MS, MAP_DELTAS } from "@/constants/config";
+import { CLUSTER_DEBOUNCE_MS, CLUSTER_ZOOM_THRESHOLD, DEFAULT_LOCATION, MAP_ANIMATION_MS, MAP_DELTAS } from "@/constants/config";
 import {
     NEXT_STATUSES,
     STATUS_COLOR,
@@ -16,12 +16,13 @@ import {
     deleteIncident,
     deletePhoto,
     getIncidents,
+    getMapSummary,
     getPhotos,
     getStatusHistory,
     updateIncidentStatus,
 } from "@/services/incidents";
 import { getValidToken } from "@/storage/tokens";
-import type { IncidentResponse, PhotoResponse, StatusHistoryEntry } from "@/types/incidents";
+import type { IncidentResponse, MapClusterDto, PhotoResponse, StatusHistoryEntry } from "@/types/incidents";
 import { useFocusEffect } from "@react-navigation/native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useUserLocation } from "@/hooks/use-user-location";
@@ -39,9 +40,22 @@ import {
 } from "react-native";
 import { ClusterPin, MapPin } from "@/components/ui/MapPin";
 import { Image } from "expo-image";
-import ClusteredMapView from "react-native-map-clustering";
 import MapView, { Marker, Region } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function regionToZoom(latitudeDelta: number): number {
+  return Math.round(Math.log(360 / latitudeDelta) / Math.LN2);
+}
+
+function clusterDominantColor(c: MapClusterDto): string {
+  if (c.in_progress > 0) return STATUS_COLOR.in_progress;
+  if (c.reported > 0)    return STATUS_COLOR.reported;
+  return STATUS_COLOR.resolved;
+}
+
+// ─── Markers ──────────────────────────────────────────────────────────────────
 
 type IncidentMarkerProps = {
   incident: IncidentResponse;
@@ -72,35 +86,34 @@ function IncidentMarker({ incident, color, active, onPress }: IncidentMarkerProp
 }
 
 type ClusterMarkerProps = {
-  longitude: number;
-  latitude: number;
-  count: number;
-  color: string;
+  cluster: MapClusterDto;
   onPress: () => void;
 };
 
-function ClusterMarker({ longitude, latitude, count, color, onPress }: ClusterMarkerProps) {
+function ClusterMarker({ cluster, onPress }: ClusterMarkerProps) {
   const [tracksViewChanges, setTracksViewChanges] = useState(true);
 
   useEffect(() => {
     setTracksViewChanges(true);
     const t = setTimeout(() => setTracksViewChanges(false), MAP_ANIMATION_MS.trackViewChange);
     return () => clearTimeout(t);
-  }, [count]);
+  }, [cluster.count]);
 
   return (
     <Marker
-      coordinate={{ longitude, latitude }}
+      coordinate={{ latitude: cluster.latitude, longitude: cluster.longitude }}
       tracksViewChanges={tracksViewChanges}
       anchor={{ x: 0.5, y: 0.5 }}
       onPress={onPress}
     >
-      <ClusterPin count={count} color={color} />
+      <ClusterPin count={cluster.count} color={clusterDominantColor(cluster)} />
     </Marker>
   );
 }
 
-const LYON: Region = {
+// ─── Screen ───────────────────────────────────────────────────────────────────
+
+const INITIAL_REGION: Region = {
   ...DEFAULT_LOCATION,
   latitudeDelta: MAP_DELTAS.explore,
   longitudeDelta: MAP_DELTAS.explore,
@@ -108,6 +121,9 @@ const LYON: Region = {
 
 export default function SignalementsScreen() {
   const [incidents, setIncidents] = useState<IncidentResponse[]>([]);
+  const [clusters, setClusters] = useState<MapClusterDto[]>([]);
+  const [currentZoom, setCurrentZoom] = useState(() => regionToZoom(MAP_DELTAS.explore));
+
   const { region: userRegion } = useUserLocation(MAP_DELTAS.user);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<IncidentResponse | null>(null);
@@ -131,8 +147,11 @@ export default function SignalementsScreen() {
   const [zoomedPhoto, setZoomedPhoto] = useState<string | null>(null);
 
   const markerJustPressed = useRef(false);
-  const mapRef = useRef<ClusteredMapView>(null);
+  const mapRef = useRef<MapView>(null);
+  const currentRegionRef = useRef<Region>(INITIAL_REGION);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // ── Photos & history on selection ──
   useEffect(() => {
     if (!selected) { setPhotos([]); setStatusHistory([]); setPhotosError(false); return; }
     setPhotosLoading(true);
@@ -146,49 +165,51 @@ export default function SignalementsScreen() {
     }).finally(() => setPhotosLoading(false));
   }, [selected?.id]);
 
-  const renderCluster = useCallback(
-    ({ id, geometry, properties, onPress }: {
-      id: number;
-      geometry: { coordinates: [number, number] };
-      properties: { point_count: number };
-      onPress: () => void;
-    }) => (
-      <ClusterMarker
-        key={`cluster-${id}`}
-        longitude={geometry.coordinates[0]}
-        latitude={geometry.coordinates[1]}
-        count={properties.point_count}
-        color={colors.primary}
-        onPress={onPress}
-      />
-    ),
-    [colors.primary],
-  );
+  // ── Load clusters (server-side) ──
+  const loadClusters = useCallback(async (
+    region: Region,
+    status: string | null,
+    type: string | null,
+  ) => {
+    const zoom = regionToZoom(region.latitudeDelta);
+    if (zoom >= CLUSTER_ZOOM_THRESHOLD) { setClusters([]); return; }
 
-  const markers = useMemo(
-    () =>
-      filteredIncidents.map((inc) => {
-        const isActive = selected?.id === inc.id;
-        const color = STATUS_COLOR[inc.status] ?? colors.primary;
-        return (
-          <IncidentMarker
-            key={inc.id}
-            incident={inc}
-            color={color}
-            active={isActive}
-            onPress={() => {
-              markerJustPressed.current = true;
-              setSelected(inc);
-              setTimeout(() => { markerJustPressed.current = false; }, MAP_ANIMATION_MS.markerPress);
-            }}
-          />
-        );
-      }),
-    [filteredIncidents, colors.primary, selected?.id],
-  );
-  const { selectId } = useLocalSearchParams<{ selectId?: string }>();
-  const pendingSelectRef = useRef<string | null>(null);
+    const latMin = region.latitude - region.latitudeDelta / 2;
+    const latMax = region.latitude + region.latitudeDelta / 2;
+    const lngMin = region.longitude - region.longitudeDelta / 2;
+    const lngMax = region.longitude + region.longitudeDelta / 2;
 
+    try {
+      const res = await getMapSummary({
+        zoom,
+        latMin, latMax, lngMin, lngMax,
+        status: status ?? undefined,
+        type: type ?? undefined,
+      });
+      setClusters(res.data);
+    } catch {
+      // silencieux — ne pas bloquer la carte
+    }
+  }, []);
+
+  // ── Region change → debounced cluster reload ──
+  const onRegionChangeComplete = useCallback((region: Region) => {
+    currentRegionRef.current = region;
+    const zoom = regionToZoom(region.latitudeDelta);
+    setCurrentZoom(zoom);
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      void loadClusters(region, filterStatus, filterType);
+    }, CLUSTER_DEBOUNCE_MS);
+  }, [loadClusters, filterStatus, filterType]);
+
+  // ── Reload clusters when filters change ──
+  useEffect(() => {
+    void loadClusters(currentRegionRef.current, filterStatus, filterType);
+  }, [filterStatus, filterType, loadClusters]);
+
+  // ── Load incidents (individual mode + selectId) ──
   const loadIncidents = useCallback(async () => {
     setLoading(true);
     try {
@@ -201,10 +222,16 @@ export default function SignalementsScreen() {
     }
   }, []);
 
+  const handleRefresh = useCallback(async () => {
+    await loadIncidents();
+    void loadClusters(currentRegionRef.current, filterStatus, filterType);
+  }, [loadIncidents, loadClusters, filterStatus, filterType]);
+
+  // ── Select + animate map ──
   const selectIncident = useCallback((inc: IncidentResponse) => {
     setSelected(inc);
     setTimeout(() => {
-      (mapRef.current as unknown as MapView)?.animateToRegion(
+      mapRef.current?.animateToRegion(
         {
           latitude: inc.latitude - MAP_DELTAS.incidentOffset,
           longitude: inc.longitude,
@@ -216,7 +243,25 @@ export default function SignalementsScreen() {
     }, MAP_ANIMATION_MS.selectDelay);
   }, []);
 
-  // Quand selectId change, réinitialise et prépare la sélection
+  // ── Cluster tap → zoom in ──
+  const handleClusterPress = useCallback((cluster: MapClusterDto) => {
+    const newZoom = Math.min(currentZoom + 3, CLUSTER_ZOOM_THRESHOLD + 1);
+    const delta = 360 / Math.pow(2, newZoom);
+    mapRef.current?.animateToRegion(
+      {
+        latitude: cluster.latitude,
+        longitude: cluster.longitude,
+        latitudeDelta: delta,
+        longitudeDelta: delta,
+      },
+      MAP_ANIMATION_MS.animateRegion,
+    );
+  }, [currentZoom]);
+
+  // ── selectId (from notification) ──
+  const { selectId } = useLocalSearchParams<{ selectId?: string }>();
+  const pendingSelectRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (!selectId) return;
     setSelected(null);
@@ -224,7 +269,6 @@ export default function SignalementsScreen() {
     loadIncidents();
   }, [selectId, loadIncidents]);
 
-  // Quand les incidents chargent, consomme le pending select
   useEffect(() => {
     if (!pendingSelectRef.current || incidents.length === 0) return;
     const inc = incidents.find((i) => i.id === pendingSelectRef.current);
@@ -234,16 +278,17 @@ export default function SignalementsScreen() {
     }
   }, [incidents, selectIncident]);
 
-  // Rechargement à chaque focus (sans logique de sélection)
   useFocusEffect(
     useCallback(() => {
-      if (!selectId) loadIncidents();
-      return () => {
-        pendingSelectRef.current = null;
-      };
-    }, [loadIncidents, selectId]),
+      if (!selectId) {
+        loadIncidents();
+        void loadClusters(currentRegionRef.current, filterStatus, filterType);
+      }
+      return () => { pendingSelectRef.current = null; };
+    }, [loadIncidents, loadClusters, selectId, filterStatus, filterType]),
   );
 
+  // ── Status change ──
   const handleStatusChange = useCallback(
     async (newStatus: string) => {
       if (!selected) return;
@@ -252,17 +297,11 @@ export default function SignalementsScreen() {
         const token = await getValidToken();
         if (!token) throw new Error(STRINGS.api.unauthenticated);
         await updateIncidentStatus(selected.id, newStatus, token);
-        // Mise à jour locale immédiate
         const updated = { ...selected, status: newStatus } as IncidentResponse;
-        setIncidents((prev) =>
-          prev.map((inc) => (inc.id === selected.id ? updated : inc)),
-        );
+        setIncidents((prev) => prev.map((inc) => (inc.id === selected.id ? updated : inc)));
         setSelected(updated);
       } catch (e) {
-        Alert.alert(
-          STRINGS.alert.errorTitle,
-          e instanceof Error ? e.message : STRINGS.api.unknownError,
-        );
+        Alert.alert(STRINGS.alert.errorTitle, e instanceof Error ? e.message : STRINGS.api.unknownError);
       } finally {
         setUpdatingStatus(false);
       }
@@ -306,15 +345,10 @@ export default function SignalementsScreen() {
               const token = await getValidToken();
               if (!token) throw new Error(STRINGS.api.unauthenticated);
               await deleteIncident(selected.id, token);
-              setIncidents((prev) =>
-                prev.filter((inc) => inc.id !== selected.id),
-              );
+              setIncidents((prev) => prev.filter((inc) => inc.id !== selected.id));
               setSelected(null);
             } catch (e) {
-              Alert.alert(
-                "Erreur",
-                e instanceof Error ? e.message : STRINGS.api.unknownError,
-              );
+              Alert.alert("Erreur", e instanceof Error ? e.message : STRINGS.api.unknownError);
             }
           },
         },
@@ -322,21 +356,55 @@ export default function SignalementsScreen() {
     );
   }, [selected]);
 
+  // ── Markers ──
+  const isClusterMode = currentZoom < CLUSTER_ZOOM_THRESHOLD;
+
+  const clusterMarkers = useMemo(
+    () => clusters.map((c, i) => (
+      <ClusterMarker
+        key={`cluster-${i}-${c.latitude}-${c.longitude}`}
+        cluster={c}
+        onPress={() => handleClusterPress(c)}
+      />
+    )),
+    [clusters, handleClusterPress],
+  );
+
+  const individualMarkers = useMemo(
+    () => filteredIncidents.map((inc) => {
+      const isActive = selected?.id === inc.id;
+      const color = STATUS_COLOR[inc.status] ?? colors.primary;
+      return (
+        <IncidentMarker
+          key={inc.id}
+          incident={inc}
+          color={color}
+          active={isActive}
+          onPress={() => {
+            markerJustPressed.current = true;
+            setSelected(inc);
+            setTimeout(() => { markerJustPressed.current = false; }, MAP_ANIMATION_MS.markerPress);
+          }}
+        />
+      );
+    }),
+    [filteredIncidents, colors.primary, selected?.id],
+  );
+
   return (
     <View style={styles.container}>
-      <ClusteredMapView
+      <MapView
         ref={mapRef}
         style={styles.map}
-        initialRegion={userRegion}
+        initialRegion={userRegion ?? INITIAL_REGION}
         showsUserLocation
-        clusterColor={colors.primary}
-        renderCluster={renderCluster}
+        onRegionChangeComplete={onRegionChangeComplete}
         onPress={() => {
           if (!markerJustPressed.current) setSelected(null);
         }}
       >
-        {markers}
-      </ClusteredMapView>
+        {isClusterMode ? clusterMarkers : individualMarkers}
+      </MapView>
 
       {/* Barre de filtres (overlay) */}
       <View style={styles.filterBarOverlay}>
@@ -345,7 +413,7 @@ export default function SignalementsScreen() {
           setFilterStatus={setFilterStatus}
           filterType={filterType}
           setFilterType={setFilterType}
-          onRefresh={loadIncidents}
+          onRefresh={handleRefresh}
           loading={loading}
           paddingTop={insets.top + 8}
         />
@@ -357,7 +425,7 @@ export default function SignalementsScreen() {
         </View>
       )}
 
-      {/* Bottom sheet détail — via Modal pour passer au-dessus de la tab bar */}
+      {/* Bottom sheet détail */}
       <Modal
         visible={!!selected}
         transparent
@@ -474,7 +542,7 @@ export default function SignalementsScreen() {
                   )}
                 </View>
 
-                {/* Boutons statut — agents / admins */}
+                {/* Boutons statut */}
                 {isStaff && NEXT_STATUSES[selected.status]?.length > 0 && (
                   <View style={styles.statusActions}>
                     <Text style={styles.sectionLabel}>Changer le statut</Text>
@@ -498,7 +566,7 @@ export default function SignalementsScreen() {
                   </View>
                 )}
 
-                {/* Bouton suppression — admin uniquement */}
+                {/* Suppression admin */}
                 {isAdmin && (
                   <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete} activeOpacity={0.8}>
                     <Text style={styles.deleteBtnText}>{STRINGS.alert.deleteIncidentTitle}</Text>
@@ -508,7 +576,7 @@ export default function SignalementsScreen() {
             </View>
           )}
 
-          {/* Visionneuse plein écran — dans le même Modal pour éviter les problèmes Android */}
+          {/* Visionneuse plein écran */}
           {zoomedPhoto && (
             <View style={styles.zoomOverlay}>
               <TouchableOpacity
@@ -529,7 +597,7 @@ export default function SignalementsScreen() {
         </View>
       </Modal>
 
-      {/* FAB Signaler — citoyens uniquement, masqué quand le sheet est ouvert */}
+      {/* FAB Signaler */}
       {!selected && !isStaff && (
         <TouchableOpacity
           style={styles.fab}
@@ -572,13 +640,8 @@ function makeStyles(c: AppColors, bottomInset: number) {
     },
     fabIcon: { fontSize: 24, color: "#fff", fontWeight: "700", marginRight: 8 },
     fabLabel: { fontSize: 15, fontWeight: "700", color: "#fff" },
-    modalContainer: {
-      flex: 1,
-      justifyContent: "flex-end",
-    },
-    modalDismiss: {
-      flex: 1,
-    },
+    modalContainer: { flex: 1, justifyContent: "flex-end" },
+    modalDismiss: { flex: 1 },
     sheet: {
       backgroundColor: c.background,
       borderTopLeftRadius: 24,
@@ -607,16 +670,12 @@ function makeStyles(c: AppColors, bottomInset: number) {
     statusBadge: { alignSelf: "flex-start", borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
     statusBadgeText: { color: "#fff", fontWeight: "700", fontSize: 12 },
     closeBtn: {
-      width: 30,
-      height: 30,
-      borderRadius: 15,
+      width: 30, height: 30, borderRadius: 15,
       backgroundColor: c.secondary,
-      alignItems: "center",
-      justifyContent: "center",
+      alignItems: "center", justifyContent: "center",
       marginLeft: 8,
     },
     closeBtnText: { fontSize: 13, color: c.text, fontWeight: "700" },
-    // Timeline
     timeline: {
       flexDirection: "row",
       backgroundColor: c.white,
@@ -627,19 +686,14 @@ function makeStyles(c: AppColors, bottomInset: number) {
     timelineItem: { flex: 1, alignItems: "center" },
     timelineTrack: { alignItems: "center", width: "100%" },
     timelineDot: {
-      width: 14,
-      height: 14,
-      borderRadius: 7,
+      width: 14, height: 14, borderRadius: 7,
       backgroundColor: c.secondary,
-      borderWidth: 2,
-      borderColor: c.inputBorder,
+      borderWidth: 2, borderColor: c.inputBorder,
       zIndex: 1,
     },
     timelineLine: {
       position: "absolute",
-      top: 6,
-      left: "50%",
-      right: "-50%",
+      top: 6, left: "50%", right: "-50%",
       height: 2,
       backgroundColor: c.inputBorder,
     },
@@ -648,97 +702,62 @@ function makeStyles(c: AppColors, bottomInset: number) {
     timelineStepText: { fontSize: 11, color: c.text, opacity: 0.4, fontWeight: "600", textAlign: "center" },
     timelineStepTextActive: { opacity: 1, color: c.text },
     timelineDateText: { fontSize: 10, color: c.text, opacity: 0.5, textAlign: "center" },
-    // Description
     descBlock: {
-      backgroundColor: c.white,
-      borderRadius: 12,
-      padding: 14,
-      marginBottom: 10,
-      borderLeftWidth: 3,
-      borderLeftColor: c.primary,
+      backgroundColor: c.white, borderRadius: 12,
+      padding: 14, marginBottom: 10,
+      borderLeftWidth: 3, borderLeftColor: c.primary,
     },
     sheetDesc: { fontSize: 14, color: c.text, lineHeight: 21 },
-    // Adresse
     addressRow: {
-      flexDirection: "row",
-      alignItems: "flex-start",
-      gap: 8,
-      paddingHorizontal: 4,
-      marginBottom: 14,
+      flexDirection: "row", alignItems: "flex-start",
+      gap: 8, paddingHorizontal: 4, marginBottom: 14,
     },
     addressPin: { fontSize: 16, color: c.text, opacity: 0.4, marginTop: 1 },
     addressText: { flex: 1, fontSize: 13, color: c.text, opacity: 0.6, lineHeight: 18 },
-    // Section label commun
     sectionLabel: {
-      fontSize: 11,
-      color: c.text,
-      opacity: 0.45,
-      marginBottom: 10,
-      textTransform: "uppercase",
-      letterSpacing: 0.6,
-      fontWeight: "600",
+      fontSize: 11, color: c.text, opacity: 0.45,
+      marginBottom: 10, textTransform: "uppercase",
+      letterSpacing: 0.6, fontWeight: "600",
     },
-    // Photos
     photosSection: { marginBottom: 14 },
     photosEmpty: { fontSize: 13, color: c.text, opacity: 0.4, fontStyle: "italic" },
     photoThumb: { width: 96, height: 96, borderRadius: 12, overflow: "hidden", marginRight: 8 },
     photoImg: { width: 96, height: 96 },
     photoDeleteBtn: {
-      position: "absolute",
-      top: 4,
-      right: 4,
-      width: 22,
-      height: 22,
-      borderRadius: 11,
+      position: "absolute", top: 4, right: 4,
+      width: 22, height: 22, borderRadius: 11,
       backgroundColor: "#000a",
-      alignItems: "center",
-      justifyContent: "center",
+      alignItems: "center", justifyContent: "center",
     },
     photoDeleteBtnText: { color: "#fff", fontSize: 10, fontWeight: "700" },
-    // Actions statut
     statusActions: { marginBottom: 4 },
     statusActionsRow: { flexDirection: "row", gap: 10 },
     statusActionBtn: {
-      flex: 1,
-      borderRadius: 12,
+      flex: 1, borderRadius: 12,
       paddingVertical: 12,
-      alignItems: "center",
-      justifyContent: "center",
+      alignItems: "center", justifyContent: "center",
     },
     statusActionBtnText: { fontWeight: "700", fontSize: 14, color: "#fff" },
     deleteBtn: {
-      marginTop: 12,
-      borderRadius: 12,
-      paddingVertical: 13,
-      alignItems: "center",
+      marginTop: 12, borderRadius: 12,
+      paddingVertical: 13, alignItems: "center",
       backgroundColor: c.statusRed + "1a",
-      borderWidth: 1,
-      borderColor: c.statusRed,
+      borderWidth: 1, borderColor: c.statusRed,
     },
     deleteBtnText: { fontWeight: "700", fontSize: 14, color: c.statusRed },
     filterBarOverlay: { position: "absolute", top: 0, left: 0, right: 0 },
-    // Visionneuse plein écran (overlay à l'intérieur du Modal détail)
     zoomOverlay: {
       ...StyleSheet.absoluteFillObject,
       backgroundColor: "#000d",
-      alignItems: "center",
-      justifyContent: "center",
+      alignItems: "center", justifyContent: "center",
       zIndex: 10,
     },
-    zoomImage: {
-      width: "100%",
-      height: "80%",
-    },
+    zoomImage: { width: "100%", height: "80%" },
     zoomClose: {
-      position: "absolute",
-      top: 52,
-      right: 20,
-      width: 36,
-      height: 36,
-      borderRadius: 18,
+      position: "absolute", top: 52, right: 20,
+      width: 36, height: 36, borderRadius: 18,
       backgroundColor: "#0008",
-      alignItems: "center",
-      justifyContent: "center",
+      alignItems: "center", justifyContent: "center",
     },
     zoomCloseText: { color: "#fff", fontSize: 16, fontWeight: "700" },
   });

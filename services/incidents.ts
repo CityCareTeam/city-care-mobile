@@ -5,6 +5,7 @@ import type {
     CreateIncidentPayload,
     IncidentListResponse,
     IncidentResponse,
+    MapSummaryResponse,
     PhotoResponse,
     ReverseGeocodeResult,
     StatusHistoryEntry,
@@ -186,6 +187,26 @@ export async function deletePhoto(
   if (!response.ok) {
     throw new Error(await parseErrorMessage(response, `Erreur ${response.status}`));
   }
+}
+
+export async function getMapSummary(params?: {
+  zoom?: number;
+  latMin?: number; latMax?: number;
+  lngMin?: number; lngMax?: number;
+  status?: string;
+  type?: string;
+}): Promise<MapSummaryResponse> {
+  const url = new URL(API_ENDPOINTS.mapSummary);
+  if (params?.zoom !== undefined) url.searchParams.set("zoom", String(params.zoom));
+  if (params?.latMin !== undefined) url.searchParams.set("latMin", String(params.latMin));
+  if (params?.latMax !== undefined) url.searchParams.set("latMax", String(params.latMax));
+  if (params?.lngMin !== undefined) url.searchParams.set("lngMin", String(params.lngMin));
+  if (params?.lngMax !== undefined) url.searchParams.set("lngMax", String(params.lngMax));
+  if (params?.status) url.searchParams.set("status", params.status);
+  if (params?.type) url.searchParams.set("type", params.type);
+  const response = await fetch(url.toString());
+  if (!response.ok) throw new Error(STRINGS.api.incidentsLoadError);
+  return response.json() as Promise<MapSummaryResponse>;
 }
 
 export async function getStatusHistory(incidentId: string): Promise<StatusHistoryEntry[]> {
