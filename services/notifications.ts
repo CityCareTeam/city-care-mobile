@@ -57,6 +57,26 @@ export async function markAllAsRead(token: string): Promise<void> {
   if (!response.ok) throw new Error(STRINGS.api.genericError);
 }
 
+export async function deleteNotification(token: string, id: string): Promise<void> {
+  let response: Response;
+  try {
+    response = await authFetch(API_ENDPOINTS.notificationDelete(id), token, { method: "DELETE" });
+  } catch {
+    throw new Error(STRINGS.api.networkError);
+  }
+  if (!response.ok) throw new Error(STRINGS.api.genericError);
+}
+
+export async function deleteAllNotifications(token: string): Promise<void> {
+  let response: Response;
+  try {
+    response = await authFetch(API_ENDPOINTS.notificationsDeleteAll, token, { method: "DELETE" });
+  } catch {
+    throw new Error(STRINGS.api.networkError);
+  }
+  if (!response.ok) throw new Error(STRINGS.api.genericError);
+}
+
 export async function registerPushToken(token: string, pushToken: string): Promise<void> {
   try {
     await authFetch(API_ENDPOINTS.pushToken, token, {
