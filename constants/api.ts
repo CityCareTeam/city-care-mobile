@@ -16,6 +16,8 @@ export const API_ENDPOINTS = {
   notificationsUnreadCount: `${API_BASE_URL}/users/me/notifications/unread-count`,
   notificationRead: (id: string) => `${API_BASE_URL}/users/me/notifications/${id}/read`,
   notificationsReadAll: `${API_BASE_URL}/users/me/notifications/read-all`,
+  notificationDelete: (id: string) => `${API_BASE_URL}/users/me/notifications/${id}`,
+  notificationsDeleteAll: `${API_BASE_URL}/users/me/notifications`,
   // Incidents
   incidents: `${API_BASE_URL}/incidents`,
   incidentPhotos: (id: string) => `${API_BASE_URL}/incidents/${id}/photos`,
