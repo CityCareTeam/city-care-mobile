@@ -22,5 +22,7 @@ export const API_ENDPOINTS = {
   incidentPhoto: (incidentId: string, photoId: string) => `${API_BASE_URL}/incidents/${incidentId}/photos/${photoId}`,
   incidentStatusHistory: (id: string) => `${API_BASE_URL}/incidents/${id}/status-history`,
   mapSummary: `${API_BASE_URL}/incidents/map-summary`,
+  incidentMessages: (id: string) => `${API_BASE_URL}/incidents/${id}/messages`,
+  incidentChatHub: `${API_BASE_URL}/hubs/incident-chat`,
   geocodeReverse: `${API_BASE_URL}/geocode/reverse`,
 };

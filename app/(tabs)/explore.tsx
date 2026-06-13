@@ -1,5 +1,5 @@
 import { IncidentFilterBar } from "@/components/incident-filter-bar";
-import { formatIncidentDateTime } from "@/utils/format-date";
+import { formatIncidentDateTime, timeAgo } from "@/utils/format-date";
 import { CLUSTER_DEBOUNCE_MS, CLUSTER_ZOOM_THRESHOLD, DEFAULT_LOCATION, MAP_ANIMATION_MS, MAP_DELTAS } from "@/constants/config";
 import {
     NEXT_STATUSES,
@@ -7,11 +7,13 @@ import {
     STATUS_LABEL,
     TYPE_LABEL,
 } from "@/constants/incidents";
+import { ROLE_COLORS } from "@/constants/roles";
 import { useAuth } from "@/context/AuthContext";
 import { STRINGS } from "@/constants/strings";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
 import { useIncidentFilters } from "@/hooks/use-incident-filters";
+import { useIncidentChat } from "@/hooks/use-incident-chat";
 import {
     deleteIncident,
     deletePhoto,
@@ -23,6 +25,7 @@ import {
 } from "@/services/incidents";
 import { getValidToken } from "@/storage/tokens";
 import type { IncidentResponse, MapClusterDto, PhotoResponse, StatusHistoryEntry } from "@/types/incidents";
+import type { MessageResponse } from "@/types/messages";
 import { useFocusEffect } from "@react-navigation/native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useUserLocation } from "@/hooks/use-user-location";
@@ -30,11 +33,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
+    FlatList,
+    KeyboardAvoidingView,
     Modal,
     Platform,
     ScrollView,
     StyleSheet,
     Text,
+    TextInput,
     TouchableOpacity,
     View,
 } from "react-native";
@@ -145,6 +151,29 @@ export default function SignalementsScreen() {
   const [photosError, setPhotosError] = useState(false);
   const [statusHistory, setStatusHistory] = useState<StatusHistoryEntry[]>([]);
   const [zoomedPhoto, setZoomedPhoto] = useState<string | null>(null);
+
+  const [activeTab, setActiveTab] = useState<"details" | "chat">("details");
+  const [inputText, setInputText] = useState("");
+  const [sending, setSending] = useState(false);
+  const chatListRef = useRef<FlatList<MessageResponse>>(null);
+
+  const { messages, send, connected, loading: chatLoading } = useIncidentChat(selected?.id ?? null);
+
+  // Citoyen : accès au chat seulement sur ses propres signalements
+  const canAccessChat = isStaff || selected?.authorUserId === dbUser?.id;
+
+  // Reset tab + input when incident changes
+  useEffect(() => {
+    setActiveTab("details");
+    setInputText("");
+  }, [selected?.id]);
+
+  // Auto-scroll to last message
+  useEffect(() => {
+    if (messages.length > 0) {
+      setTimeout(() => chatListRef.current?.scrollToEnd({ animated: true }), 100);
+    }
+  }, [messages.length]);
 
   const markerJustPressed = useRef(false);
   const mapRef = useRef<MapView>(null);
@@ -259,7 +288,7 @@ export default function SignalementsScreen() {
   }, [currentZoom]);
 
   // ── selectId (from notification) ──
-  const { selectId } = useLocalSearchParams<{ selectId?: string }>();
+  const { selectId, tab: tabParam } = useLocalSearchParams<{ selectId?: string; tab?: string }>();
   const pendingSelectRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -275,8 +304,9 @@ export default function SignalementsScreen() {
     if (inc) {
       pendingSelectRef.current = null;
       selectIncident(inc);
+      if (tabParam === "chat") setActiveTab("chat");
     }
-  }, [incidents, selectIncident]);
+  }, [incidents, selectIncident, tabParam]);
 
   useFocusEffect(
     useCallback(() => {
@@ -433,7 +463,10 @@ export default function SignalementsScreen() {
         statusBarTranslucent
         onRequestClose={() => setSelected(null)}
       >
-        <View style={styles.modalContainer}>
+        <KeyboardAvoidingView
+          style={styles.modalContainer}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
           <TouchableOpacity
             style={styles.modalDismiss}
             activeOpacity={1}
@@ -445,7 +478,7 @@ export default function SignalementsScreen() {
               <View style={styles.sheetHandle} />
 
               {/* En-tête */}
-              <View style={styles.sheetHeader}>
+              <View style={[styles.sheetHeader, { paddingHorizontal: 20 }]}>
                 <View style={styles.sheetTitleBlock}>
                   <Text style={styles.sheetType}>
                     {TYPE_LABEL[selected.type] ?? selected.type}
@@ -461,7 +494,31 @@ export default function SignalementsScreen() {
                 </TouchableOpacity>
               </View>
 
-              <ScrollView showsVerticalScrollIndicator={false}>
+              {/* Tabs */}
+              <View style={styles.tabBar}>
+                <TouchableOpacity
+                  style={[styles.tab, activeTab === "details" && styles.tabActive]}
+                  onPress={() => setActiveTab("details")}
+                  activeOpacity={0.75}
+                >
+                  <Text style={[styles.tabText, activeTab === "details" && styles.tabTextActive]}>Détails</Text>
+                </TouchableOpacity>
+                {canAccessChat && (
+                  <TouchableOpacity
+                    style={[styles.tab, activeTab === "chat" && styles.tabActive]}
+                    onPress={() => setActiveTab("chat")}
+                    activeOpacity={0.75}
+                  >
+                    <View style={styles.tabInner}>
+                      <Text style={[styles.tabText, activeTab === "chat" && styles.tabTextActive]}>Discussion</Text>
+                      <View style={[styles.connDot, { backgroundColor: connected ? "#4caf50" : "#e53e3e" }]} />
+                    </View>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {/* ── Détails ── */}
+              {activeTab === "details" && <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 36 }}>
 
                 {/* Timeline */}
                 <View style={styles.timeline}>
@@ -572,7 +629,106 @@ export default function SignalementsScreen() {
                     <Text style={styles.deleteBtnText}>{STRINGS.alert.deleteIncidentTitle}</Text>
                   </TouchableOpacity>
                 )}
-              </ScrollView>
+              </ScrollView>}
+
+              {/* ── Chat ── */}
+              {activeTab === "chat" && (
+                <View style={styles.chatContainer}>
+                  {chatLoading ? (
+                    <View style={styles.chatLoader}>
+                      <ActivityIndicator color={colors.primary} />
+                    </View>
+                  ) : messages.length === 0 ? (
+                    <View style={styles.chatEmpty}>
+                      <Text style={styles.chatEmptyText}>Aucun message pour l&apos;instant.</Text>
+                      <Text style={styles.chatEmptySubtext}>Soyez le premier à commenter.</Text>
+                    </View>
+                  ) : (
+                    <FlatList
+                      ref={chatListRef}
+                      data={messages}
+                      keyExtractor={(m) => m.id}
+                      contentContainerStyle={styles.messageList}
+                      showsVerticalScrollIndicator={false}
+                      onContentSizeChange={() => chatListRef.current?.scrollToEnd({ animated: false })}
+                      renderItem={({ item: msg }) => {
+                        const isMe = msg.author_user_id === dbUser?.id;
+                        const role = msg.author_role;
+                        const isStaffMsg = role === "Agent" || role === "Admin";
+                        const roleColor = role === "Agent"
+                          ? ROLE_COLORS.Agent
+                          : role === "Admin" ? ROLE_COLORS.Admin : colors.text + "55";
+                        const displayName = msg.author_name
+                          ?? (role === "Agent" ? "Agent" : role === "Admin" ? "Admin" : "Citoyen");
+                        const initial = displayName.charAt(0).toUpperCase();
+                        return (
+                          <View style={[styles.msgRow, isMe && styles.msgRowMe]}>
+                            {!isMe && (
+                              <View style={[styles.avatar, { backgroundColor: (isStaffMsg ? roleColor : colors.secondary) }]}>
+                                <Text style={[styles.avatarText, { color: isStaffMsg ? "#fff" : colors.text }]}>
+                                  {initial}
+                                </Text>
+                              </View>
+                            )}
+                            <View style={[styles.bubbleWrap, isMe && styles.bubbleWrapMe]}>
+                              {!isMe && (
+                                <View style={styles.bubbleMeta}>
+                                  <Text style={styles.bubbleAuthor}>{displayName}</Text>
+                                  {isStaffMsg && (
+                                    <View style={[styles.roleBadge, { backgroundColor: roleColor + "22" }]}>
+                                      <Text style={[styles.roleBadgeText, { color: roleColor }]}>
+                                        {role === "Agent" ? "Agent" : "Admin"}
+                                      </Text>
+                                    </View>
+                                  )}
+                                </View>
+                              )}
+                              <View style={[styles.bubble, isMe ? styles.bubbleMe : styles.bubbleOther]}>
+                                <Text style={[styles.bubbleText, isMe && styles.bubbleTextMe]}>
+                                  {msg.content}
+                                </Text>
+                                <Text style={[styles.bubbleTime, isMe && styles.bubbleTimeMe]}>
+                                  {timeAgo(msg.created_at)}
+                                </Text>
+                              </View>
+                            </View>
+                          </View>
+                        );
+                      }}
+                    />
+                  )}
+                  <View style={styles.inputBar}>
+                    <TextInput
+                      style={styles.input}
+                      value={inputText}
+                      onChangeText={setInputText}
+                      placeholder={connected ? "Votre message…" : "Hors ligne"}
+                      placeholderTextColor={colors.text + "55"}
+                      editable={connected && !sending}
+                      maxLength={2000}
+                      multiline
+                      returnKeyType="default"
+                    />
+                    <TouchableOpacity
+                      style={[styles.sendBtn, (!connected || !inputText.trim() || sending) && styles.sendBtnDisabled]}
+                      onPress={async () => {
+                        if (!inputText.trim() || !connected || sending) return;
+                        setSending(true);
+                        try { await send(inputText); setInputText(""); }
+                        catch { /* silent */ }
+                        finally { setSending(false); }
+                      }}
+                      disabled={!connected || !inputText.trim() || sending}
+                      activeOpacity={0.8}
+                    >
+                      {sending
+                        ? <ActivityIndicator size="small" color="#fff" />
+                        : <Text style={styles.sendBtnText}>↑</Text>
+                      }
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
             </View>
           )}
 
@@ -594,7 +750,7 @@ export default function SignalementsScreen() {
               </TouchableOpacity>
             </View>
           )}
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* FAB Signaler */}
@@ -646,16 +802,98 @@ function makeStyles(c: AppColors, bottomInset: number) {
       backgroundColor: c.background,
       borderTopLeftRadius: 24,
       borderTopRightRadius: 24,
-      paddingHorizontal: 20,
-      paddingBottom: 36,
       paddingTop: 10,
-      maxHeight: "62%",
+      height: "62%",
       shadowColor: "#000",
       shadowOffset: { width: 0, height: -4 },
       shadowOpacity: 0.1,
       shadowRadius: 12,
       elevation: 20,
     },
+    // ── Tabs ──
+    tabBar: {
+      flexDirection: "row",
+      marginHorizontal: 20,
+      marginBottom: 4,
+      borderRadius: 12,
+      backgroundColor: c.secondary,
+      padding: 3,
+    },
+    tab: {
+      flex: 1,
+      paddingVertical: 8,
+      borderRadius: 10,
+      alignItems: "center",
+    },
+    tabActive: { backgroundColor: c.background },
+    tabInner: { flexDirection: "row", alignItems: "center", gap: 6 },
+    tabText: { fontSize: 13, fontWeight: "600", color: c.text, opacity: 0.45 },
+    tabTextActive: { opacity: 1 },
+    connDot: { width: 7, height: 7, borderRadius: 4 },
+    // ── Chat ──
+    chatContainer: { flex: 1, paddingHorizontal: 0 },
+    chatLoader: { flex: 1, alignItems: "center", justifyContent: "center" },
+    chatEmpty: { flex: 1, alignItems: "center", justifyContent: "center", gap: 6 },
+    chatEmptyText: { fontSize: 15, fontWeight: "700", color: c.text, opacity: 0.4 },
+    chatEmptySubtext: { fontSize: 13, color: c.text, opacity: 0.25 },
+    messageList: { paddingHorizontal: 12, paddingVertical: 8, gap: 10 },
+    msgRow: { flexDirection: "row", alignItems: "flex-end", gap: 8 },
+    msgRowMe: { justifyContent: "flex-end" },
+    avatar: {
+      width: 32, height: 32, borderRadius: 16,
+      alignItems: "center", justifyContent: "center",
+      flexShrink: 0, marginBottom: 2,
+    },
+    avatarText: { fontSize: 13, fontWeight: "700" },
+    bubbleWrap: { maxWidth: "75%", gap: 3 },
+    bubbleWrapMe: { alignItems: "flex-end" },
+    bubbleMeta: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 4 },
+    bubbleAuthor: { fontSize: 11, fontWeight: "700", color: c.text, opacity: 0.6 },
+    bubble: {
+      borderRadius: 16,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      backgroundColor: c.white,
+      gap: 4,
+    },
+    bubbleMe: { backgroundColor: c.primary, borderBottomRightRadius: 4 },
+    bubbleOther: { borderBottomLeftRadius: 4 },
+    roleBadge: { borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2 },
+    roleBadgeText: { fontSize: 10, fontWeight: "700" },
+    bubbleText: { fontSize: 14, color: c.text, lineHeight: 20 },
+    bubbleTextMe: { color: "#fff" },
+    bubbleTime: { fontSize: 10, color: c.text, opacity: 0.35, alignSelf: "flex-end" },
+    bubbleTimeMe: { color: "rgba(255,255,255,0.55)", opacity: 1 },
+    inputBar: {
+      flexDirection: "row",
+      alignItems: "flex-end",
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      gap: 8,
+      borderTopWidth: 1,
+      borderTopColor: c.secondary,
+    },
+    input: {
+      flex: 1,
+      minHeight: 40,
+      maxHeight: 100,
+      borderRadius: 20,
+      backgroundColor: c.secondary,
+      paddingHorizontal: 14,
+      paddingVertical: 9,
+      fontSize: 14,
+      color: c.text,
+    },
+    sendBtn: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: c.primary,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    sendBtnDisabled: { opacity: 0.35 },
+    sendBtnText: { fontSize: 18, color: "#fff", fontWeight: "700", marginTop: -1 },
     sheetHandle: {
       width: 44,
       height: 4,

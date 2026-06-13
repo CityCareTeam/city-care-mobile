@@ -36,12 +36,17 @@ const notifListResponse = {
     },
   ],
   unread_count: 1,
-  pagination: { page: 1, page_size: 20, total_count: 1, total_pages: 1 },
+  total: 1,
+  page: 1,
+  page_size: 20,
 };
 
 const settingsResponse = {
   email_enabled: true,
   push_enabled: false,
+  in_app_incidents_enabled: true,
+  in_app_messages_enabled: false,
+  push_messages_enabled: true,
   followed_incident_types: ['road', 'lighting'],
   updated_at: '2025-01-01T00:00:00Z',
 };
@@ -214,6 +219,9 @@ describe('getNotificationSettings', () => {
     const result = await getNotificationSettings('token');
     expect(result.email_enabled).toBe(true);
     expect(result.push_enabled).toBe(false);
+    expect(result.in_app_incidents_enabled).toBe(true);
+    expect(result.in_app_messages_enabled).toBe(false);
+    expect(result.push_messages_enabled).toBe(true);
     expect(result.followed_incident_types).toEqual(['road', 'lighting']);
   });
 
@@ -253,6 +261,39 @@ describe('updateNotificationSettings', () => {
     await updateNotificationSettings('token', { followed_incident_types: ['road', 'waste'] });
     const body = JSON.parse(mockFetch.mock.calls[0][1].body as string);
     expect(body.followed_incident_types).toEqual(['road', 'waste']);
+  });
+
+  it('sends in_app_incidents_enabled in payload', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(200, {}));
+    await updateNotificationSettings('token', { in_app_incidents_enabled: false });
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body as string);
+    expect(body.in_app_incidents_enabled).toBe(false);
+  });
+
+  it('sends in_app_messages_enabled in payload', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(200, {}));
+    await updateNotificationSettings('token', { in_app_messages_enabled: true });
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body as string);
+    expect(body.in_app_messages_enabled).toBe(true);
+  });
+
+  it('sends push_messages_enabled in payload', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(200, {}));
+    await updateNotificationSettings('token', { push_messages_enabled: false });
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body as string);
+    expect(body.push_messages_enabled).toBe(false);
+  });
+
+  it('sends partial message settings patch', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(200, {}));
+    await updateNotificationSettings('token', {
+      in_app_messages_enabled: true,
+      push_messages_enabled: false,
+    });
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body as string);
+    expect(body.in_app_messages_enabled).toBe(true);
+    expect(body.push_messages_enabled).toBe(false);
+    expect(body.email_enabled).toBeUndefined();
   });
 
   it('resolves on 200', async () => {
