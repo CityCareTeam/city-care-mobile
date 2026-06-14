@@ -1,4 +1,5 @@
 import Constants from "expo-constants";
+import * as Notifications from "expo-notifications";
 import { useEffect } from "react";
 import { Platform } from "react-native";
 import { registerPushToken } from "@/services/notifications";
@@ -12,9 +13,6 @@ export function usePushToken(isAuthenticated: boolean) {
     if (!isAuthenticated || isExpoGo) return;
 
     void (async () => {
-      // Import dynamique : évite que le module charge ses side-effects dans Expo Go
-      const Notifications = await import("expo-notifications");
-
       if (Platform.OS === "android") {
         await Notifications.setNotificationChannelAsync("default", {
           name: "CityCare+",
