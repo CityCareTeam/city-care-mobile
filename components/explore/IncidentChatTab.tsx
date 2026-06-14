@@ -1,3 +1,4 @@
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { ROLE_COLORS } from "@/constants/roles";
 import { useAppColors } from "@/hooks/use-app-colors";
 import { timeAgo } from "@/utils/format-date";
@@ -94,7 +95,6 @@ export function IncidentChatTab({ messages, loading, connected, sending, dbUserI
       alignItems: "center", justifyContent: "center",
     },
     sendBtnDisabled: { opacity: 0.35 },
-    sendBtnText: { fontSize: 18, color: "#fff", fontWeight: "700", marginTop: -1 },
   });
 
   return (
@@ -105,6 +105,7 @@ export function IncidentChatTab({ messages, loading, connected, sending, dbUserI
         </View>
       ) : messages.length === 0 ? (
         <View style={s.empty}>
+          <MaterialIcons name="chat-bubble-outline" size={48} color={colors.text} style={{ opacity: 0.15, marginBottom: 4 }} />
           <Text style={s.emptyText}>Aucun message pour l&apos;instant.</Text>
           <Text style={s.emptySubtext}>Soyez le premier à commenter.</Text>
         </View>
@@ -175,7 +176,7 @@ export function IncidentChatTab({ messages, loading, connected, sending, dbUserI
         >
           {sending
             ? <ActivityIndicator size="small" color="#fff" />
-            : <Text style={s.sendBtnText}>↑</Text>
+            : <MaterialIcons name="send" size={18} color="#fff" />
           }
         </TouchableOpacity>
       </View>

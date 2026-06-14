@@ -2,10 +2,12 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { ModalShell } from "@/components/ui/ModalShell";
 import { STRINGS } from "@/constants/strings";
+import { useAppColors } from "@/hooks/use-app-colors";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 import { updateMe } from "@/services/users";
 import { getValidToken } from "@/storage/tokens";
 import { useEffect, useState } from "react";
-import { Text } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 type InitialValues = {
   firstName: string;
@@ -21,12 +23,11 @@ type Props = {
   onSaved: () => Promise<void>;
 };
 
-const errorStyle = { color: "#e53e3e", fontSize: 13, marginBottom: 12 } as const;
-
 const nameRegex = /^[\p{L} \-'.]+$/u;
 const usernameRegex = /^[\p{L}\p{N}._\-]+$/u;
 
 export function EditProfileModal({ visible, initialValues, onClose, onSaved }: Props) {
+  const { colors } = useAppColors();
   const [firstName, setFirstName] = useState(initialValues.firstName);
   const [lastName, setLastName] = useState(initialValues.lastName);
   const [email, setEmail] = useState(initialValues.email);
@@ -83,13 +84,57 @@ export function EditProfileModal({ visible, initialValues, onClose, onSaved }: P
     }
   };
 
+  const styles = StyleSheet.create({
+    row: { flexDirection: "row", gap: 12 },
+    rowField: { flex: 1 },
+    errorText: { color: "#e53e3e", fontSize: 13, marginBottom: 12 },
+  });
+
   return (
     <ModalShell visible={visible} title="Modifier mes informations" onClose={onClose}>
-      <Input label="Prénom" value={firstName} onChangeText={setFirstName} autoCapitalize="words" />
-      <Input label="Nom" value={lastName} onChangeText={setLastName} autoCapitalize="words" />
-      <Input label="Nom d'utilisateur" value={username} onChangeText={setUsername} autoCapitalize="none" autoCorrect={false} />
-      <Input label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
-      {error && <Text style={errorStyle}>{error}</Text>}
+      <SectionHeader title="Identité" colors={colors} />
+      <View style={styles.row}>
+        <View style={styles.rowField}>
+          <Input
+            label="Prénom"
+            icon="person"
+            value={firstName}
+            onChangeText={setFirstName}
+            autoCapitalize="words"
+            autoCorrect={false}
+          />
+        </View>
+        <View style={styles.rowField}>
+          <Input
+            label="Nom"
+            value={lastName}
+            onChangeText={setLastName}
+            autoCapitalize="words"
+            autoCorrect={false}
+          />
+        </View>
+      </View>
+
+      <SectionHeader title="Compte" colors={colors} />
+      <Input
+        label="Nom d'utilisateur"
+        icon="alternate-email"
+        value={username}
+        onChangeText={setUsername}
+        autoCapitalize="none"
+        autoCorrect={false}
+      />
+      <Input
+        label="Email"
+        icon="email"
+        value={email}
+        onChangeText={setEmail}
+        keyboardType="email-address"
+        autoCapitalize="none"
+        autoCorrect={false}
+      />
+
+      {error && <Text style={styles.errorText}>{error}</Text>}
       <Button label="Enregistrer" onPress={handleSave} loading={loading} />
     </ModalShell>
   );

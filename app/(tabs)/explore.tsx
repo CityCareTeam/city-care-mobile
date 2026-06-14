@@ -1,3 +1,4 @@
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { IncidentFilterBar } from "@/components/incident-filter-bar";
 import { IncidentDetailSheet } from "@/components/explore/IncidentDetailSheet";
 import { ClusterPin, MapPin } from "@/components/ui/MapPin";
@@ -264,7 +265,7 @@ export default function SignalementsScreen() {
 
       {!selected && canReportIncident && (
         <TouchableOpacity style={styles.fab} onPress={() => router.push("/report")} activeOpacity={0.85}>
-          <Text style={styles.fabIcon}>+</Text>
+          <MaterialIcons name="add" size={22} color="#fff" />
           <Text style={styles.fabLabel}>Signaler</Text>
         </TouchableOpacity>
       )}
@@ -293,13 +294,13 @@ function makeStyles(c: AppColors, bottomInset: number) {
       paddingVertical: 14,
       flexDirection: "row",
       alignItems: "center",
-      shadowColor: "#000",
+      shadowColor: c.primary,
       shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.25,
-      shadowRadius: 8,
+      shadowOpacity: 0.45,
+      shadowRadius: 10,
       elevation: 6,
+      gap: 8,
     },
-    fabIcon: { fontSize: 24, color: "#fff", fontWeight: "700", marginRight: 8 },
     fabLabel: { fontSize: 15, fontWeight: "700", color: "#fff" },
   });
 }

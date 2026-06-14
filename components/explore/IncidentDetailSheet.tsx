@@ -4,6 +4,8 @@ import {
   NEXT_STATUSES,
   STATUS_COLOR,
   STATUS_LABEL,
+  TYPE_COLOR,
+  TYPE_ICON,
   TYPE_LABEL,
 } from "@/constants/incidents";
 import { STRINGS } from "@/constants/strings";
@@ -16,6 +18,7 @@ import { updateIncidentStatus } from "@/services/incidents";
 import { getValidToken } from "@/storage/tokens";
 import type { IncidentResponse } from "@/types/incidents";
 import { formatIncidentDateTime } from "@/utils/format-date";
+import { GlassPillSelector } from "@/components/ui/GlassPillSelector";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -30,6 +33,8 @@ import {
   View,
 } from "react-native";
 import { Image } from "expo-image";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+
 
 type Props = {
   incident: IncidentResponse | null;
@@ -121,28 +126,17 @@ export function IncidentDetailSheet({ incident, initialTab, onClose, onStatusUpd
       backgroundColor: colors.secondary,
       alignSelf: "center", marginBottom: 16,
     },
-    header: { flexDirection: "row", alignItems: "flex-start", marginBottom: 16, paddingHorizontal: 20 },
+    header: { flexDirection: "row", alignItems: "center", marginBottom: 16, paddingHorizontal: 20, gap: 12 },
     titleBlock: { flex: 1, gap: 6 },
+    typeIconBubble: { width: 42, height: 42, borderRadius: 13, alignItems: "center", justifyContent: "center", flexShrink: 0 },
     type: { fontSize: 20, fontWeight: "800", color: colors.text },
     statusBadge: { alignSelf: "flex-start", borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
     statusBadgeText: { color: "#fff", fontWeight: "700", fontSize: 12 },
     closeBtn: {
       width: 30, height: 30, borderRadius: 15,
       backgroundColor: colors.secondary,
-      alignItems: "center", justifyContent: "center", marginLeft: 8,
+      alignItems: "center", justifyContent: "center",
     },
-    closeBtnText: { fontSize: 13, color: colors.text, fontWeight: "700" },
-    tabBar: {
-      flexDirection: "row",
-      marginHorizontal: 20, marginBottom: 4,
-      borderRadius: 12, backgroundColor: colors.secondary, padding: 3,
-    },
-    tab: { flex: 1, paddingVertical: 8, borderRadius: 10, alignItems: "center" },
-    tabActive: { backgroundColor: colors.background },
-    tabInner: { flexDirection: "row", alignItems: "center", gap: 6 },
-    tabText: { fontSize: 13, fontWeight: "600", color: colors.text, opacity: 0.45 },
-    tabTextActive: { opacity: 1 },
-    connDot: { width: 7, height: 7, borderRadius: 4 },
     // ── Détails ──
     timeline: {
       flexDirection: "row",
@@ -174,7 +168,6 @@ export function IncidentDetailSheet({ incident, initialTab, onClose, onStatusUpd
       flexDirection: "row", alignItems: "flex-start",
       gap: 8, paddingHorizontal: 4, marginBottom: 14,
     },
-    addressPin: { fontSize: 16, color: colors.text, opacity: 0.4, marginTop: 1 },
     addressText: { flex: 1, fontSize: 13, color: colors.text, opacity: 0.6, lineHeight: 18 },
     sectionLabel: {
       fontSize: 11, color: colors.text, opacity: 0.45,
@@ -191,7 +184,6 @@ export function IncidentDetailSheet({ incident, initialTab, onClose, onStatusUpd
       backgroundColor: "#000a",
       alignItems: "center", justifyContent: "center",
     },
-    photoDeleteBtnText: { color: "#fff", fontSize: 10, fontWeight: "700" },
     statusActions: { marginBottom: 4 },
     statusActionsRow: { flexDirection: "row", gap: 10 },
     statusActionBtn: {
@@ -223,6 +215,9 @@ export function IncidentDetailSheet({ incident, initialTab, onClose, onStatusUpd
 
             {/* En-tête */}
             <View style={s.header}>
+              <View style={[s.typeIconBubble, { backgroundColor: (TYPE_COLOR[incident.type] ?? "#78909C") + "22" }]}>
+                <MaterialIcons name={TYPE_ICON[incident.type] ?? "help-outline"} size={22} color={TYPE_COLOR[incident.type] ?? "#78909C"} />
+              </View>
               <View style={s.titleBlock}>
                 <Text style={s.type}>{TYPE_LABEL[incident.type] ?? incident.type}</Text>
                 <View style={[s.statusBadge, { backgroundColor: STATUS_COLOR[incident.status] ?? "#999" }]}>
@@ -230,32 +225,22 @@ export function IncidentDetailSheet({ incident, initialTab, onClose, onStatusUpd
                 </View>
               </View>
               <TouchableOpacity onPress={onClose} style={s.closeBtn}>
-                <Text style={s.closeBtnText}>✕</Text>
+                <MaterialIcons name="close" size={16} color={colors.text} />
               </TouchableOpacity>
             </View>
 
             {/* Tabs */}
-            <View style={s.tabBar}>
-              <TouchableOpacity
-                style={[s.tab, activeTab === "details" && s.tabActive]}
-                onPress={() => setActiveTab("details")}
-                activeOpacity={0.75}
-              >
-                <Text style={[s.tabText, activeTab === "details" && s.tabTextActive]}>Détails</Text>
-              </TouchableOpacity>
-              {canAccessChat && (
-                <TouchableOpacity
-                  style={[s.tab, activeTab === "chat" && s.tabActive]}
-                  onPress={() => setActiveTab("chat")}
-                  activeOpacity={0.75}
-                >
-                  <View style={s.tabInner}>
-                    <Text style={[s.tabText, activeTab === "chat" && s.tabTextActive]}>Discussion</Text>
-                    <View style={[s.connDot, { backgroundColor: connected ? "#4caf50" : "#e53e3e" }]} />
-                  </View>
-                </TouchableOpacity>
-              )}
-            </View>
+            {canAccessChat && (
+              <GlassPillSelector
+                options={[
+                  { label: "Détails",    value: "details" as const },
+                  { label: "Discussion", value: "chat"    as const, dotColor: connected ? "#4caf50" : "#e53e3e" },
+                ]}
+                activeValue={activeTab}
+                onSelect={(v) => setActiveTab(v)}
+                style={{ marginHorizontal: 20, marginBottom: 4 }}
+              />
+            )}
 
             {/* Détails */}
             {activeTab === "details" && (
@@ -301,7 +286,7 @@ export function IncidentDetailSheet({ incident, initialTab, onClose, onStatusUpd
                 {/* Adresse */}
                 {incident.addressLabel && (
                   <View style={s.addressRow}>
-                    <Text style={s.addressPin}>◎</Text>
+                    <MaterialIcons name="location-on" size={16} color={colors.text} style={{ opacity: 0.4, marginTop: 1 }} />
                     <Text style={s.addressText} numberOfLines={2}>{incident.addressLabel}</Text>
                   </View>
                 )}
@@ -324,7 +309,7 @@ export function IncidentDetailSheet({ incident, initialTab, onClose, onStatusUpd
                           </TouchableOpacity>
                           {canDeletePhoto(p) && (
                             <TouchableOpacity style={s.photoDeleteBtn} onPress={() => handleDeletePhoto(p.id)}>
-                              <Text style={s.photoDeleteBtnText}>✕</Text>
+                              <MaterialIcons name="close" size={12} color="#fff" />
                             </TouchableOpacity>
                           )}
                         </View>

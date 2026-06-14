@@ -16,6 +16,7 @@ export type PillOption<T> = {
   label: string;
   value: T;
   dotColor?: string;
+  badge?: number;
 };
 
 type Props<T> = {
@@ -131,6 +132,13 @@ export function GlassPillSelector<T>({
               >
                 {opt.label}
               </Text>
+              {opt.badge != null && opt.badge > 0 && (
+                <View style={[styles.badge, { backgroundColor: isActive ? "rgba(255,255,255,0.25)" : color + "30" }]}>
+                  <Text style={[styles.badgeText, { color: isActive ? "#fff" : color }]}>
+                    {opt.badge}
+                  </Text>
+                </View>
+              )}
             </View>
           </Pressable>
         );
@@ -180,5 +188,16 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     fontWeight: "600",
+  },
+  badge: {
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    minWidth: 18,
+    alignItems: "center",
+  },
+  badgeText: {
+    fontSize: 11,
+    fontWeight: "700",
   },
 });
