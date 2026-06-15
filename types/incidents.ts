@@ -79,3 +79,9 @@ export type MapSummaryResponse = {
   cell_size: number;
   total: number;
 };
+
+export type VoteResponse = {
+  incidentId: string;
+  voteCount: number;
+  hasVoted: boolean;
+};
