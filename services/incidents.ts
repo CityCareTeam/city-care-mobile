@@ -125,16 +125,23 @@ export async function deleteIncident(
 function resolvePhotoUrl(url: string): string {
   if (!url) return url;
   const afterProto = API_BASE_URL.split("//")[1] ?? "";
-  const apiHost = afterProto.split(":")[0].split("/")[0]; // "172.20.10.245"
+  const apiHost = afterProto.split(":")[0].split("/")[0];
   const apiProto = API_BASE_URL.startsWith("https") ? "https" : "http";
-  const nginxOrigin = `${apiProto}://${apiHost}`; // "http://172.20.10.245"
-  if (url.startsWith("/")) return `${nginxOrigin}/photos${url}`;
+  const isDevLocalhost = apiHost === "localhost" || apiHost === "127.0.0.1";
+  if (url.startsWith("/")) {
+    return isDevLocalhost
+      ? `${apiProto}://${apiHost}${url}`
+      : `${apiProto}://${apiHost}/photos${url}`;
+  }
   try {
     const u = new URL(url);
     const isInternal = u.hostname === "localhost"
       || u.hostname === "127.0.0.1"
       || !u.hostname.includes(".");
-    if (isInternal) return `${nginxOrigin}/photos${u.pathname}${u.search}`;
+    if (isInternal) {
+      if (isDevLocalhost) { u.hostname = "localhost"; return u.toString(); }
+      return `${apiProto}://${apiHost}/photos${u.pathname}${u.search}`;
+    }
   } catch { return url; }
   return url;
 }
