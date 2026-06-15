@@ -69,7 +69,7 @@ export function ModalShell({ visible, title, onClose, children }: Props) {
                 <MaterialIcons name="close" size={16} color={colors.text} />
               </TouchableOpacity>
             </View>
-            <ScrollView style={s.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+            <ScrollView contentContainerStyle={s.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
               {children}
             </ScrollView>
           </View>
