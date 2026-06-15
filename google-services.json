@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "418135013280",
+    "project_id": "citycare-4077c",
+    "storage_bucket": "citycare-4077c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:418135013280:android:8a98c0f6fee9784279d6c5",
+        "android_client_info": {
+          "package_name": "com.citycare.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyByhzAS74SypIOXPo6rzOYrrbhbK8Fpmmc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

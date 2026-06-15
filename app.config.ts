@@ -18,6 +18,7 @@ export default ({ config }: ConfigContext) => ({
   },
   android: {
     package: "com.citycare.mobile",
+    googleServicesFile: "./google-services.json",
     adaptiveIcon: {
       backgroundColor: "#f6aa54",
       foregroundImage: "./assets/images/logo-city-care.png",
