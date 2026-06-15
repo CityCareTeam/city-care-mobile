@@ -1,6 +1,6 @@
 import { API_BASE_URL, API_ENDPOINTS } from "@/constants/api";
 import { STRINGS } from "@/constants/strings";
-import { authFetch, fetchWithTimeout, parseApiError } from "@/services/api-client";
+import { authFetch, fetchWithTimeout, parseApiError, UPLOAD_TIMEOUT_MS } from "@/services/api-client";
 import type {
     CreateIncidentPayload,
     IncidentListResponse,
@@ -167,7 +167,7 @@ export async function uploadPhoto(
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
     body: form,
-  }); // multipart/form-data — pas de Content-Type JSON, authFetch ne convient pas ici
+  }, UPLOAD_TIMEOUT_MS); // multipart/form-data — timeout étendu pour les fichiers lourds
   if (!response.ok) {
     throw new Error(await parseApiError(response, `Erreur ${response.status}`));
   }
