@@ -15,6 +15,7 @@ type Props = {
   address: string | null | undefined;
   createdAt: string;
   onPress: (id: string) => void;
+  isMine?: boolean;
 };
 
 
@@ -83,10 +84,24 @@ function makeStyles(c: AppColors) {
       fontSize: 11,
       fontWeight: "700",
     },
+    mineBadge: {
+      borderRadius: 10,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      backgroundColor: c.primary,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+    },
+    mineBadgeText: {
+      fontSize: 10,
+      fontWeight: "700",
+      color: "#fff",
+    },
   });
 }
 
-export function IncidentRow({ id, type, status, description, address, createdAt, onPress }: Props) {
+export function IncidentRow({ id, type, status, description, address, createdAt, onPress, isMine }: Props) {
   const { colors } = useAppColors();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
@@ -117,6 +132,12 @@ export function IncidentRow({ id, type, status, description, address, createdAt,
             {STATUS_LABEL[status] ?? status}
           </Text>
         </View>
+        {isMine && (
+          <View style={styles.mineBadge}>
+            <MaterialIcons name="person" size={10} color="#fff" />
+            <Text style={styles.mineBadgeText}>Le mien</Text>
+          </View>
+        )}
         <Text style={styles.date}>{formatDateShort(createdAt)}</Text>
       </View>
       </View>

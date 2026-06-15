@@ -79,12 +79,16 @@ export async function deleteAllNotifications(token: string): Promise<void> {
 
 export async function registerPushToken(token: string, pushToken: string): Promise<void> {
   try {
-    await authFetch(API_ENDPOINTS.pushToken, token, {
+    const res = await authFetch(API_ENDPOINTS.pushToken, token, {
       method: "PATCH",
       body: JSON.stringify({ push_token: pushToken }),
     });
-  } catch {
-    // silent — ne pas bloquer l'app si l'enregistrement échoue
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      console.warn("[push] PATCH /push-token failed", res.status, body);
+    }
+  } catch (e) {
+    console.warn("[push] PATCH /push-token error", e);
   }
 }
 
