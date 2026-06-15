@@ -77,7 +77,7 @@ export async function deleteAllNotifications(token: string): Promise<void> {
   if (!response.ok) throw new Error(STRINGS.api.genericError);
 }
 
-export async function registerPushToken(token: string, pushToken: string): Promise<void> {
+export async function registerPushToken(token: string, pushToken: string | null): Promise<void> {
   try {
     const res = await authFetch(API_ENDPOINTS.pushToken, token, {
       method: "PATCH",

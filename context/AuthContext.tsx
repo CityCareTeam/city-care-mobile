@@ -1,4 +1,5 @@
 import { getMe, logout as authLogout } from "@/services/auth";
+import { registerPushToken } from "@/services/notifications";
 import { getUserMe } from "@/services/users";
 import { clearTokens, getAccessToken, getRefreshToken, getValidToken } from "@/storage/tokens";
 import type { MeResponse } from "@/types/auth";
@@ -86,6 +87,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
+    const token = await getValidToken();
+    if (token) await registerPushToken(token, null);
     const refreshToken = await getRefreshToken();
     if (refreshToken) await authLogout(refreshToken);
     await clearTokens();
