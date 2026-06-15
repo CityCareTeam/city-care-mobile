@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type Props = {
   messages: MessageResponse[];
@@ -25,6 +26,7 @@ type Props = {
 
 export function IncidentChatTab({ messages, loading, connected, sending, dbUserId, onSend }: Props) {
   const { colors } = useAppColors();
+  const { bottom: bottomInset } = useSafeAreaInsets();
   const [inputText, setInputText] = useState("");
   const listRef = useRef<FlatList<MessageResponse>>(null);
 
@@ -73,7 +75,8 @@ export function IncidentChatTab({ messages, loading, connected, sending, dbUserI
       flexDirection: "row",
       alignItems: "flex-end",
       paddingHorizontal: 16,
-      paddingVertical: 10,
+      paddingTop: 10,
+      paddingBottom: 10 + bottomInset,
       gap: 8,
       borderTopWidth: 1,
       borderTopColor: colors.secondary,
