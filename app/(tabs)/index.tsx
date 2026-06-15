@@ -118,6 +118,7 @@ function IncidentList({
   onPress,
   pageSize = INCIDENTS_PAGE_SIZE.list,
   isMine = false,
+  myIds,
 }: {
   incidents: {
     id: string;
@@ -130,6 +131,7 @@ function IncidentList({
   onPress: (id: string) => void;
   pageSize?: number;
   isMine?: boolean;
+  myIds?: Set<string>;
 }) {
   const { isDark, colors } = useAppColors();
   const styles = isDark ? darkStyles : lightStyles;
@@ -150,6 +152,7 @@ function IncidentList({
             address={inc.address}
             createdAt={inc.createdAt}
             onPress={onPress}
+            isMine={myIds?.has(inc.id)}
           />
         </View>
       ))}
@@ -214,6 +217,8 @@ function CitizenView({
     () => applyFilters(allIncidents, allType, allStatus),
     [allIncidents, allType, allStatus],
   );
+
+  const myIdsSet = useMemo(() => new Set(incidents.map((i) => i.id)), [incidents]);
 
   const mineTypeCount = useMemo(() => {
     const acc: Record<string, number> = {};
@@ -301,6 +306,7 @@ function CitizenView({
           <IncidentList
             incidents={filteredAll.map((i) => ({ id: i.id, type: i.type, status: i.status, description: i.description, address: i.addressLabel, createdAt: i.createdAt }))}
             onPress={onPress}
+            myIds={myIdsSet}
           />
         )
       )}
