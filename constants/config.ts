@@ -10,7 +10,7 @@ export const MAP_DELTAS = {
   user: 0.05,
   incident: 0.008,
   report: 0.005,
-  incidentOffset: 0.002,
+  incidentOffset: 0.003,
 } as const;
 
 export const MAP_ANIMATION_MS = {
@@ -24,3 +24,6 @@ export const INCIDENTS_PAGE_SIZE = {
   list: 10,
   load: 50,
 } as const;
+
+export const CLUSTER_ZOOM_THRESHOLD = 15;
+export const CLUSTER_DEBOUNCE_MS = 300;

@@ -1,3 +1,4 @@
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { Button } from "@/components/ui/Button";
 import { Toast } from "@/components/ui/ToastMessage";
 import { MAP_DELTAS } from "@/constants/config";
@@ -8,22 +9,21 @@ import { getValidToken } from "@/storage/tokens";
 import type { IncidentType } from "@/types/incidents";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 import { useUserLocation } from "@/hooks/use-user-location";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Modal,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import MapView, { Marker, Region } from "react-native-maps";
 
@@ -33,103 +33,120 @@ type PickedPhoto = {
   mimeType: string;
 };
 
-const INCIDENT_TYPES: { value: IncidentType; label: string }[] = [
-  { value: "Road", label: "Route abîmée" },
-  { value: "Lighting", label: "Éclairage" },
-  { value: "Waste", label: "Déchets" },
-  { value: "Graffiti", label: "Graffiti" },
-  { value: "Safety", label: "Sécurité" },
-  { value: "Other", label: "Autre" },
+type NominatimResult = {
+  display_name: string;
+  lat: string;
+  lon: string;
+};
+
+const INCIDENT_TYPES: {
+  value: IncidentType;
+  label: string;
+  icon: React.ComponentProps<typeof MaterialIcons>["name"];
+  color: string;
+}[] = [
+  { value: "Road",     label: "Voirie",    icon: "construction",   color: "#FF7043" },
+  { value: "Lighting", label: "Éclairage", icon: "lightbulb",      color: "#FFC107" },
+  { value: "Waste",    label: "Déchets",   icon: "delete-outline",  color: "#66BB6A" },
+  { value: "Graffiti", label: "Graffiti",  icon: "format-paint",   color: "#AB47BC" },
+  { value: "Safety",   label: "Sécurité",  icon: "shield",         color: "#EF5350" },
+  { value: "Other",    label: "Autre",     icon: "help-outline",   color: "#78909C" },
 ];
+
 
 export default function ReportScreen() {
   const { colors, isDark } = useAppColors();
   const styles = useMemo(() => makeStyles(colors, isDark), [colors, isDark]);
 
   const mapRef = useRef<MapView>(null);
+  const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const { coords, setCoords, loading: locLoading } = useUserLocation(MAP_DELTAS.report);
-  const [address, setAddress] = useState("");
-  const [description, setDescription] = useState("");
+  const [addressQuery, setAddressQuery] = useState("");
+  const [suggestions, setSuggestions]   = useState<NominatimResult[]>([]);
+  const [description, setDescription]   = useState("");
   const [selectedType, setSelectedType] = useState<IncidentType | null>(null);
-  const [pickerVisible, setPickerVisible] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [photos, setPhotos] = useState<PickedPhoto[]>([]);
+  const [submitting, setSubmitting]     = useState(false);
+  const [photos, setPhotos]             = useState<PickedPhoto[]>([]);
 
   useEffect(() => {
     if (!locLoading) {
       reverseGeocode(coords.latitude, coords.longitude).then((result) => {
-        if (result) setAddress(result.address_label);
+        if (result) setAddressQuery(result.address_label);
       });
     }
   }, [locLoading]);
 
-  async function handleMapPress(coordinate: {
-    latitude: number;
-    longitude: number;
-  }) {
+  async function handleMapPress(coordinate: { latitude: number; longitude: number }) {
     setCoords(coordinate);
-    const result = await reverseGeocode(
-      coordinate.latitude,
-      coordinate.longitude,
-    );
-    if (result) setAddress(result.address_label);
+    setSuggestions([]);
+    const result = await reverseGeocode(coordinate.latitude, coordinate.longitude);
+    if (result) setAddressQuery(result.address_label);
+  }
+
+  function handleAddressChange(text: string) {
+    setAddressQuery(text);
+    if (searchTimeout.current) clearTimeout(searchTimeout.current);
+    if (text.length < 3) { setSuggestions([]); return; }
+    searchTimeout.current = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(text)}&format=json&limit=5&addressdetails=1`,
+          { headers: { "User-Agent": "CityCare/1.0" } },
+        );
+        const data = await res.json() as NominatimResult[];
+        setSuggestions(data);
+      } catch {
+        setSuggestions([]);
+      }
+    }, 350);
+  }
+
+  function selectSuggestion(s: NominatimResult) {
+    const lat = parseFloat(s.lat);
+    const lon = parseFloat(s.lon);
+    setAddressQuery(s.display_name);
+    setSuggestions([]);
+    setCoords({ latitude: lat, longitude: lon });
+    mapRef.current?.animateToRegion({
+      latitude: lat,
+      longitude: lon,
+      latitudeDelta: MAP_DELTAS.report,
+      longitudeDelta: MAP_DELTAS.report,
+    });
   }
 
   async function handlePickPhoto() {
-    if (photos.length >= MAX_INCIDENT_PHOTOS) {
-      Alert.alert(STRINGS.alert.errorTitle, STRINGS.photos.limitReached);
-      return;
-    }
+    if (photos.length >= MAX_INCIDENT_PHOTOS) { Alert.alert(STRINGS.alert.errorTitle, STRINGS.photos.limitReached); return; }
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert("Permission refusée", STRINGS.photos.permissionDeniedGallery);
-      return;
-    }
+    if (status !== "granted") { Alert.alert("Permission refusée", STRINGS.photos.permissionDeniedGallery); return; }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: "images",
-      allowsMultipleSelection: true,
-      quality: 0.8,
+      mediaTypes: "images", allowsMultipleSelection: true, quality: 0.8,
       selectionLimit: MAX_INCIDENT_PHOTOS - photos.length,
     });
     if (result.canceled) return;
     const picked: PickedPhoto[] = result.assets.map((a) => ({
-      uri: a.uri,
-      fileName: a.fileName ?? `photo_${Date.now()}.jpg`,
-      mimeType: a.mimeType ?? "image/jpeg",
+      uri: a.uri, fileName: a.fileName ?? `photo_${Date.now()}.jpg`, mimeType: a.mimeType ?? "image/jpeg",
     }));
     setPhotos((prev) => [...prev, ...picked].slice(0, MAX_INCIDENT_PHOTOS));
   }
 
   async function handleTakePhoto() {
-    if (photos.length >= MAX_INCIDENT_PHOTOS) {
-      Alert.alert(STRINGS.alert.errorTitle, STRINGS.photos.limitReached);
-      return;
-    }
+    if (photos.length >= MAX_INCIDENT_PHOTOS) { Alert.alert(STRINGS.alert.errorTitle, STRINGS.photos.limitReached); return; }
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert("Permission refusée", STRINGS.photos.permissionDeniedCamera);
-      return;
-    }
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: "images",
-      quality: 0.8,
-    });
+    if (status !== "granted") { Alert.alert("Permission refusée", STRINGS.photos.permissionDeniedCamera); return; }
+    const result = await ImagePicker.launchCameraAsync({ mediaTypes: "images", quality: 0.8 });
     if (result.canceled) return;
     const a = result.assets[0];
     setPhotos((prev) => [...prev, {
-      uri: a.uri,
-      fileName: a.fileName ?? `photo_${Date.now()}.jpg`,
-      mimeType: a.mimeType ?? "image/jpeg",
+      uri: a.uri, fileName: a.fileName ?? `photo_${Date.now()}.jpg`, mimeType: a.mimeType ?? "image/jpeg",
     }].slice(0, MAX_INCIDENT_PHOTOS));
   }
 
   function handleAddPhoto() {
-    if (photos.length >= MAX_INCIDENT_PHOTOS) {
-      Alert.alert(STRINGS.alert.errorTitle, STRINGS.photos.limitReached);
-      return;
-    }
+    if (photos.length >= MAX_INCIDENT_PHOTOS) { Alert.alert(STRINGS.alert.errorTitle, STRINGS.photos.limitReached); return; }
     Alert.alert("Ajouter une photo", undefined, [
-      { text: "Prendre une photo", onPress: handleTakePhoto },
+      { text: "Prendre une photo",        onPress: handleTakePhoto },
       { text: "Choisir depuis la galerie", onPress: handlePickPhoto },
       { text: "Annuler", style: "cancel" },
     ]);
@@ -140,67 +157,38 @@ export default function ReportScreen() {
     setSubmitting(true);
     try {
       const token = await getValidToken();
-      if (!token) {
-        Alert.alert(STRINGS.alert.sessionExpiredTitle, STRINGS.alert.sessionExpiredMsg);
-        router.replace("/login");
-        return;
-      }
+      if (!token) { Alert.alert(STRINGS.alert.sessionExpiredTitle, STRINGS.alert.sessionExpiredMsg); router.replace("/login"); return; }
       const incident = await createIncident(
-        {
-          latitude: coords.latitude,
-          longitude: coords.longitude,
-          type: selectedType,
-          description: description.trim(),
-        },
+        { latitude: coords.latitude, longitude: coords.longitude, type: selectedType, description: description.trim() },
         token,
       );
       let uploadFailed = false;
       for (const photo of photos) {
-        try {
-          await uploadPhoto(incident.id, photo.uri, photo.fileName, photo.mimeType, token);
-        } catch {
-          uploadFailed = true;
-        }
+        try { await uploadPhoto(incident.id, photo.uri, photo.fileName, photo.mimeType, token); }
+        catch { uploadFailed = true; }
       }
-      if (uploadFailed) {
-        Toast.show({ type: "error", text1: STRINGS.alert.errorTitle, text2: STRINGS.photos.uploadError });
-      }
-      Toast.show({
-        type: "success",
-        text1: STRINGS.toast.reportSuccessTitle,
-        text2: STRINGS.toast.reportSuccess,
-      });
+      if (uploadFailed) Toast.show({ type: "error", text1: STRINGS.alert.errorTitle, text2: STRINGS.photos.uploadError });
+      Toast.show({ type: "success", text1: STRINGS.toast.reportSuccessTitle, text2: STRINGS.toast.reportSuccess });
       router.back();
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : STRINGS.api.unknownError;
-      Alert.alert(STRINGS.alert.errorTitle, msg);
+      Alert.alert(STRINGS.alert.errorTitle, e instanceof Error ? e.message : STRINGS.api.unknownError);
     } finally {
       setSubmitting(false);
     }
   }
 
-  const selectedLabel = INCIDENT_TYPES.find(
-    (t) => t.value === selectedType,
-  )?.label;
-  const initialRegion: Region = {
-    ...coords,
-    latitudeDelta: MAP_DELTAS.report,
-    longitudeDelta: MAP_DELTAS.report,
-  };
+  const initialRegion: Region = { ...coords, latitudeDelta: MAP_DELTAS.report, longitudeDelta: MAP_DELTAS.report };
+  const remaining  = 255 - description.length;
+  const canSubmit  = !!selectedType && !!description.trim();
 
   return (
-    <ScrollView
-      contentContainerStyle={styles.container}
-      keyboardShouldPersistTaps="handled"
-    >
-      <Text style={styles.title}>Signaler un incident</Text>
+    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
 
-      {/* Mini-carte */}
+      {/* ── Localisation ── */}
+      <SectionHeader title="Localisation" colors={colors} required />
       <View style={styles.mapContainer}>
         {locLoading ? (
-          <View style={styles.mapLoader}>
-            <ActivityIndicator color={colors.primary} />
-          </View>
+          <View style={styles.mapLoader}><ActivityIndicator color={colors.primary} /></View>
         ) : (
           <MapView
             ref={mapRef}
@@ -209,37 +197,91 @@ export default function ReportScreen() {
             showsUserLocation
             onPress={(e) => handleMapPress(e.nativeEvent.coordinate)}
           >
-            <Marker
-              coordinate={coords}
-              pinColor={colors.primary}
-              tracksViewChanges={false}
-            />
+            <Marker coordinate={coords} pinColor={colors.primary} tracksViewChanges={false} />
           </MapView>
         )}
       </View>
-      <Text style={styles.hint}>
-        Appuyez sur la carte pour déplacer le marqueur
-      </Text>
 
-      {/* Description */}
-      <Text style={styles.label}>Description</Text>
+      {/* Champ adresse avec autocomplete */}
+      <View style={styles.addressWrap}>
+        <View style={styles.addressInputRow}>
+          <MaterialIcons name="search" size={18} color={colors.text + "55"} style={{ marginLeft: 12 }} />
+          <TextInput
+            style={styles.addressInput}
+            value={addressQuery}
+            onChangeText={handleAddressChange}
+            placeholder="Rechercher ou taper une adresse..."
+            placeholderTextColor={colors.text + "55"}
+            returnKeyType="search"
+            onSubmitEditing={() => {
+              if (suggestions.length > 0) selectSuggestion(suggestions[0]);
+            }}
+          />
+          {addressQuery.length > 0 && (
+            <TouchableOpacity onPress={() => { setAddressQuery(""); setSuggestions([]); }} style={{ marginRight: 10 }}>
+              <MaterialIcons name="close" size={16} color={colors.text + "55"} />
+            </TouchableOpacity>
+          )}
+        </View>
+        {suggestions.length > 0 && (
+          <View style={styles.suggestions}>
+            {suggestions.map((s, i) => (
+              <TouchableOpacity
+                key={i}
+                style={[styles.suggestionItem, i < suggestions.length - 1 && styles.suggestionDivider]}
+                onPress={() => selectSuggestion(s)}
+                activeOpacity={0.7}
+              >
+                <MaterialIcons name="location-on" size={14} color={colors.primary} style={{ marginTop: 1 }} />
+                <Text style={styles.suggestionText} numberOfLines={2}>{s.display_name}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+      </View>
+
+      {/* ── Catégorie ── */}
+      <SectionHeader title="Catégorie" colors={colors} required />
+      <View style={styles.typeGrid}>
+        {INCIDENT_TYPES.map((t) => {
+          const active = selectedType === t.value;
+          return (
+            <TouchableOpacity
+              key={t.value}
+              style={[styles.typeCard, { backgroundColor: active ? t.color : colors.white, borderColor: active ? t.color : colors.chipBorder }]}
+              onPress={() => setSelectedType(t.value)}
+              activeOpacity={0.75}
+            >
+              <View style={[styles.typeIconBubble, { backgroundColor: active ? "rgba(255,255,255,0.22)" : t.color + "18" }]}>
+                <MaterialIcons name={t.icon} size={22} color={active ? "#fff" : t.color} />
+              </View>
+              <Text style={[styles.typeLabel, { color: active ? "#fff" : colors.text }]}>
+                {t.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {/* ── Description ── */}
+      <SectionHeader title="Description" colors={colors} required />
       <TextInput
         style={styles.textarea}
         multiline
         numberOfLines={4}
         placeholder="Décrivez brièvement l'incident..."
-        placeholderTextColor={colors.text + "66"}
+        placeholderTextColor={colors.text + "55"}
         value={description}
         onChangeText={setDescription}
         textAlignVertical="top"
         maxLength={255}
       />
-      <Text style={{ fontSize: 12, color: description.length > 240 ? "orange" : colors.text + "66", textAlign: "right" }}>
-        {255 - description.length} caractère{255 - description.length !== 1 ? "s" : ""} restant{255 - description.length !== 1 ? "s" : ""}
+      <Text style={[styles.charCount, { color: remaining < 15 ? "#f0a500" : colors.text + "55" }]}>
+        {remaining} caractère{remaining !== 1 ? "s" : ""} restant{remaining !== 1 ? "s" : ""}
       </Text>
 
-      {/* Photos (optionnel) */}
-      <Text style={styles.label}>Photos (optionnel)</Text>
+      {/* ── Photos ── */}
+      <SectionHeader title="Photos (optionnel)" colors={colors} />
       <View style={styles.photosRow}>
         {photos.map((p, i) => (
           <View key={p.uri} style={styles.photoThumb}>
@@ -248,247 +290,118 @@ export default function ReportScreen() {
               style={styles.photoRemoveBtn}
               onPress={() => setPhotos((prev) => prev.filter((_, idx) => idx !== i))}
             >
-              <Text style={styles.photoRemoveBtnText}>✕</Text>
+              <MaterialIcons name="close" size={11} color="#fff" />
             </TouchableOpacity>
           </View>
         ))}
         {photos.length < MAX_INCIDENT_PHOTOS && (
           <TouchableOpacity style={styles.photoAddBtn} onPress={handleAddPhoto} activeOpacity={0.7}>
-            <Text style={styles.photoAddBtnIcon}>+</Text>
+            <MaterialIcons name="add-a-photo" size={22} color={colors.text + "55"} />
+            <Text style={styles.photoAddLabel}>{MAX_INCIDENT_PHOTOS - photos.length} restante{MAX_INCIDENT_PHOTOS - photos.length !== 1 ? "s" : ""}</Text>
           </TouchableOpacity>
         )}
       </View>
 
-      {/* Catégorie */}
-      <Text style={styles.label}>Catégorie</Text>
-      <TouchableOpacity
-        style={styles.select}
-        onPress={() => setPickerVisible(true)}
-        activeOpacity={0.7}
-      >
-        <Text style={[styles.selectText, !selectedLabel && styles.placeholder]}>
-          {selectedLabel ?? "Sélectionner une catégorie"}
-        </Text>
-        <Text style={styles.arrow}>▾</Text>
-      </TouchableOpacity>
-
-      {/* Localisation (affichage seul) */}
-      <Text style={styles.label}>Localisation</Text>
-      <TextInput
-        style={[styles.input, styles.inputReadonly]}
-        value={address}
-        editable={false}
-        placeholder="Appuyez sur la carte pour définir le lieu"
-        placeholderTextColor={colors.text + "55"}
-      />
-
-      <Button
-        label="Envoyer le signalement"
-        onPress={handleSubmit}
-        loading={submitting}
-        disabled={!selectedType || !description.trim()}
-      />
-      {(!selectedType || !description.trim()) && (
+      {/* ── Submit ── */}
+      <Button label="Envoyer le signalement" onPress={handleSubmit} loading={submitting} disabled={!canSubmit} />
+      {!canSubmit && (
         <Text style={styles.validationHint}>
           {!selectedType && !description.trim()
             ? "Sélectionnez une catégorie et entrez une description"
-            : !selectedType
-              ? "Sélectionnez une catégorie"
-              : "Entrez une description"}
+            : !selectedType ? "Sélectionnez une catégorie"
+            : "Entrez une description"}
         </Text>
       )}
 
-      {/* Modal sélection catégorie */}
-      <Modal
-        visible={pickerVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setPickerVisible(false)}
-      >
-        <Pressable
-          style={styles.overlay}
-          onPress={() => setPickerVisible(false)}
-        >
-          <View style={styles.sheet}>
-            <Text style={styles.sheetTitle}>Catégorie</Text>
-            {INCIDENT_TYPES.map((t) => (
-              <TouchableOpacity
-                key={t.value}
-                style={[
-                  styles.option,
-                  selectedType === t.value && styles.optionActive,
-                ]}
-                onPress={() => {
-                  setSelectedType(t.value);
-                  setPickerVisible(false);
-                }}
-                activeOpacity={0.7}
-              >
-                <Text
-                  style={[
-                    styles.optionText,
-                    selectedType === t.value && styles.optionTextActive,
-                  ]}
-                >
-                  {t.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </Pressable>
-      </Modal>
     </ScrollView>
   );
 }
 
 function makeStyles(c: AppColors, isDark: boolean) {
   return StyleSheet.create({
-    container: {
-      backgroundColor: c.background,
-      padding: 20,
-      paddingBottom: 48,
-    },
-    title: {
-      fontSize: 22,
-      fontWeight: "800",
-      color: c.text,
-      textAlign: "center",
-      marginBottom: 20,
-    },
+    container: { backgroundColor: c.background, padding: 20, paddingBottom: 48 },
+
+    // ── Map ──
     mapContainer: {
-      height: 180,
-      borderRadius: 14,
-      overflow: "hidden",
-      marginBottom: 6,
+      height: 190, borderRadius: 16, overflow: "hidden", marginBottom: 10,
+      shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 3,
     },
     map: { flex: 1 },
-    mapLoader: {
+    mapLoader: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: isDark ? c.secondary : "#e8e6db" },
+
+    // ── Address autocomplete ──
+    addressWrap: { marginBottom: 20 },
+    addressInputRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: c.inputBg,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: c.inputBorder,
+      height: 46,
+    },
+    addressInput: {
       flex: 1,
-      alignItems: "center",
-      justifyContent: "center",
-      backgroundColor: isDark ? c.secondary : "#e8e6db",
-    },
-    hint: {
-      fontSize: 12,
-      color: c.text,
-      opacity: 0.45,
-      textAlign: "center",
-      marginBottom: 20,
-    },
-    label: {
-      fontSize: 14,
-      fontWeight: "500",
-      color: c.text,
-      marginBottom: 6,
-    },
-    textarea: {
-      backgroundColor: c.inputBg,
-      borderRadius: 10,
-      borderWidth: 1,
-      borderColor: c.inputBorder,
-      padding: 12,
-      fontSize: 14,
-      color: c.text,
-      minHeight: 90,
-      marginBottom: 16,
-    },
-    input: {
-      backgroundColor: c.inputBg,
-      borderRadius: 10,
-      borderWidth: 1,
-      borderColor: c.inputBorder,
-      padding: 12,
-      height: 46,
-      fontSize: 14,
-      color: c.text,
-      marginBottom: 24,
-    },
-    inputReadonly: { backgroundColor: isDark ? c.secondary : "#f4f2ea", color: c.text },
-    select: {
-      backgroundColor: c.inputBg,
-      borderRadius: 10,
-      borderWidth: 1,
-      borderColor: c.inputBorder,
-      paddingHorizontal: 12,
-      height: 46,
-      marginBottom: 16,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-    },
-    selectText: { fontSize: 14, color: c.text },
-    placeholder: { color: c.text + "66" },
-    arrow: { fontSize: 16, color: c.text + "88" },
-    overlay: { flex: 1, backgroundColor: "#0006", justifyContent: "flex-end" },
-    sheet: {
-      backgroundColor: c.white,
-      borderTopLeftRadius: 20,
-      borderTopRightRadius: 20,
-      padding: 20,
-      paddingBottom: 40,
-    },
-    sheetTitle: {
-      fontSize: 16,
-      fontWeight: "700",
-      color: c.text,
-      textAlign: "center",
-      marginBottom: 12,
-    },
-    option: {
-      paddingVertical: 14,
-      paddingHorizontal: 12,
-      borderRadius: 8,
-      marginBottom: 4,
-    },
-    optionActive: { backgroundColor: c.primary + "22" },
-    optionText: { fontSize: 15, color: c.text },
-    optionTextActive: { fontWeight: "700", color: c.primary },
-    validationHint: {
+      paddingHorizontal: 10,
       fontSize: 13,
-      color: c.statusRed,
-      textAlign: "center",
-      marginTop: 8,
-      opacity: 0.8,
+      color: c.text,
     },
-    photosRow: {
-      flexDirection: "row",
-      flexWrap: "wrap",
-      gap: 8,
-      marginBottom: 20,
-    },
-    photoThumb: {
-      width: 72,
-      height: 72,
-      borderRadius: 10,
-      overflow: "hidden",
-    },
-    photoImg: {
-      width: 72,
-      height: 72,
-    },
-    photoRemoveBtn: {
-      position: "absolute",
-      top: 3,
-      right: 3,
-      width: 20,
-      height: 20,
-      borderRadius: 10,
-      backgroundColor: "#000a",
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    photoRemoveBtnText: { color: "#fff", fontSize: 10, fontWeight: "700" },
-    photoAddBtn: {
-      width: 72,
-      height: 72,
-      borderRadius: 10,
-      borderWidth: 1.5,
+    suggestions: {
+      backgroundColor: c.white,
+      borderRadius: 12,
+      borderWidth: 1,
       borderColor: c.inputBorder,
-      borderStyle: "dashed",
-      alignItems: "center",
-      justifyContent: "center",
-      backgroundColor: c.inputBg,
+      marginTop: 4,
+      overflow: "hidden",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.08,
+      shadowRadius: 8,
+      elevation: 4,
     },
-    photoAddBtnIcon: { fontSize: 28, color: c.text, opacity: 0.4 },
+    suggestionItem: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: 8,
+      paddingHorizontal: 14,
+      paddingVertical: 11,
+    },
+    suggestionDivider: { borderBottomWidth: 1, borderBottomColor: c.secondary },
+    suggestionText: { fontSize: 13, color: c.text, flex: 1, lineHeight: 18 },
+
+    // ── Type grid ──
+    typeGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 20 },
+    typeCard: {
+      width: "47%", borderRadius: 14, borderWidth: 1.5,
+      padding: 14, alignItems: "center", gap: 10,
+      shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 1,
+    },
+    typeIconBubble: { width: 46, height: 46, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+    typeLabel: { fontSize: 13, fontWeight: "600", textAlign: "center" },
+
+    // ── Description ──
+    textarea: {
+      backgroundColor: c.inputBg, borderRadius: 12, borderWidth: 1, borderColor: c.inputBorder,
+      padding: 14, fontSize: 14, color: c.text, minHeight: 96, marginBottom: 6,
+    },
+    charCount: { fontSize: 12, textAlign: "right", marginBottom: 20 },
+
+    // ── Photos ──
+    photosRow: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 24 },
+    photoThumb: { width: 80, height: 80, borderRadius: 12, overflow: "hidden" },
+    photoImg: { width: 80, height: 80 },
+    photoRemoveBtn: {
+      position: "absolute", top: 4, right: 4, width: 20, height: 20,
+      borderRadius: 10, backgroundColor: "#000a", alignItems: "center", justifyContent: "center",
+    },
+    photoAddBtn: {
+      width: 80, height: 80, borderRadius: 12, borderWidth: 1.5,
+      borderColor: c.inputBorder, borderStyle: "dashed",
+      alignItems: "center", justifyContent: "center", backgroundColor: c.inputBg, gap: 4,
+    },
+    photoAddLabel: { fontSize: 10, color: c.text, opacity: 0.4, fontWeight: "600" },
+
+    // ── Validation ──
+    validationHint: { fontSize: 13, color: c.statusRed, textAlign: "center", marginTop: 8, opacity: 0.8 },
   });
 }

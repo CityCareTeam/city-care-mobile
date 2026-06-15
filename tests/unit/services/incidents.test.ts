@@ -2,6 +2,7 @@ import { STRINGS } from '@/constants/strings';
 import {
   createIncident,
   getIncidents,
+  getMapSummary,
   updateIncidentStatus,
   deleteIncident,
   reverseGeocode,
@@ -354,5 +355,74 @@ describe('getStatusHistory', () => {
   it('throws on error response', async () => {
     mockFetch.mockResolvedValueOnce(makeResponse(404, {}));
     await expect(getStatusHistory('bad-id')).rejects.toThrow('Erreur 404');
+  });
+});
+
+const mapSummaryResponse = {
+  data: [
+    { latitude: 45.748, longitude: 4.847, count: 5, reported: 3, in_progress: 1, resolved: 1 },
+    { latitude: 45.760, longitude: 4.860, count: 2, reported: 0, in_progress: 0, resolved: 2 },
+  ],
+  cell_size: 0.05,
+  total: 7,
+};
+
+describe('getMapSummary', () => {
+  beforeEach(() => mockFetch.mockClear());
+
+  it('returns clusters on success', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(200, mapSummaryResponse));
+    const result = await getMapSummary();
+    expect(result.data).toHaveLength(2);
+    expect(result.total).toBe(7);
+    expect(result.cell_size).toBe(0.05);
+  });
+
+  it('calls map-summary endpoint', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(200, mapSummaryResponse));
+    await getMapSummary();
+    expect(mockFetch.mock.calls[0][0]).toContain('map-summary');
+  });
+
+  it('appends zoom param', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(200, mapSummaryResponse));
+    await getMapSummary({ zoom: 12 });
+    expect(mockFetch.mock.calls[0][0]).toContain('zoom=12');
+  });
+
+  it('appends all bounds params', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(200, mapSummaryResponse));
+    await getMapSummary({ latMin: 45.7, latMax: 45.8, lngMin: 4.8, lngMax: 4.9 });
+    const url = mockFetch.mock.calls[0][0] as string;
+    expect(url).toContain('latMin=45.7');
+    expect(url).toContain('latMax=45.8');
+    expect(url).toContain('lngMin=4.8');
+    expect(url).toContain('lngMax=4.9');
+  });
+
+  it('appends status filter', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(200, mapSummaryResponse));
+    await getMapSummary({ status: 'reported' });
+    expect(mockFetch.mock.calls[0][0]).toContain('status=reported');
+  });
+
+  it('appends type filter', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(200, mapSummaryResponse));
+    await getMapSummary({ type: 'Road' });
+    expect(mockFetch.mock.calls[0][0]).toContain('type=Road');
+  });
+
+  it('does not append undefined params', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(200, mapSummaryResponse));
+    await getMapSummary({});
+    const url = mockFetch.mock.calls[0][0] as string;
+    expect(url).not.toContain('zoom=');
+    expect(url).not.toContain('status=');
+    expect(url).not.toContain('latMin=');
+  });
+
+  it('throws on error response', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(500, {}));
+    await expect(getMapSummary()).rejects.toThrow();
   });
 });

@@ -14,6 +14,7 @@ export default ({ config }: ConfigContext) => ({
   newArchEnabled: true,
   ios: {
     supportsTablet: true,
+    bundleIdentifier: "com.citycare.mobile",
   },
   android: {
     package: "com.citycare.mobile",
@@ -23,6 +24,7 @@ export default ({ config }: ConfigContext) => ({
       monochromeImage: "./assets/images/android-icon-monochrome.png",
     },
     edgeToEdgeEnabled: true,
+    softwareKeyboardLayoutMode: "pan",
     predictiveBackGestureEnabled: false,
     usesCleartextTraffic: true,
     config: {
@@ -53,6 +55,14 @@ export default ({ config }: ConfigContext) => ({
       },
     ],
     "expo-secure-store",
+    [
+      "expo-notifications",
+      {
+        icon: "./assets/images/logo-city-care.png",
+        color: "#f6aa54",
+        androidMode: "default",
+      },
+    ],
     [
       "expo-location",
       {

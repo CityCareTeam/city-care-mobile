@@ -1,3 +1,4 @@
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { IncidentRow } from "@/components/incident-row";
 import { Logo } from "@/components/ui/Logo";
 import { STATUS_COLOR, STATUS_LABEL, TYPE_LABEL } from "@/constants/incidents";
@@ -61,20 +62,20 @@ function StatCard({
   label,
   value,
   color,
+  icon,
 }: {
   label: string;
   value: number;
   color: string;
+  icon: React.ComponentProps<typeof MaterialIcons>["name"];
 }) {
   const { isDark } = useAppColors();
   const styles = isDark ? darkStyles : lightStyles;
   return (
-    <View
-      style={[
-        styles.statCard,
-        { backgroundColor: color + "1A", borderTopColor: color },
-      ]}
-    >
+    <View style={[styles.statCard, { backgroundColor: color + "1A", borderTopColor: color }]}>
+      <View style={[styles.statIconBubble, { backgroundColor: color + "28" }]}>
+        <MaterialIcons name={icon} size={15} color={color} />
+      </View>
       <Text style={[styles.statValue, { color }]}>{value}</Text>
       <Text style={styles.statLabel}>{label}</Text>
     </View>
@@ -82,10 +83,13 @@ function StatCard({
 }
 
 function EmptyState({ text }: { text: string }) {
-  const { isDark } = useAppColors();
+  const { isDark, colors } = useAppColors();
   const styles = isDark ? darkStyles : lightStyles;
   return (
     <View style={styles.empty}>
+      <View style={[styles.emptyIconWrap, { backgroundColor: colors.secondary }]}>
+        <MaterialIcons name="inbox" size={26} color={colors.text + "35"} />
+      </View>
       <Text style={styles.emptyText}>{text}</Text>
     </View>
   );
@@ -113,6 +117,7 @@ function IncidentList({
   incidents,
   onPress,
   pageSize = INCIDENTS_PAGE_SIZE.list,
+  isMine = false,
 }: {
   incidents: {
     id: string;
@@ -124,8 +129,9 @@ function IncidentList({
   }[];
   onPress: (id: string) => void;
   pageSize?: number;
+  isMine?: boolean;
 }) {
-  const { isDark } = useAppColors();
+  const { isDark, colors } = useAppColors();
   const styles = isDark ? darkStyles : lightStyles;
   const [visibleCount, setVisibleCount] = useState(pageSize);
   const visible = incidents.slice(0, visibleCount);
@@ -165,6 +171,7 @@ function IncidentList({
   );
 }
 
+
 // ── Vue Citoyen ───────────────────────────────────────────────────────────
 
 function CitizenView({
@@ -176,53 +183,95 @@ function CitizenView({
   allIncidents: IncidentResponse[];
   onPress: (id: string) => void;
 }) {
-  const { isDark } = useAppColors();
+  const { colors, isDark } = useAppColors();
   const styles = isDark ? darkStyles : lightStyles;
-  const reported = incidents.filter((i) => i.status === "reported").length;
-  const inProgress = incidents.filter((i) => i.status === "in_progress").length;
-  const resolved = incidents.filter((i) => i.status === "resolved").length;
 
-  const { filterType, setFilterType, filterStatus, setFilterStatus, filteredIncidents: filteredMyIncidents } =
-    useIncidentFilters(incidents);
+  const [activeTab, setActiveTab] = useState<"mine" | "all">("mine");
 
-  const typeCount = useMemo(() => {
+  const isMineTab = activeTab === "mine";
+
+  const mineReported   = incidents.filter((i) => i.status === "reported").length;
+  const mineInProgress = incidents.filter((i) => i.status === "in_progress").length;
+  const mineResolved   = incidents.filter((i) => i.status === "resolved").length;
+
+  const allReported   = allIncidents.filter((i) => i.status === "reported").length;
+  const allInProgress = allIncidents.filter((i) => i.status === "in_progress").length;
+  const allResolved   = allIncidents.filter((i) => i.status === "resolved").length;
+
+  const reported   = isMineTab ? mineReported   : allReported;
+  const inProgress = isMineTab ? mineInProgress : allInProgress;
+  const resolved   = isMineTab ? mineResolved   : allResolved;
+
+  const {
+    filterType: mineType, setFilterType: setMineType,
+    filterStatus: mineStatus, setFilterStatus: setMineStatus,
+    filteredIncidents: filteredMine,
+  } = useIncidentFilters(incidents);
+
+  const [allType, setAllType] = useState<string | null>(null);
+  const [allStatus, setAllStatus] = useState<string | null>(null);
+  const filteredAll = useMemo(
+    () => applyFilters(allIncidents, allType, allStatus),
+    [allIncidents, allType, allStatus],
+  );
+
+  const mineTypeCount = useMemo(() => {
     const acc: Record<string, number> = {};
-    allIncidents.forEach((inc) => { acc[inc.type] = (acc[inc.type] ?? 0) + 1; });
+    incidents.forEach((i) => { acc[i.type] = (acc[i.type] ?? 0) + 1; });
+    return acc;
+  }, [incidents]);
+
+  const allTypeCount = useMemo(() => {
+    const acc: Record<string, number> = {};
+    allIncidents.forEach((i) => { acc[i.type] = (acc[i.type] ?? 0) + 1; });
     return acc;
   }, [allIncidents]);
 
-  const filteredAllIncidents = applyFilters(allIncidents, filterType, filterStatus);
+  const filterType   = isMineTab ? mineType   : allType;
+  const setFilterType = isMineTab ? setMineType : setAllType;
+  const filterStatus  = isMineTab ? mineStatus  : allStatus;
+  const setFilterStatus = isMineTab ? setMineStatus : setAllStatus;
+  const typeCount    = isMineTab ? mineTypeCount : allTypeCount;
 
   return (
     <>
-      <SectionHeader title="Mes stats" />
+      <SectionHeader title={isMineTab ? "Mes stats" : "Stats communauté"} />
       <View style={styles.statRow}>
-        <StatCard label="Déclarés" value={reported} color="#2196f3" />
-        <StatCard label="En cours" value={inProgress} color="#f0a500" />
-        <StatCard label="Résolus" value={resolved} color="#4caf50" />
+        <StatCard label="Déclarés" value={reported}   color="#2196f3" icon="flag" />
+        <StatCard label="En cours" value={inProgress} color="#f0a500" icon="autorenew" />
+        <StatCard label="Résolus"  value={resolved}   color="#4caf50" icon="check-circle" />
       </View>
 
-      <SectionHeader title="Par catégorie" />
-      <View style={styles.typeRow}>
-        {Object.entries(typeCount).map(([type, count]) => {
-          const active = filterType === type;
-          return (
-            <TouchableOpacity
-              key={type}
-              style={[styles.typeChip, active && styles.typeChipActive]}
-              onPress={() => setFilterType(active ? null : type)}
-              activeOpacity={0.75}
-            >
-              <Text style={[styles.typeChipCount, active && styles.typeChipActiveText]}>
-                {count}
-              </Text>
-              <Text style={[styles.typeChipLabel, active && styles.typeChipActiveText]}>
-                {TYPE_LABEL[type] ?? type}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+      {/* ── Onglets ── */}
+      <GlassPillSelector
+        options={[
+          { label: "Les miens",   value: "mine" as const, badge: incidents.length    || undefined },
+          { label: "Communauté",  value: "all"  as const, badge: allIncidents.length || undefined },
+        ]}
+        activeValue={activeTab}
+        onSelect={(v) => setActiveTab(v)}
+        style={{ marginBottom: 16 }}
+      />
+
+      {/* ── Filtres ── */}
+      {Object.keys(typeCount).length > 0 && (
+        <View style={styles.typeRow}>
+          {Object.entries(typeCount).map(([type, count]) => {
+            const active = filterType === type;
+            return (
+              <TouchableOpacity
+                key={type}
+                style={[styles.typeChip, active && styles.typeChipActive]}
+                onPress={() => setFilterType(active ? null : type)}
+                activeOpacity={0.75}
+              >
+                <Text style={[styles.typeChipCount, active && styles.typeChipActiveText]}>{count}</Text>
+                <Text style={[styles.typeChipLabel,  active && styles.typeChipActiveText]}>{TYPE_LABEL[type] ?? type}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      )}
 
       <GlassPillSelector
         options={STATUS_OPTIONS_4}
@@ -231,59 +280,29 @@ function CitizenView({
         style={{ marginBottom: 16 }}
       />
 
-      <SectionHeader
-        title="Mes signalements"
-        count={filteredMyIncidents.length}
-      />
-      {filteredMyIncidents.length === 0 ? (
-        <EmptyState
-          text={
-            incidents.length === 0
-              ? STRINGS.emptyState.noMyIncidents
-              : STRINGS.emptyState.noFilterResults
-          }
-        />
+      {/* ── Contenu de l'onglet actif ── */}
+      {isMineTab ? (
+        filteredMine.length === 0 ? (
+          <EmptyState text={incidents.length === 0 ? STRINGS.emptyState.noMyIncidents : STRINGS.emptyState.noFilterResults} />
+        ) : (
+          <IncidentList
+            isMine
+            incidents={filteredMine.map((i) => {
+              const full = allIncidents.find((a) => a.id === i.id);
+              return { id: i.id, type: i.type, status: i.status, description: full?.description ?? i.description, address: i.address_label, createdAt: i.created_at };
+            })}
+            onPress={onPress}
+          />
+        )
       ) : (
-        <IncidentList
-          incidents={filteredMyIncidents.map((i) => {
-            const full = allIncidents.find((a) => a.id === i.id);
-            return {
-              id: i.id,
-              type: i.type,
-              status: i.status,
-              description: full?.description ?? i.description,
-              address: i.address_label,
-              createdAt: i.created_at,
-            };
-          })}
-          onPress={onPress}
-        />
-      )}
-
-      <SectionHeader
-        title="Tous les signalements"
-        count={filteredAllIncidents.length}
-      />
-      {filteredAllIncidents.length === 0 ? (
-        <EmptyState
-          text={
-            allIncidents.length === 0
-              ? STRINGS.emptyState.noAllIncidents
-              : STRINGS.emptyState.noFilterResults
-          }
-        />
-      ) : (
-        <IncidentList
-          incidents={filteredAllIncidents.map((i) => ({
-            id: i.id,
-            type: i.type,
-            status: i.status,
-            description: i.description,
-            address: i.addressLabel,
-            createdAt: i.createdAt,
-          }))}
-          onPress={onPress}
-        />
+        filteredAll.length === 0 ? (
+          <EmptyState text={allIncidents.length === 0 ? STRINGS.emptyState.noAllIncidents : STRINGS.emptyState.noFilterResults} />
+        ) : (
+          <IncidentList
+            incidents={filteredAll.map((i) => ({ id: i.id, type: i.type, status: i.status, description: i.description, address: i.addressLabel, createdAt: i.createdAt }))}
+            onPress={onPress}
+          />
+        )
       )}
     </>
   );
@@ -318,8 +337,8 @@ function AgentView({
   return (
     <>
       <View style={styles.statRow}>
-        <StatCard label="À traiter" value={reportedCount} color="#2196f3" />
-        <StatCard label="En cours" value={inProgressCount} color="#f0a500" />
+        <StatCard label="À traiter" value={reportedCount}   color="#2196f3" icon="pending-actions" />
+        <StatCard label="En cours"  value={inProgressCount} color="#f0a500" icon="autorenew" />
       </View>
 
       <SectionHeader title="Par catégorie" />
@@ -407,9 +426,9 @@ function AdminView({
   return (
     <>
       <View style={styles.statRow}>
-        <StatCard label="Déclarés" value={reported} color="#2196f3" />
-        <StatCard label="En cours" value={inProgress} color="#f0a500" />
-        <StatCard label="Résolus" value={resolved} color="#4caf50" />
+        <StatCard label="Déclarés" value={reported}    color="#2196f3" icon="flag" />
+        <StatCard label="En cours" value={inProgress}  color="#f0a500" icon="autorenew" />
+        <StatCard label="Résolus"  value={resolved}    color="#4caf50" icon="check-circle" />
       </View>
       <Text style={styles.totalLabel}>
         {incidents.length} signalement{incidents.length !== 1 ? "s" : ""} au
@@ -577,6 +596,13 @@ export default function HomeScreen() {
             <Text style={styles.rolePillText}>{ROLE_LABELS[role] ?? role}</Text>
           </View>
         )}
+        {role === "Citizen" && (
+          <TouchableOpacity style={styles.reportShortcut} onPress={() => router.push("/report")} activeOpacity={0.8}>
+            <MaterialIcons name="add-circle-outline" size={16} color="#fff" />
+            <Text style={styles.reportShortcutText}>Signaler un incident</Text>
+            <MaterialIcons name="chevron-right" size={16} color="rgba(255,255,255,0.5)" />
+          </TouchableOpacity>
+        )}
       </View>
 
       {role === "Citizen" && (
@@ -641,7 +667,12 @@ function makeStyles(c: AppColors) {
     rolePillText: { fontSize: 12, fontWeight: "700", color: "#fff" },
     statRow: { flexDirection: "row", gap: 10, marginBottom: 24 },
     statCard: { flex: 1, borderRadius: 12, borderTopWidth: 3, padding: 14, alignItems: "center" },
-    statValue: { fontSize: 30, fontWeight: "800", marginBottom: 2 },
+    statIconBubble: {
+      width: 28, height: 28, borderRadius: 8,
+      alignItems: "center", justifyContent: "center",
+      marginBottom: 8,
+    },
+    statValue: { fontSize: 28, fontWeight: "800", marginBottom: 2 },
     statLabel: {
       fontSize: 11,
       color: c.text,
@@ -651,6 +682,17 @@ function makeStyles(c: AppColors) {
       textTransform: "uppercase",
       letterSpacing: 0.4,
     },
+    reportShortcut: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      backgroundColor: "rgba(255,255,255,0.18)",
+      borderRadius: 12,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      marginTop: 12,
+    },
+    reportShortcutText: { fontSize: 14, fontWeight: "600", color: "#fff", flex: 1 },
     totalLabel: {
       fontSize: 13,
       color: c.text,
@@ -674,6 +716,22 @@ function makeStyles(c: AppColors) {
       fontWeight: "800",
       color: c.text,
     },
+    tabBar: {
+      flexDirection: "row",
+      borderRadius: 14,
+      backgroundColor: c.secondary,
+      padding: 3,
+      marginBottom: 16,
+    },
+    tab: {
+      flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center",
+      paddingVertical: 10, borderRadius: 11, gap: 6,
+    },
+    tabActive: { backgroundColor: c.white },
+    tabText: { fontSize: 13, fontWeight: "600", color: c.text, opacity: 0.4 },
+    tabTextActive: { opacity: 1 },
+    tabBadge: { borderRadius: 10, paddingHorizontal: 7, paddingVertical: 2, minWidth: 22, alignItems: "center" },
+    tabBadgeText: { fontSize: 11, fontWeight: "700" },
     typeRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 },
     typeChip: {
       borderRadius: 20,
@@ -707,7 +765,12 @@ function makeStyles(c: AppColors) {
       borderRadius: 12,
       padding: 28,
       alignItems: "center",
+      gap: 10,
       marginBottom: 20,
+    },
+    emptyIconWrap: {
+      width: 52, height: 52, borderRadius: 16,
+      alignItems: "center", justifyContent: "center",
     },
     emptyText: { fontSize: 14, color: c.text, opacity: 0.5, textAlign: "center" },
     sectionHeader: {

@@ -1,29 +1,17 @@
 import { API_BASE_URL, API_ENDPOINTS } from "@/constants/api";
 import { STRINGS } from "@/constants/strings";
-import { fetchWithTimeout } from "@/services/api-client";
+import { authFetch, fetchWithTimeout, parseApiError } from "@/services/api-client";
 import type {
     CreateIncidentPayload,
     IncidentListResponse,
     IncidentResponse,
+    MapSummaryResponse,
     PhotoResponse,
     ReverseGeocodeResult,
     StatusHistoryEntry,
 } from "@/types/incidents";
 
 export type { ReverseGeocodeResult };
-
-async function parseErrorMessage(
-  response: Response,
-  fallback: string,
-): Promise<string> {
-  const text = await response.text().catch(() => "");
-  try {
-    const data = JSON.parse(text) as Record<string, unknown>;
-    return ((data?.error ?? data?.message ?? data?.title ?? text) as string) || fallback;
-  } catch {
-    return text || fallback;
-  }
-}
 
 // Mapping vers les valeurs entières .NET (ordre de l'enum côté backend)
 const INCIDENT_TYPE_INT: Record<string, number> = {
@@ -110,19 +98,13 @@ export async function updateIncidentStatus(
   accessToken: string,
   comment?: string,
 ): Promise<void> {
-  const response = await fetchWithTimeout(
+  const response = await authFetch(
     `${API_ENDPOINTS.incidents}/${id}/status`,
-    {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify({ status, comment }),
-    },
+    accessToken,
+    { method: "PATCH", body: JSON.stringify({ status, comment }) },
   );
   if (!response.ok) {
-    throw new Error(await parseErrorMessage(response, `Erreur ${response.status}`));
+    throw new Error(await parseApiError(response, `Erreur ${response.status}`));
   }
 }
 
@@ -130,16 +112,38 @@ export async function deleteIncident(
   id: string,
   accessToken: string,
 ): Promise<void> {
-  const response = await fetchWithTimeout(
+  const response = await authFetch(
     `${API_ENDPOINTS.incidents}/${id}`,
-    {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${accessToken}` },
-    },
+    accessToken,
+    { method: "DELETE" },
   );
   if (!response.ok) {
-    throw new Error(await parseErrorMessage(response, `Erreur ${response.status}`));
+    throw new Error(await parseApiError(response, `Erreur ${response.status}`));
   }
+}
+
+function resolvePhotoUrl(url: string): string {
+  if (!url) return url;
+  const afterProto = API_BASE_URL.split("//")[1] ?? "";
+  const apiHost = afterProto.split(":")[0].split("/")[0];
+  const apiProto = API_BASE_URL.startsWith("https") ? "https" : "http";
+  const isDevLocalhost = apiHost === "localhost" || apiHost === "127.0.0.1";
+  if (url.startsWith("/")) {
+    return isDevLocalhost
+      ? `${apiProto}://${apiHost}${url}`
+      : `${apiProto}://${apiHost}/photos${url}`;
+  }
+  try {
+    const u = new URL(url);
+    const isInternal = u.hostname === "localhost"
+      || u.hostname === "127.0.0.1"
+      || !u.hostname.includes(".");
+    if (isInternal) {
+      if (isDevLocalhost) { u.hostname = "localhost"; return u.toString(); }
+      return `${apiProto}://${apiHost}/photos${u.pathname}${u.search}`;
+    }
+  } catch { return url; }
+  return url;
 }
 
 export async function getPhotos(incidentId: string): Promise<PhotoResponse[]> {
@@ -147,11 +151,7 @@ export async function getPhotos(incidentId: string): Promise<PhotoResponse[]> {
   if (!response.ok) throw new Error(`Erreur ${response.status}`);
   const body = await response.json() as PhotoResponse[] | { data: PhotoResponse[] };
   const list = Array.isArray(body) ? body : (body.data ?? []);
-  const apiHost = API_BASE_URL.split("//")[1]?.split(":")[0] ?? "localhost";
-  return list.map((p) => ({
-    ...p,
-    url: p.url.replace("localhost", apiHost),
-  }));
+  return list.map((p) => ({ ...p, url: resolvePhotoUrl(p.url) }));
 }
 
 export async function uploadPhoto(
@@ -167,9 +167,9 @@ export async function uploadPhoto(
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
     body: form,
-  });
+  }); // multipart/form-data — pas de Content-Type JSON, authFetch ne convient pas ici
   if (!response.ok) {
-    throw new Error(await parseErrorMessage(response, `Erreur ${response.status}`));
+    throw new Error(await parseApiError(response, `Erreur ${response.status}`));
   }
   return response.json() as Promise<PhotoResponse>;
 }
@@ -179,13 +179,34 @@ export async function deletePhoto(
   photoId: string,
   token: string,
 ): Promise<void> {
-  const response = await fetchWithTimeout(API_ENDPOINTS.incidentPhoto(incidentId, photoId), {
-    method: "DELETE",
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const response = await authFetch(
+    API_ENDPOINTS.incidentPhoto(incidentId, photoId),
+    token,
+    { method: "DELETE" },
+  );
   if (!response.ok) {
-    throw new Error(await parseErrorMessage(response, `Erreur ${response.status}`));
+    throw new Error(await parseApiError(response, `Erreur ${response.status}`));
   }
+}
+
+export async function getMapSummary(params?: {
+  zoom?: number;
+  latMin?: number; latMax?: number;
+  lngMin?: number; lngMax?: number;
+  status?: string;
+  type?: string;
+}): Promise<MapSummaryResponse> {
+  const url = new URL(API_ENDPOINTS.mapSummary);
+  if (params?.zoom !== undefined) url.searchParams.set("zoom", String(params.zoom));
+  if (params?.latMin !== undefined) url.searchParams.set("latMin", String(params.latMin));
+  if (params?.latMax !== undefined) url.searchParams.set("latMax", String(params.latMax));
+  if (params?.lngMin !== undefined) url.searchParams.set("lngMin", String(params.lngMin));
+  if (params?.lngMax !== undefined) url.searchParams.set("lngMax", String(params.lngMax));
+  if (params?.status) url.searchParams.set("status", params.status);
+  if (params?.type) url.searchParams.set("type", params.type);
+  const response = await fetch(url.toString());
+  if (!response.ok) throw new Error(STRINGS.api.incidentsLoadError);
+  return response.json() as Promise<MapSummaryResponse>;
 }
 
 export async function getStatusHistory(incidentId: string): Promise<StatusHistoryEntry[]> {

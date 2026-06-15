@@ -1,7 +1,9 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { Input } from "@/components/ui/Input";
+import { ChangePasswordModal } from "@/components/profile/ChangePasswordModal";
+import { EditProfileModal } from "@/components/profile/EditProfileModal";
+import { NotificationSettingsModal } from "@/components/profile/NotificationSettingsModal";
 import { ROLE_COLORS, ROLE_LABELS } from "@/constants/roles";
 import { DEBUG_NETWORK } from "@/constants/config";
 import { getTabBarScrollPadding } from "@/utils/layout";
@@ -9,7 +11,7 @@ import { useAuth } from "@/context/AuthContext";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
 import { STRINGS } from "@/constants/strings";
-import { deleteAccount, updateMe } from "@/services/users";
+import { deleteAccount } from "@/services/users";
 import { getValidToken } from "@/storage/tokens";
 import { formatDate } from "@/utils/format-date";
 import Constants from "expo-constants";
@@ -18,9 +20,6 @@ import { type ComponentProps, useEffect, useMemo, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
     ScrollView,
     StyleSheet,
     Text,
@@ -43,17 +42,40 @@ function makeStyles(c: AppColors, bottomInset: number) {
       paddingBottom: getTabBarScrollPadding(bottomInset),
     },
 
-    // ── Avatar ──
-    avatarWrapper: { alignItems: "center", marginBottom: 32 },
+    // ── Hero card ──
+    heroCard: {
+      width: "100%",
+      backgroundColor: c.white,
+      borderRadius: 20,
+      overflow: "hidden",
+      alignItems: "center",
+      marginBottom: 24,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.07,
+      shadowRadius: 8,
+      elevation: 3,
+    },
+    heroBand: {
+      width: "100%",
+      height: 72,
+      backgroundColor: c.primary + "22",
+    },
     avatarRing: {
       width: 100,
       height: 100,
       borderRadius: 50,
       borderWidth: 3,
-      borderColor: c.primary + "40",
+      borderColor: c.white,
+      backgroundColor: c.white,
       alignItems: "center",
       justifyContent: "center",
-      marginBottom: 14,
+      marginTop: -50,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.12,
+      shadowRadius: 6,
+      elevation: 4,
     },
     avatar: {
       width: 88,
@@ -64,9 +86,9 @@ function makeStyles(c: AppColors, bottomInset: number) {
       justifyContent: "center",
     },
     avatarText: { fontSize: 32, fontWeight: "800", color: "#fff" },
-    fullName: { fontSize: 20, fontWeight: "700", color: c.text, marginBottom: 2 },
+    fullName: { fontSize: 20, fontWeight: "700", color: c.text, marginTop: 10, marginBottom: 2 },
     usernameLabel: { fontSize: 14, color: c.text, opacity: 0.45, marginBottom: 10 },
-    badge: { borderRadius: 20, paddingHorizontal: 14, paddingVertical: 5 },
+    badge: { borderRadius: 20, paddingHorizontal: 14, paddingVertical: 5, marginBottom: 20 },
     badgeText: { color: "#fff", fontSize: 13, fontWeight: "700" },
 
     // ── Block header (accent bar + title) ──
@@ -78,65 +100,47 @@ function makeStyles(c: AppColors, bottomInset: number) {
       marginBottom: 10,
       marginTop: 8,
     },
-    blockAccent: {
-      width: 3,
-      height: 18,
-      borderRadius: 2,
-      backgroundColor: c.primary,
-    },
-    blockTitle: {
-      fontSize: 16,
-      fontWeight: "800",
-      color: c.text,
-    },
+    blockAccent: { width: 3, height: 18, borderRadius: 2, backgroundColor: c.primary },
+    blockTitle: { fontSize: 16, fontWeight: "800", color: c.text },
 
     // ── Cards ──
     card: { width: "100%", marginBottom: 8, padding: 0 },
     rowDivider: { borderBottomWidth: 1, borderBottomColor: c.secondary },
 
-    // ── Info rows (display, 2-line layout with icon) ──
+    // ── Icon bubble ──
+    iconBubble: {
+      width: 36,
+      height: 36,
+      borderRadius: 10,
+      alignItems: "center",
+      justifyContent: "center",
+      marginRight: 14,
+    },
+
+    // ── Info rows ──
     infoRow: {
       flexDirection: "row",
       alignItems: "center",
-      paddingVertical: 13,
+      paddingVertical: 11,
       paddingHorizontal: 16,
       width: "100%",
     },
-    infoIcon: { marginRight: 14 },
     infoContent: { flex: 1 },
     infoLabel: { fontSize: 12, color: c.text, opacity: 0.45, marginBottom: 3 },
     infoValue: { fontSize: 15, color: c.text, fontWeight: "600" },
 
-    // ── Settings rows (tappable) ──
+    // ── Settings rows ──
     settingsRow: {
       flexDirection: "row",
       alignItems: "center",
-      paddingVertical: 15,
+      paddingVertical: 11,
       paddingHorizontal: 16,
       width: "100%",
     },
-    settingsIcon: { marginRight: 14 },
     settingsLabel: { fontSize: 15, flex: 1 },
     chevron: { fontSize: 22, color: c.text, opacity: 0.2 },
 
-    // ── Modal ──
-    modalWrap: { flex: 1, backgroundColor: "#000a" },
-    modalKav: { flex: 1, justifyContent: "center", alignItems: "center", padding: 24 },
-    modalCard: { width: "100%", backgroundColor: c.background, borderRadius: 16, overflow: "hidden" },
-    modalHeader: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      paddingHorizontal: 20,
-      paddingVertical: 16,
-      borderBottomWidth: 1,
-      borderBottomColor: c.secondary,
-    },
-    modalTitle: { fontSize: 17, fontWeight: "700", color: c.text },
-    modalCloseText: { fontSize: 20, color: c.text, opacity: 0.4, padding: 4 },
-    modalBody: { padding: 20 },
     errorText: { color: "#e53e3e", fontSize: 13, marginBottom: 12 },
-
     version: { marginTop: 20, fontSize: 12, color: c.text, opacity: 0.3 },
   });
 }
@@ -151,6 +155,7 @@ export default function ProfileScreen() {
 
   const [editOpen, setEditOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
@@ -205,8 +210,9 @@ export default function ProfileScreen() {
     <>
       <ScrollView contentContainerStyle={styles.container}>
 
-        {/* ── Avatar ── */}
-        <View style={styles.avatarWrapper}>
+        {/* ── Hero card ── */}
+        <View style={styles.heroCard}>
+          <View style={styles.heroBand} />
           <View style={styles.avatarRing}>
             <View style={styles.avatar}>
               <Text style={styles.avatarText}>{initials}</Text>
@@ -242,35 +248,15 @@ export default function ProfileScreen() {
         {/* ── Mon compte ── */}
         <BlockHeader title="Mon compte" styles={styles} />
         <Card style={styles.card}>
-          <SettingsRow
-            label="Modifier mes informations"
-            icon="edit"
-            color={colors.primary}
-            onPress={() => setEditOpen(true)}
-            styles={styles}
-          />
-          <SettingsRow
-            label="Changer le mot de passe"
-            icon="lock"
-            color={colors.primary}
-            last
-            onPress={() => setPasswordOpen(true)}
-            styles={styles}
-          />
+          <SettingsRow label="Modifier mes informations" icon="edit" color={colors.primary} onPress={() => setEditOpen(true)} styles={styles} colors={colors} />
+          <SettingsRow label="Changer le mot de passe" icon="lock" color={colors.primary} onPress={() => setPasswordOpen(true)} styles={styles} colors={colors} />
+          <SettingsRow label="Notifications" icon="notifications" color={colors.primary} last onPress={() => setNotifOpen(true)} styles={styles} colors={colors} />
         </Card>
 
         {/* ── Session ── */}
         <BlockHeader title="Session" styles={styles} />
         <Card style={styles.card}>
-          <SettingsRow
-            label="Se déconnecter"
-            icon="logout"
-            color={colors.primary}
-            showChevron={false}
-            last
-            onPress={logout}
-            styles={styles}
-          />
+          <SettingsRow label="Se déconnecter" icon="logout" color={colors.primary} showChevron={false} last onPress={logout} styles={styles} colors={colors} />
         </Card>
 
         {/* ── Zone danger ── */}
@@ -285,6 +271,7 @@ export default function ProfileScreen() {
             loading={deleting}
             onPress={handleDelete}
             styles={styles}
+            colors={colors}
           />
         </Card>
 
@@ -294,6 +281,7 @@ export default function ProfileScreen() {
         )}
       </ScrollView>
 
+      <NotificationSettingsModal visible={notifOpen} onClose={() => setNotifOpen(false)} />
       <EditProfileModal
         visible={editOpen}
         initialValues={{
@@ -304,28 +292,15 @@ export default function ProfileScreen() {
         }}
         onClose={() => setEditOpen(false)}
         onSaved={async () => { setEditOpen(false); await refreshUser(); }}
-        styles={styles}
       />
-
-      <ChangePasswordModal
-        visible={passwordOpen}
-        onClose={() => setPasswordOpen(false)}
-        onSaved={() => setPasswordOpen(false)}
-        styles={styles}
-      />
+      <ChangePasswordModal visible={passwordOpen} onClose={() => setPasswordOpen(false)} onSaved={() => setPasswordOpen(false)} />
     </>
   );
 }
 
 // ─── Block header ──────────────────────────────────────────────────────────────
 
-function BlockHeader({
-  title,
-  styles,
-}: {
-  title: string;
-  styles: ReturnType<typeof makeStyles>;
-}) {
+function BlockHeader({ title, styles }: { title: string; styles: ReturnType<typeof makeStyles> }) {
   return (
     <View style={styles.blockHeader}>
       <View style={styles.blockAccent} />
@@ -334,15 +309,10 @@ function BlockHeader({
   );
 }
 
-// ─── Info row (display, icon + 2-line label/value) ────────────────────────────
+// ─── Info row ─────────────────────────────────────────────────────────────────
 
 function InfoRow({
-  icon,
-  label,
-  value,
-  last,
-  styles,
-  colors,
+  icon, label, value, last, styles, colors,
 }: {
   icon: ComponentProps<typeof MaterialIcons>["name"];
   label: string;
@@ -353,7 +323,9 @@ function InfoRow({
 }) {
   return (
     <View style={[styles.infoRow, !last && styles.rowDivider]}>
-      <MaterialIcons name={icon} size={20} color={colors.primary + "99"} style={styles.infoIcon} />
+      <View style={[styles.iconBubble, { backgroundColor: colors.primary + "15" }]}>
+        <MaterialIcons name={icon} size={18} color={colors.primary} />
+      </View>
       <View style={styles.infoContent}>
         <Text style={styles.infoLabel}>{label}</Text>
         <Text style={styles.infoValue}>{value ?? "—"}</Text>
@@ -362,17 +334,10 @@ function InfoRow({
   );
 }
 
-// ─── Settings row (tappable) ──────────────────────────────────────────────────
+// ─── Settings row ─────────────────────────────────────────────────────────────
 
 function SettingsRow({
-  label,
-  icon,
-  color,
-  showChevron = true,
-  last,
-  loading,
-  onPress,
-  styles,
+  label, icon, color, showChevron = true, last, loading, onPress, styles, colors,
 }: {
   label: string;
   icon: ComponentProps<typeof MaterialIcons>["name"];
@@ -382,6 +347,7 @@ function SettingsRow({
   loading?: boolean;
   onPress: () => void;
   styles: ReturnType<typeof makeStyles>;
+  colors: AppColors;
 }) {
   return (
     <TouchableOpacity
@@ -390,198 +356,14 @@ function SettingsRow({
       activeOpacity={0.7}
       disabled={loading}
     >
-      <MaterialIcons name={icon} size={20} color={color} style={styles.settingsIcon} />
+      <View style={[styles.iconBubble, { backgroundColor: color + "18" }]}>
+        <MaterialIcons name={icon} size={18} color={color} />
+      </View>
       {loading
         ? <ActivityIndicator color={color} size="small" style={{ flex: 1 }} />
-        : <Text style={[styles.settingsLabel, { color, fontWeight: showChevron ? "400" : "600" }]}>{label}</Text>
+        : <Text style={[styles.settingsLabel, { color: showChevron ? colors.text : color, fontWeight: showChevron ? "500" : "600" }]}>{label}</Text>
       }
       {showChevron && <Text style={styles.chevron}>›</Text>}
     </TouchableOpacity>
-  );
-}
-
-// ─── Modal shell ───────────────────────────────────────────────────────────────
-
-function ModalShell({
-  visible,
-  title,
-  onClose,
-  styles,
-  children,
-}: {
-  visible: boolean;
-  title: string;
-  onClose: () => void;
-  styles: ReturnType<typeof makeStyles>;
-  children: React.ReactNode;
-}) {
-  return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
-      <View style={styles.modalWrap}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.modalKav}
-        >
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{title}</Text>
-              <TouchableOpacity onPress={onClose}>
-                <Text style={styles.modalCloseText}>✕</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.modalBody}>{children}</View>
-          </View>
-        </KeyboardAvoidingView>
-      </View>
-    </Modal>
-  );
-}
-
-// ─── Edit profile modal ────────────────────────────────────────────────────────
-
-function EditProfileModal({
-  visible,
-  initialValues,
-  onClose,
-  onSaved,
-  styles,
-}: {
-  visible: boolean;
-  initialValues: { firstName: string; lastName: string; email: string; username: string };
-  onClose: () => void;
-  onSaved: () => Promise<void>;
-  styles: ReturnType<typeof makeStyles>;
-}) {
-  const [firstName, setFirstName] = useState(initialValues.firstName);
-  const [lastName, setLastName] = useState(initialValues.lastName);
-  const [email, setEmail] = useState(initialValues.email);
-  const [username, setUsername] = useState(initialValues.username);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (visible) {
-      setFirstName(initialValues.firstName);
-      setLastName(initialValues.lastName);
-      setEmail(initialValues.email);
-      setUsername(initialValues.username);
-      setError(null);
-    }
-  }, [visible, initialValues.firstName, initialValues.lastName, initialValues.email, initialValues.username]);
-
-  const handleSave = async () => {
-    if (!firstName.trim() || !lastName.trim() || !email.trim() || !username.trim()) {
-      setError(STRINGS.toast.missingFields);
-      return;
-    }
-    const nameRegex = /^[\p{L} \-'.]+$/u;
-    const usernameRegex = /^[\p{L}\p{N}._\-]+$/u;
-    if (firstName.trim().length > 30 || lastName.trim().length > 30) {
-      setError(STRINGS.toast.nameTooLong);
-      return;
-    }
-    if (!nameRegex.test(firstName.trim()) || !nameRegex.test(lastName.trim())) {
-      setError(STRINGS.toast.nameInvalidChars);
-      return;
-    }
-    if (username.trim().length > 30) {
-      setError(STRINGS.toast.usernameTooLong);
-      return;
-    }
-    if (!usernameRegex.test(username.trim())) {
-      setError(STRINGS.toast.usernameInvalidChars);
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const token = await getValidToken();
-      if (!token) throw new Error(STRINGS.api.sessionExpired);
-      await updateMe(token, {
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-        email: email.trim(),
-        username: username.trim(),
-      });
-      await onSaved();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : STRINGS.api.unknownError);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <ModalShell visible={visible} title="Modifier mes informations" onClose={onClose} styles={styles}>
-      <Input label="Prénom" value={firstName} onChangeText={setFirstName} autoCapitalize="words" />
-      <Input label="Nom" value={lastName} onChangeText={setLastName} autoCapitalize="words" />
-      <Input
-        label="Nom d'utilisateur"
-        value={username}
-        onChangeText={setUsername}
-        autoCapitalize="none"
-        autoCorrect={false}
-      />
-      <Input
-        label="Email"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-      />
-      {error && <Text style={styles.errorText}>{error}</Text>}
-      <Button label="Enregistrer" onPress={handleSave} loading={loading} />
-    </ModalShell>
-  );
-}
-
-// ─── Change password modal ─────────────────────────────────────────────────────
-
-function ChangePasswordModal({
-  visible,
-  onClose,
-  onSaved,
-  styles,
-}: {
-  visible: boolean;
-  onClose: () => void;
-  onSaved: () => void;
-  styles: ReturnType<typeof makeStyles>;
-}) {
-  const [newPwd, setNewPwd] = useState("");
-  const [confirm, setConfirm] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (visible) { setNewPwd(""); setConfirm(""); setError(null); }
-  }, [visible]);
-
-  const handleSave = async () => {
-    if (!newPwd || !confirm) { setError(STRINGS.toast.missingFields); return; }
-    if (newPwd !== confirm) { setError(STRINGS.toast.passwordMismatch); return; }
-    if (newPwd.length < 8) { setError(STRINGS.toast.passwordTooShort); return; }
-    setLoading(true);
-    setError(null);
-    try {
-      const token = await getValidToken();
-      if (!token) throw new Error(STRINGS.api.sessionExpired);
-      await updateMe(token, { newPassword: newPwd });
-      Alert.alert(STRINGS.alert.passwordChangedTitle, STRINGS.alert.passwordChangedMsg);
-      onSaved();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : STRINGS.api.unknownError);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <ModalShell visible={visible} title="Changer le mot de passe" onClose={onClose} styles={styles}>
-      <Input label="Nouveau mot de passe" value={newPwd} onChangeText={setNewPwd} secureTextEntry />
-      <Input label="Confirmer le mot de passe" value={confirm} onChangeText={setConfirm} secureTextEntry />
-      {error && <Text style={styles.errorText}>{error}</Text>}
-      <Button label="Enregistrer" onPress={handleSave} loading={loading} />
-    </ModalShell>
   );
 }

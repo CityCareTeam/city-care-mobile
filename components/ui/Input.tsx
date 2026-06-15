@@ -14,6 +14,7 @@ import {
 type InputProps = TextInputProps & {
   label: string;
   error?: string;
+  icon?: React.ComponentProps<typeof MaterialIcons>["name"];
 };
 
 function makeStyles(c: AppColors) {
@@ -42,8 +43,14 @@ function makeStyles(c: AppColors) {
       color: c.text,
       backgroundColor: c.inputBg,
     },
-    inputPassword: {
-      paddingRight: 46,
+    inputWithIcon: { paddingLeft: 42 },
+    inputPassword: { paddingRight: 46 },
+    iconLeft: {
+      position: "absolute",
+      left: 12,
+      top: 0,
+      bottom: 0,
+      justifyContent: "center",
     },
     inputError: {
       borderColor: c.statusRed,
@@ -65,7 +72,7 @@ function makeStyles(c: AppColors) {
   });
 }
 
-export function Input({ label, error, style, secureTextEntry, ...props }: InputProps) {
+export function Input({ label, error, icon, style, secureTextEntry, ...props }: InputProps) {
   const { colors, isDark } = useAppColors();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [hidden, setHidden] = useState(true);
@@ -75,9 +82,15 @@ export function Input({ label, error, style, secureTextEntry, ...props }: InputP
     <View style={styles.wrapper} collapsable={false}>
       <Text style={styles.label}>{label}</Text>
       <View style={styles.inputRow}>
+        {icon && (
+          <View style={styles.iconLeft} pointerEvents="none">
+            <MaterialIcons name={icon} size={18} color={isDark ? "#888" : "#bbb"} />
+          </View>
+        )}
         <TextInput
           style={[
             styles.input,
+            icon && styles.inputWithIcon,
             isPassword && styles.inputPassword,
             !!error && styles.inputError,
             style,

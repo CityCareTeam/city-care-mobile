@@ -64,3 +64,18 @@ export type IncidentListResponse = {
     total_pages: number;
   };
 };
+
+export type MapClusterDto = {
+  latitude: number;
+  longitude: number;
+  count: number;
+  reported: number;
+  in_progress: number;
+  resolved: number;
+};
+
+export type MapSummaryResponse = {
+  data: MapClusterDto[];
+  cell_size: number;
+  total: number;
+};

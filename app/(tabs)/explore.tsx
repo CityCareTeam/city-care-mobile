@@ -1,56 +1,51 @@
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { IncidentFilterBar } from "@/components/incident-filter-bar";
-import { formatIncidentDateTime } from "@/utils/format-date";
-import { DEFAULT_LOCATION, MAP_ANIMATION_MS, MAP_DELTAS } from "@/constants/config";
-import {
-    NEXT_STATUSES,
-    STATUS_COLOR,
-    STATUS_LABEL,
-    TYPE_LABEL,
-} from "@/constants/incidents";
-import { useAuth } from "@/context/AuthContext";
-import { STRINGS } from "@/constants/strings";
+import { IncidentDetailSheet } from "@/components/explore/IncidentDetailSheet";
+import { ClusterPin, MapPin } from "@/components/ui/MapPin";
+import { CLUSTER_ZOOM_THRESHOLD, DEFAULT_LOCATION, MAP_ANIMATION_MS, MAP_DELTAS } from "@/constants/config";
+import { STATUS_COLOR } from "@/constants/incidents";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
 import { useIncidentFilters } from "@/hooks/use-incident-filters";
-import {
-    deleteIncident,
-    deletePhoto,
-    getIncidents,
-    getPhotos,
-    getStatusHistory,
-    updateIncidentStatus,
-} from "@/services/incidents";
-import { getValidToken } from "@/storage/tokens";
-import type { IncidentResponse, PhotoResponse, StatusHistoryEntry } from "@/types/incidents";
+import { useIncidentPermissions } from "@/hooks/use-incident-permissions";
+import { useMapClusters } from "@/hooks/use-map-clusters";
+import { useUserLocation } from "@/hooks/use-user-location";
+import { getIncidents } from "@/services/incidents";
+import type { IncidentResponse, MapClusterDto } from "@/types/incidents";
 import { useFocusEffect } from "@react-navigation/native";
 import { router, useLocalSearchParams } from "expo-router";
-import { useUserLocation } from "@/hooks/use-user-location";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Modal,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { ClusterPin, MapPin } from "@/components/ui/MapPin";
-import { Image } from "expo-image";
-import ClusteredMapView from "react-native-map-clustering";
 import MapView, { Marker, Region } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-type IncidentMarkerProps = {
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function regionToZoom(latitudeDelta: number): number {
+  return Math.round(Math.log(360 / latitudeDelta) / Math.LN2);
+}
+
+function clusterDominantColor(c: MapClusterDto): string {
+  if (c.in_progress > 0) return STATUS_COLOR.in_progress;
+  if (c.reported > 0)    return STATUS_COLOR.reported;
+  return STATUS_COLOR.resolved;
+}
+
+// ─── Markers ──────────────────────────────────────────────────────────────────
+
+function IncidentMarker({ incident, color, active, onPress }: {
   incident: IncidentResponse;
   color: string;
   active: boolean;
   onPress: () => void;
-};
-
-function IncidentMarker({ incident, color, active, onPress }: IncidentMarkerProps) {
+}) {
   const [tracksViewChanges, setTracksViewChanges] = useState(true);
 
   useEffect(() => {
@@ -62,7 +57,7 @@ function IncidentMarker({ incident, color, active, onPress }: IncidentMarkerProp
   return (
     <Marker
       coordinate={{ latitude: incident.latitude, longitude: incident.longitude }}
-      tracksViewChanges={tracksViewChanges}
+      tracksViewChanges={active || tracksViewChanges}
       anchor={{ x: 0.5, y: 1 }}
       onPress={onPress}
     >
@@ -71,36 +66,30 @@ function IncidentMarker({ incident, color, active, onPress }: IncidentMarkerProp
   );
 }
 
-type ClusterMarkerProps = {
-  longitude: number;
-  latitude: number;
-  count: number;
-  color: string;
-  onPress: () => void;
-};
-
-function ClusterMarker({ longitude, latitude, count, color, onPress }: ClusterMarkerProps) {
+function ClusterMarker({ cluster, onPress }: { cluster: MapClusterDto; onPress: () => void }) {
   const [tracksViewChanges, setTracksViewChanges] = useState(true);
 
   useEffect(() => {
     setTracksViewChanges(true);
     const t = setTimeout(() => setTracksViewChanges(false), MAP_ANIMATION_MS.trackViewChange);
     return () => clearTimeout(t);
-  }, [count]);
+  }, [cluster.count]);
 
   return (
     <Marker
-      coordinate={{ longitude, latitude }}
+      coordinate={{ latitude: cluster.latitude, longitude: cluster.longitude }}
       tracksViewChanges={tracksViewChanges}
       anchor={{ x: 0.5, y: 0.5 }}
       onPress={onPress}
     >
-      <ClusterPin count={count} color={color} />
+      <ClusterPin count={cluster.count} color={clusterDominantColor(cluster)} />
     </Marker>
   );
 }
 
-const LYON: Region = {
+// ─── Screen ───────────────────────────────────────────────────────────────────
+
+const INITIAL_REGION: Region = {
   ...DEFAULT_LOCATION,
   latitudeDelta: MAP_DELTAS.explore,
   longitudeDelta: MAP_DELTAS.explore,
@@ -108,87 +97,23 @@ const LYON: Region = {
 
 export default function SignalementsScreen() {
   const [incidents, setIncidents] = useState<IncidentResponse[]>([]);
-  const { region: userRegion } = useUserLocation(MAP_DELTAS.user);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<IncidentResponse | null>(null);
-  const [updatingStatus, setUpdatingStatus] = useState(false);
-  const { isStaff, isAdmin, dbUser } = useAuth();
+  const [initialTab, setInitialTab] = useState<"details" | "chat">("details");
+
+  const { region: userRegion } = useUserLocation(MAP_DELTAS.user);
   const { colors } = useAppColors();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(colors, insets.bottom), [colors, insets.bottom]);
-  const {
-    filterType,
-    setFilterType,
-    filterStatus,
-    setFilterStatus,
-    filteredIncidents,
-  } = useIncidentFilters(incidents);
+  const { canReportIncident } = useIncidentPermissions(null);
+  const { filterType, setFilterType, filterStatus, setFilterStatus, filteredIncidents } = useIncidentFilters(incidents);
+  const { clusters, currentZoom, currentRegionRef, onRegionChangeComplete, reload: reloadClusters } = useMapClusters(filterStatus, filterType);
 
-  const [photos, setPhotos] = useState<PhotoResponse[]>([]);
-  const [photosLoading, setPhotosLoading] = useState(false);
-  const [photosError, setPhotosError] = useState(false);
-  const [statusHistory, setStatusHistory] = useState<StatusHistoryEntry[]>([]);
-  const [zoomedPhoto, setZoomedPhoto] = useState<string | null>(null);
-
+  const mapRef = useRef<MapView>(null);
   const markerJustPressed = useRef(false);
-  const mapRef = useRef<ClusteredMapView>(null);
-
-  useEffect(() => {
-    if (!selected) { setPhotos([]); setStatusHistory([]); setPhotosError(false); return; }
-    setPhotosLoading(true);
-    setPhotosError(false);
-    Promise.all([
-      getPhotos(selected.id).catch(() => { setPhotosError(true); return []; }),
-      getStatusHistory(selected.id).catch(() => []),
-    ]).then(([p, h]) => {
-      setPhotos(p);
-      setStatusHistory(h);
-    }).finally(() => setPhotosLoading(false));
-  }, [selected?.id]);
-
-  const renderCluster = useCallback(
-    ({ id, geometry, properties, onPress }: {
-      id: number;
-      geometry: { coordinates: [number, number] };
-      properties: { point_count: number };
-      onPress: () => void;
-    }) => (
-      <ClusterMarker
-        key={`cluster-${id}`}
-        longitude={geometry.coordinates[0]}
-        latitude={geometry.coordinates[1]}
-        count={properties.point_count}
-        color={colors.primary}
-        onPress={onPress}
-      />
-    ),
-    [colors.primary],
-  );
-
-  const markers = useMemo(
-    () =>
-      filteredIncidents.map((inc) => {
-        const isActive = selected?.id === inc.id;
-        const color = STATUS_COLOR[inc.status] ?? colors.primary;
-        return (
-          <IncidentMarker
-            key={inc.id}
-            incident={inc}
-            color={color}
-            active={isActive}
-            onPress={() => {
-              markerJustPressed.current = true;
-              setSelected(inc);
-              setTimeout(() => { markerJustPressed.current = false; }, MAP_ANIMATION_MS.markerPress);
-            }}
-          />
-        );
-      }),
-    [filteredIncidents, colors.primary, selected?.id],
-  );
-  const { selectId } = useLocalSearchParams<{ selectId?: string }>();
   const pendingSelectRef = useRef<string | null>(null);
 
+  // ── Load incidents ──
   const loadIncidents = useCallback(async () => {
     setLoading(true);
     try {
@@ -201,10 +126,16 @@ export default function SignalementsScreen() {
     }
   }, []);
 
+  const handleRefresh = useCallback(async () => {
+    await loadIncidents();
+    reloadClusters();
+  }, [loadIncidents, reloadClusters]);
+
+  // ── Select + animate map ──
   const selectIncident = useCallback((inc: IncidentResponse) => {
     setSelected(inc);
     setTimeout(() => {
-      (mapRef.current as unknown as MapView)?.animateToRegion(
+      mapRef.current?.animateToRegion(
         {
           latitude: inc.latitude - MAP_DELTAS.incidentOffset,
           longitude: inc.longitude,
@@ -216,7 +147,19 @@ export default function SignalementsScreen() {
     }, MAP_ANIMATION_MS.selectDelay);
   }, []);
 
-  // Quand selectId change, réinitialise et prépare la sélection
+  // ── Cluster tap → zoom in ──
+  const handleClusterPress = useCallback((cluster: MapClusterDto) => {
+    const newZoom = Math.min(currentZoom + 3, CLUSTER_ZOOM_THRESHOLD + 1);
+    const delta = 360 / Math.pow(2, newZoom);
+    mapRef.current?.animateToRegion(
+      { latitude: cluster.latitude, longitude: cluster.longitude, latitudeDelta: delta, longitudeDelta: delta },
+      MAP_ANIMATION_MS.animateRegion,
+    );
+  }, [currentZoom]);
+
+  // ── selectId (depuis une notification) ──
+  const { selectId, tab: tabParam } = useLocalSearchParams<{ selectId?: string; tab?: string }>();
+
   useEffect(() => {
     if (!selectId) return;
     setSelected(null);
@@ -224,128 +167,77 @@ export default function SignalementsScreen() {
     loadIncidents();
   }, [selectId, loadIncidents]);
 
-  // Quand les incidents chargent, consomme le pending select
   useEffect(() => {
     if (!pendingSelectRef.current || incidents.length === 0) return;
     const inc = incidents.find((i) => i.id === pendingSelectRef.current);
     if (inc) {
       pendingSelectRef.current = null;
+      setInitialTab(tabParam === "chat" ? "chat" : "details");
       selectIncident(inc);
     }
-  }, [incidents, selectIncident]);
+  }, [incidents, selectIncident, tabParam]);
 
-  // Rechargement à chaque focus (sans logique de sélection)
   useFocusEffect(
     useCallback(() => {
-      if (!selectId) loadIncidents();
-      return () => {
-        pendingSelectRef.current = null;
-      };
-    }, [loadIncidents, selectId]),
-  );
-
-  const handleStatusChange = useCallback(
-    async (newStatus: string) => {
-      if (!selected) return;
-      setUpdatingStatus(true);
-      try {
-        const token = await getValidToken();
-        if (!token) throw new Error(STRINGS.api.unauthenticated);
-        await updateIncidentStatus(selected.id, newStatus, token);
-        // Mise à jour locale immédiate
-        const updated = { ...selected, status: newStatus } as IncidentResponse;
-        setIncidents((prev) =>
-          prev.map((inc) => (inc.id === selected.id ? updated : inc)),
-        );
-        setSelected(updated);
-      } catch (e) {
-        Alert.alert(
-          STRINGS.alert.errorTitle,
-          e instanceof Error ? e.message : STRINGS.api.unknownError,
-        );
-      } finally {
-        setUpdatingStatus(false);
+      if (!selectId) {
+        loadIncidents();
+        reloadClusters();
       }
-    },
-    [selected],
+      return () => { pendingSelectRef.current = null; };
+    }, [loadIncidents, reloadClusters, selectId]),
   );
 
-  const handleDeletePhoto = useCallback((photoId: string) => {
-    if (!selected) return;
-    Alert.alert(STRINGS.photos.deleteConfirmTitle, STRINGS.photos.deleteConfirmMsg, [
-      { text: "Annuler", style: "cancel" },
-      {
-        text: "Supprimer",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            const token = await getValidToken();
-            if (!token) return;
-            await deletePhoto(selected.id, photoId, token);
-            setPhotos((prev) => prev.filter((p) => p.id !== photoId));
-          } catch {
-            Alert.alert(STRINGS.alert.errorTitle, STRINGS.photos.deleteError);
-          }
-        },
-      },
-    ]);
-  }, [selected]);
+  // ── Markers ──
+  const isClusterMode = currentZoom < CLUSTER_ZOOM_THRESHOLD;
 
-  const handleDelete = useCallback(() => {
-    if (!selected) return;
-    Alert.alert(
-      STRINGS.alert.deleteIncidentTitle,
-      STRINGS.alert.deleteIncidentMsg,
-      [
-        { text: "Annuler", style: "cancel" },
-        {
-          text: "Supprimer",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              const token = await getValidToken();
-              if (!token) throw new Error(STRINGS.api.unauthenticated);
-              await deleteIncident(selected.id, token);
-              setIncidents((prev) =>
-                prev.filter((inc) => inc.id !== selected.id),
-              );
-              setSelected(null);
-            } catch (e) {
-              Alert.alert(
-                "Erreur",
-                e instanceof Error ? e.message : STRINGS.api.unknownError,
-              );
-            }
-          },
-        },
-      ],
-    );
-  }, [selected]);
+  const clusterMarkers = useMemo(
+    () => clusters.map((c, i) => (
+      <ClusterMarker
+        key={`cluster-${i}-${c.latitude}-${c.longitude}`}
+        cluster={c}
+        onPress={() => handleClusterPress(c)}
+      />
+    )),
+    [clusters, handleClusterPress],
+  );
+
+  const individualMarkers = useMemo(
+    () => filteredIncidents.map((inc) => (
+      <IncidentMarker
+        key={inc.id}
+        incident={inc}
+        color={STATUS_COLOR[inc.status] ?? colors.primary}
+        active={selected?.id === inc.id}
+        onPress={() => {
+          markerJustPressed.current = true;
+          selectIncident(inc);
+          setTimeout(() => { markerJustPressed.current = false; }, MAP_ANIMATION_MS.markerPress);
+        }}
+      />
+    )),
+    [filteredIncidents, colors.primary, selected?.id],
+  );
 
   return (
     <View style={styles.container}>
-      <ClusteredMapView
+      <MapView
         ref={mapRef}
         style={styles.map}
-        initialRegion={userRegion}
+        initialRegion={userRegion ?? INITIAL_REGION}
         showsUserLocation
-        clusterColor={colors.primary}
-        renderCluster={renderCluster}
-        onPress={() => {
-          if (!markerJustPressed.current) setSelected(null);
-        }}
+        onRegionChangeComplete={onRegionChangeComplete}
+        onPress={() => { if (!markerJustPressed.current) setSelected(null); }}
       >
-        {markers}
-      </ClusteredMapView>
+        {isClusterMode ? clusterMarkers : individualMarkers}
+      </MapView>
 
-      {/* Barre de filtres (overlay) */}
       <View style={styles.filterBarOverlay}>
         <IncidentFilterBar
           filterStatus={filterStatus}
           setFilterStatus={setFilterStatus}
           filterType={filterType}
           setFilterType={setFilterType}
-          onRefresh={loadIncidents}
+          onRefresh={handleRefresh}
           loading={loading}
           paddingTop={insets.top + 8}
         />
@@ -357,186 +249,23 @@ export default function SignalementsScreen() {
         </View>
       )}
 
-      {/* Bottom sheet détail — via Modal pour passer au-dessus de la tab bar */}
-      <Modal
-        visible={!!selected}
-        transparent
-        animationType="slide"
-        statusBarTranslucent
-        onRequestClose={() => setSelected(null)}
-      >
-        <View style={styles.modalContainer}>
-          <TouchableOpacity
-            style={styles.modalDismiss}
-            activeOpacity={1}
-            onPress={() => setSelected(null)}
-          />
-          {selected && (
-            <View style={styles.sheet}>
+      <IncidentDetailSheet
+        incident={selected}
+        initialTab={initialTab}
+        onClose={() => setSelected(null)}
+        onStatusUpdated={(updated) => {
+          setIncidents((prev) => prev.map((inc) => (inc.id === updated.id ? updated : inc)));
+          setSelected(updated);
+        }}
+        onDeleted={() => {
+          if (selected) setIncidents((prev) => prev.filter((inc) => inc.id !== selected.id));
+          setSelected(null);
+        }}
+      />
 
-              <View style={styles.sheetHandle} />
-
-              {/* En-tête */}
-              <View style={styles.sheetHeader}>
-                <View style={styles.sheetTitleBlock}>
-                  <Text style={styles.sheetType}>
-                    {TYPE_LABEL[selected.type] ?? selected.type}
-                  </Text>
-                  <View style={[styles.statusBadge, { backgroundColor: STATUS_COLOR[selected.status] ?? "#999" }]}>
-                    <Text style={styles.statusBadgeText}>
-                      {STATUS_LABEL[selected.status] ?? selected.status}
-                    </Text>
-                  </View>
-                </View>
-                <TouchableOpacity onPress={() => setSelected(null)} style={styles.closeBtn}>
-                  <Text style={styles.closeBtnText}>✕</Text>
-                </TouchableOpacity>
-              </View>
-
-              <ScrollView showsVerticalScrollIndicator={false}>
-
-                {/* Timeline */}
-                <View style={styles.timeline}>
-                  {(["reported", "in_progress", "resolved"] as const).map((step, i, arr) => {
-                    const isActive = selected.status === "resolved"
-                      || (selected.status === "in_progress" && step !== "resolved")
-                      || step === "reported";
-                    const stepDate = step === "reported"
-                      ? formatIncidentDateTime(selected.createdAt)
-                      : step === "resolved" && selected.resolvedAt
-                        ? formatIncidentDateTime(selected.resolvedAt)
-                        : step === "in_progress"
-                          ? (() => {
-                              const e = statusHistory.find((h) => h.newStatus === "in_progress");
-                              return e ? formatIncidentDateTime(e.changedAt) : null;
-                            })()
-                          : null;
-                    const lineActive = i < arr.length - 1 && (
-                      selected.status === "resolved"
-                      || (selected.status === "in_progress" && i === 0)
-                    );
-                    return (
-                      <View key={step} style={styles.timelineItem}>
-                        <View style={styles.timelineTrack}>
-                          <View style={[styles.timelineDot, isActive && { backgroundColor: STATUS_COLOR[step] ?? colors.primary }]} />
-                          {i < arr.length - 1 && (
-                            <View style={[styles.timelineLine, lineActive && styles.timelineLineActive]} />
-                          )}
-                        </View>
-                        <View style={styles.timelineLabel}>
-                          <Text style={[styles.timelineStepText, isActive && styles.timelineStepTextActive]}>
-                            {STATUS_LABEL[step]}
-                          </Text>
-                          {stepDate && <Text style={styles.timelineDateText}>{stepDate}</Text>}
-                        </View>
-                      </View>
-                    );
-                  })}
-                </View>
-
-                {/* Description */}
-                <View style={styles.descBlock}>
-                  <Text style={styles.sheetDesc}>{selected.description}</Text>
-                </View>
-
-                {/* Adresse */}
-                {selected.addressLabel ? (
-                  <View style={styles.addressRow}>
-                    <Text style={styles.addressPin}>◎</Text>
-                    <Text style={styles.addressText} numberOfLines={2}>{selected.addressLabel}</Text>
-                  </View>
-                ) : null}
-
-                {/* Photos */}
-                <View style={styles.photosSection}>
-                  <Text style={styles.sectionLabel}>Photos</Text>
-                  {photosLoading ? (
-                    <ActivityIndicator size="small" color={colors.primary} />
-                  ) : photosError ? (
-                    <Text style={styles.photosEmpty}>{STRINGS.photos.loadError}</Text>
-                  ) : photos.length === 0 ? (
-                    <Text style={styles.photosEmpty}>Aucune photo jointe</Text>
-                  ) : (
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                      {photos.map((p) => (
-                        <View key={p.id} style={styles.photoThumb}>
-                          <TouchableOpacity activeOpacity={0.85} onPress={() => setZoomedPhoto(p.url)}>
-                            <Image source={{ uri: p.url }} style={styles.photoImg} contentFit="cover" />
-                          </TouchableOpacity>
-                          {(isAdmin || dbUser?.id === p.uploadedByUserId) && (
-                            <TouchableOpacity style={styles.photoDeleteBtn} onPress={() => handleDeletePhoto(p.id)}>
-                              <Text style={styles.photoDeleteBtnText}>✕</Text>
-                            </TouchableOpacity>
-                          )}
-                        </View>
-                      ))}
-                    </ScrollView>
-                  )}
-                </View>
-
-                {/* Boutons statut — agents / admins */}
-                {isStaff && NEXT_STATUSES[selected.status]?.length > 0 && (
-                  <View style={styles.statusActions}>
-                    <Text style={styles.sectionLabel}>Changer le statut</Text>
-                    <View style={styles.statusActionsRow}>
-                      {NEXT_STATUSES[selected.status].map((s) => (
-                        <TouchableOpacity
-                          key={s}
-                          style={[styles.statusActionBtn, { backgroundColor: STATUS_COLOR[s] ?? "#999" }]}
-                          onPress={() => handleStatusChange(s)}
-                          disabled={updatingStatus}
-                          activeOpacity={0.8}
-                        >
-                          {updatingStatus ? (
-                            <ActivityIndicator size="small" color="#fff" />
-                          ) : (
-                            <Text style={styles.statusActionBtnText}>{STATUS_LABEL[s]}</Text>
-                          )}
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  </View>
-                )}
-
-                {/* Bouton suppression — admin uniquement */}
-                {isAdmin && (
-                  <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete} activeOpacity={0.8}>
-                    <Text style={styles.deleteBtnText}>{STRINGS.alert.deleteIncidentTitle}</Text>
-                  </TouchableOpacity>
-                )}
-              </ScrollView>
-            </View>
-          )}
-
-          {/* Visionneuse plein écran — dans le même Modal pour éviter les problèmes Android */}
-          {zoomedPhoto && (
-            <View style={styles.zoomOverlay}>
-              <TouchableOpacity
-                style={StyleSheet.absoluteFill}
-                activeOpacity={1}
-                onPress={() => setZoomedPhoto(null)}
-              />
-              <Image
-                source={{ uri: zoomedPhoto }}
-                style={styles.zoomImage}
-                contentFit="contain"
-              />
-              <TouchableOpacity style={styles.zoomClose} onPress={() => setZoomedPhoto(null)}>
-                <Text style={styles.zoomCloseText}>✕</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-      </Modal>
-
-      {/* FAB Signaler — citoyens uniquement, masqué quand le sheet est ouvert */}
-      {!selected && !isStaff && (
-        <TouchableOpacity
-          style={styles.fab}
-          onPress={() => router.push("/report")}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.fabIcon}>+</Text>
+      {!selected && canReportIncident && (
+        <TouchableOpacity style={styles.fab} onPress={() => router.push("/report")} activeOpacity={0.85}>
+          <MaterialIcons name="add" size={22} color="#fff" />
           <Text style={styles.fabLabel}>Signaler</Text>
         </TouchableOpacity>
       )}
@@ -554,6 +283,7 @@ function makeStyles(c: AppColors, bottomInset: number) {
       alignItems: "center",
       backgroundColor: c.loaderOverlay,
     },
+    filterBarOverlay: { position: "absolute", top: 0, left: 0, right: 0 },
     fab: {
       position: "absolute",
       bottom: 60 + bottomInset + (Platform.OS === "ios" ? 0 : 8) + 16,
@@ -564,182 +294,13 @@ function makeStyles(c: AppColors, bottomInset: number) {
       paddingVertical: 14,
       flexDirection: "row",
       alignItems: "center",
-      shadowColor: "#000",
+      shadowColor: c.primary,
       shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.25,
-      shadowRadius: 8,
+      shadowOpacity: 0.45,
+      shadowRadius: 10,
       elevation: 6,
-    },
-    fabIcon: { fontSize: 24, color: "#fff", fontWeight: "700", marginRight: 8 },
-    fabLabel: { fontSize: 15, fontWeight: "700", color: "#fff" },
-    modalContainer: {
-      flex: 1,
-      justifyContent: "flex-end",
-    },
-    modalDismiss: {
-      flex: 1,
-    },
-    sheet: {
-      backgroundColor: c.background,
-      borderTopLeftRadius: 24,
-      borderTopRightRadius: 24,
-      paddingHorizontal: 20,
-      paddingBottom: 36,
-      paddingTop: 10,
-      maxHeight: "62%",
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: -4 },
-      shadowOpacity: 0.1,
-      shadowRadius: 12,
-      elevation: 20,
-    },
-    sheetHandle: {
-      width: 44,
-      height: 4,
-      borderRadius: 2,
-      backgroundColor: c.secondary,
-      alignSelf: "center",
-      marginBottom: 16,
-    },
-    sheetHeader: { flexDirection: "row", alignItems: "flex-start", marginBottom: 16 },
-    sheetTitleBlock: { flex: 1, gap: 6 },
-    sheetType: { fontSize: 20, fontWeight: "800", color: c.text },
-    statusBadge: { alignSelf: "flex-start", borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
-    statusBadgeText: { color: "#fff", fontWeight: "700", fontSize: 12 },
-    closeBtn: {
-      width: 30,
-      height: 30,
-      borderRadius: 15,
-      backgroundColor: c.secondary,
-      alignItems: "center",
-      justifyContent: "center",
-      marginLeft: 8,
-    },
-    closeBtnText: { fontSize: 13, color: c.text, fontWeight: "700" },
-    // Timeline
-    timeline: {
-      flexDirection: "row",
-      backgroundColor: c.white,
-      borderRadius: 14,
-      padding: 16,
-      marginBottom: 12,
-    },
-    timelineItem: { flex: 1, alignItems: "center" },
-    timelineTrack: { alignItems: "center", width: "100%" },
-    timelineDot: {
-      width: 14,
-      height: 14,
-      borderRadius: 7,
-      backgroundColor: c.secondary,
-      borderWidth: 2,
-      borderColor: c.inputBorder,
-      zIndex: 1,
-    },
-    timelineLine: {
-      position: "absolute",
-      top: 6,
-      left: "50%",
-      right: "-50%",
-      height: 2,
-      backgroundColor: c.inputBorder,
-    },
-    timelineLineActive: { backgroundColor: c.primary },
-    timelineLabel: { alignItems: "center", marginTop: 8, gap: 2 },
-    timelineStepText: { fontSize: 11, color: c.text, opacity: 0.4, fontWeight: "600", textAlign: "center" },
-    timelineStepTextActive: { opacity: 1, color: c.text },
-    timelineDateText: { fontSize: 10, color: c.text, opacity: 0.5, textAlign: "center" },
-    // Description
-    descBlock: {
-      backgroundColor: c.white,
-      borderRadius: 12,
-      padding: 14,
-      marginBottom: 10,
-      borderLeftWidth: 3,
-      borderLeftColor: c.primary,
-    },
-    sheetDesc: { fontSize: 14, color: c.text, lineHeight: 21 },
-    // Adresse
-    addressRow: {
-      flexDirection: "row",
-      alignItems: "flex-start",
       gap: 8,
-      paddingHorizontal: 4,
-      marginBottom: 14,
     },
-    addressPin: { fontSize: 16, color: c.text, opacity: 0.4, marginTop: 1 },
-    addressText: { flex: 1, fontSize: 13, color: c.text, opacity: 0.6, lineHeight: 18 },
-    // Section label commun
-    sectionLabel: {
-      fontSize: 11,
-      color: c.text,
-      opacity: 0.45,
-      marginBottom: 10,
-      textTransform: "uppercase",
-      letterSpacing: 0.6,
-      fontWeight: "600",
-    },
-    // Photos
-    photosSection: { marginBottom: 14 },
-    photosEmpty: { fontSize: 13, color: c.text, opacity: 0.4, fontStyle: "italic" },
-    photoThumb: { width: 96, height: 96, borderRadius: 12, overflow: "hidden", marginRight: 8 },
-    photoImg: { width: 96, height: 96 },
-    photoDeleteBtn: {
-      position: "absolute",
-      top: 4,
-      right: 4,
-      width: 22,
-      height: 22,
-      borderRadius: 11,
-      backgroundColor: "#000a",
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    photoDeleteBtnText: { color: "#fff", fontSize: 10, fontWeight: "700" },
-    // Actions statut
-    statusActions: { marginBottom: 4 },
-    statusActionsRow: { flexDirection: "row", gap: 10 },
-    statusActionBtn: {
-      flex: 1,
-      borderRadius: 12,
-      paddingVertical: 12,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    statusActionBtnText: { fontWeight: "700", fontSize: 14, color: "#fff" },
-    deleteBtn: {
-      marginTop: 12,
-      borderRadius: 12,
-      paddingVertical: 13,
-      alignItems: "center",
-      backgroundColor: c.statusRed + "1a",
-      borderWidth: 1,
-      borderColor: c.statusRed,
-    },
-    deleteBtnText: { fontWeight: "700", fontSize: 14, color: c.statusRed },
-    filterBarOverlay: { position: "absolute", top: 0, left: 0, right: 0 },
-    // Visionneuse plein écran (overlay à l'intérieur du Modal détail)
-    zoomOverlay: {
-      ...StyleSheet.absoluteFillObject,
-      backgroundColor: "#000d",
-      alignItems: "center",
-      justifyContent: "center",
-      zIndex: 10,
-    },
-    zoomImage: {
-      width: "100%",
-      height: "80%",
-    },
-    zoomClose: {
-      position: "absolute",
-      top: 52,
-      right: 20,
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      backgroundColor: "#0008",
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    zoomCloseText: { color: "#fff", fontSize: 16, fontWeight: "700" },
+    fabLabel: { fontSize: 15, fontWeight: "700", color: "#fff" },
   });
 }
