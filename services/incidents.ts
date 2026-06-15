@@ -122,16 +122,29 @@ export async function deleteIncident(
   }
 }
 
+function resolvePhotoUrl(url: string): string {
+  if (!url) return url;
+  const afterProto = API_BASE_URL.split("//")[1] ?? "";
+  const apiHost = afterProto.split(":")[0].split("/")[0]; // "172.20.10.245"
+  const apiProto = API_BASE_URL.startsWith("https") ? "https" : "http";
+  const nginxOrigin = `${apiProto}://${apiHost}`; // "http://172.20.10.245"
+  if (url.startsWith("/")) return `${nginxOrigin}/photos${url}`;
+  try {
+    const u = new URL(url);
+    const isInternal = u.hostname === "localhost"
+      || u.hostname === "127.0.0.1"
+      || !u.hostname.includes(".");
+    if (isInternal) return `${nginxOrigin}/photos${u.pathname}${u.search}`;
+  } catch { return url; }
+  return url;
+}
+
 export async function getPhotos(incidentId: string): Promise<PhotoResponse[]> {
   const response = await fetch(API_ENDPOINTS.incidentPhotos(incidentId));
   if (!response.ok) throw new Error(`Erreur ${response.status}`);
   const body = await response.json() as PhotoResponse[] | { data: PhotoResponse[] };
   const list = Array.isArray(body) ? body : (body.data ?? []);
-  const apiHost = API_BASE_URL.split("//")[1]?.split(":")[0] ?? "localhost";
-  return list.map((p) => ({
-    ...p,
-    url: p.url.replace("localhost", apiHost),
-  }));
+  return list.map((p) => ({ ...p, url: resolvePhotoUrl(p.url) }));
 }
 
 export async function uploadPhoto(
