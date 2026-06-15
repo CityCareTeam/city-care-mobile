@@ -164,8 +164,13 @@ export default function ReportScreen() {
       );
       let uploadFailed = false;
       for (const photo of photos) {
-        try { await uploadPhoto(incident.id, photo.uri, photo.fileName, photo.mimeType, token); }
-        catch { uploadFailed = true; }
+        const uploadToken = await getValidToken();
+        if (!uploadToken) { uploadFailed = true; break; }
+        try { await uploadPhoto(incident.id, photo.uri, photo.fileName, photo.mimeType, uploadToken); }
+        catch (uploadErr) {
+          console.warn("[upload photo]", uploadErr instanceof Error ? uploadErr.message : uploadErr);
+          uploadFailed = true;
+        }
       }
       if (uploadFailed) Toast.show({ type: "error", text1: STRINGS.alert.errorTitle, text2: STRINGS.photos.uploadError });
       Toast.show({ type: "success", text1: STRINGS.toast.reportSuccessTitle, text2: STRINGS.toast.reportSuccess });

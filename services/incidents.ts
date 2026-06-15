@@ -1,6 +1,6 @@
 import { API_BASE_URL, API_ENDPOINTS } from "@/constants/api";
 import { STRINGS } from "@/constants/strings";
-import { authFetch, fetchWithTimeout, parseApiError } from "@/services/api-client";
+import { authFetch, fetchWithTimeout, parseApiError, UPLOAD_TIMEOUT_MS } from "@/services/api-client";
 import type {
     CreateIncidentPayload,
     IncidentListResponse,
@@ -9,6 +9,7 @@ import type {
     PhotoResponse,
     ReverseGeocodeResult,
     StatusHistoryEntry,
+    VoteResponse,
 } from "@/types/incidents";
 
 export type { ReverseGeocodeResult };
@@ -167,7 +168,7 @@ export async function uploadPhoto(
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
     body: form,
-  }); // multipart/form-data — pas de Content-Type JSON, authFetch ne convient pas ici
+  }, UPLOAD_TIMEOUT_MS); // multipart/form-data — timeout étendu pour les fichiers lourds
   if (!response.ok) {
     throw new Error(await parseApiError(response, `Erreur ${response.status}`));
   }
@@ -207,6 +208,24 @@ export async function getMapSummary(params?: {
   const response = await fetch(url.toString());
   if (!response.ok) throw new Error(STRINGS.api.incidentsLoadError);
   return response.json() as Promise<MapSummaryResponse>;
+}
+
+export async function getVotes(incidentId: string, token?: string): Promise<VoteResponse> {
+  const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
+  const response = await fetch(API_ENDPOINTS.incidentVotes(incidentId), { headers });
+  if (!response.ok) throw new Error(`Erreur ${response.status}`);
+  return response.json() as Promise<VoteResponse>;
+}
+
+export async function addVote(incidentId: string, token: string): Promise<VoteResponse> {
+  const response = await authFetch(API_ENDPOINTS.incidentVotes(incidentId), token, { method: "POST" });
+  if (!response.ok) throw new Error(await parseApiError(response, `Erreur ${response.status}`));
+  return response.json() as Promise<VoteResponse>;
+}
+
+export async function removeVote(incidentId: string, token: string): Promise<void> {
+  const response = await authFetch(API_ENDPOINTS.incidentVoteMe(incidentId), token, { method: "DELETE" });
+  if (!response.ok) throw new Error(await parseApiError(response, `Erreur ${response.status}`));
 }
 
 export async function getStatusHistory(incidentId: string): Promise<StatusHistoryEntry[]> {

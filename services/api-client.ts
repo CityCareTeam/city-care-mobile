@@ -1,4 +1,5 @@
 export const TIMEOUT_MS = 8000;
+export const UPLOAD_TIMEOUT_MS = 30_000;
 
 export async function authFetch(
   url: string,
@@ -29,9 +30,10 @@ export async function parseApiError(response: Response, fallback: string): Promi
 export function fetchWithTimeout(
   url: string,
   options: RequestInit = {},
+  timeoutMs = TIMEOUT_MS,
 ): Promise<Response> {
   const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  const id = setTimeout(() => controller.abort(), timeoutMs);
   return fetch(url, { ...options, signal: controller.signal }).finally(() =>
     clearTimeout(id),
   );
