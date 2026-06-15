@@ -14,6 +14,7 @@ import { useAppColors } from "@/hooks/use-app-colors";
 import { useIncidentChat } from "@/hooks/use-incident-chat";
 import { useIncidentPermissions } from "@/hooks/use-incident-permissions";
 import { useIncidentPhotos } from "@/hooks/use-incident-photos";
+import { useIncidentVotes } from "@/hooks/use-incident-votes";
 import { updateIncidentStatus } from "@/services/incidents";
 import { getValidToken } from "@/storage/tokens";
 import type { IncidentResponse } from "@/types/incidents";
@@ -52,8 +53,9 @@ export function IncidentDetailSheet({ incident, initialTab, onClose, onStatusUpd
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [sending, setSending] = useState(false);
 
-  const { canAccessChat, canChangeStatus, canDeleteIncident, canDeletePhoto } = useIncidentPermissions(incident);
+  const { canAccessChat, canChangeStatus, canDeleteIncident, canDeletePhoto, canVote } = useIncidentPermissions(incident);
   const { photos, photosLoading, photosError, statusHistory, handleDeletePhoto } = useIncidentPhotos(incident?.id ?? null);
+  const { votes, toggling, toggleVote } = useIncidentVotes(incident?.id ?? null);
   const { messages, send, connected, loading: chatLoading } = useIncidentChat(
     activeTab === "chat" ? (incident?.id ?? null) : null
   );
@@ -174,6 +176,13 @@ export function IncidentDetailSheet({ incident, initialTab, onClose, onStatusUpd
       marginBottom: 10, textTransform: "uppercase",
       letterSpacing: 0.6, fontWeight: "600",
     },
+    voteBtn: {
+      flexDirection: "row", alignItems: "center", gap: 4,
+      paddingHorizontal: 10, paddingVertical: 6, borderRadius: 16,
+      borderWidth: 1, borderColor: colors.inputBorder,
+    },
+    voteBtnActive: { borderColor: colors.primary, backgroundColor: colors.primary + "18" },
+    voteBtnCount: { fontSize: 13, fontWeight: "700", color: colors.text, opacity: 0.55 },
     photosSection: { marginBottom: 14 },
     photosEmpty: { fontSize: 13, color: colors.text, opacity: 0.4, fontStyle: "italic" },
     photoThumb: { width: 96, height: 96, borderRadius: 12, overflow: "hidden", marginRight: 8 },
@@ -224,7 +233,23 @@ export function IncidentDetailSheet({ incident, initialTab, onClose, onStatusUpd
                   <Text style={s.statusBadgeText}>{STATUS_LABEL[incident.status] ?? incident.status}</Text>
                 </View>
               </View>
-              <TouchableOpacity onPress={onClose} style={s.closeBtn}>
+              <TouchableOpacity
+                style={[s.voteBtn, votes?.hasVoted && s.voteBtnActive, toggling && { opacity: 0.5 }]}
+                onPress={toggleVote}
+                disabled={!canVote || toggling}
+                activeOpacity={0.75}
+              >
+                <MaterialIcons
+                  name={votes?.hasVoted ? "thumb-up" : "thumb-up-off-alt"}
+                  size={15}
+                  color={votes?.hasVoted ? colors.primary : colors.text}
+                  style={{ opacity: canVote ? 1 : 0.3 }}
+                />
+                <Text style={[s.voteBtnCount, votes?.hasVoted && { color: colors.primary, opacity: 1 }]}>
+                  {votes?.voteCount ?? 0}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={onClose} style={[s.closeBtn, { marginLeft: 10 }]}>
                 <MaterialIcons name="close" size={16} color={colors.text} />
               </TouchableOpacity>
             </View>

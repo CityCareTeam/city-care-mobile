@@ -6,6 +6,7 @@ type IncidentPermissions = {
   canChangeStatus: boolean;
   canDeleteIncident: boolean;
   canReportIncident: boolean;
+  canVote: boolean;
   canDeletePhoto: (photo: Pick<PhotoResponse, "uploadedByUserId">) => boolean;
 };
 
@@ -19,6 +20,7 @@ export function useIncidentPermissions(
     canChangeStatus: isStaff,
     canDeleteIncident: isAdmin,
     canReportIncident: !isStaff,
+    canVote: !!dbUser && !isStaff,
     canDeletePhoto: (photo) => isAdmin || dbUser?.id === photo.uploadedByUserId,
   };
 }

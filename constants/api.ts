@@ -22,6 +22,8 @@ export const API_ENDPOINTS = {
   incidents: `${API_BASE_URL}/incidents`,
   incidentPhotos: (id: string) => `${API_BASE_URL}/incidents/${id}/photos`,
   incidentPhoto: (incidentId: string, photoId: string) => `${API_BASE_URL}/incidents/${incidentId}/photos/${photoId}`,
+  incidentVotes: (id: string) => `${API_BASE_URL}/incidents/${id}/votes`,
+  incidentVoteMe: (id: string) => `${API_BASE_URL}/incidents/${id}/votes/me`,
   incidentStatusHistory: (id: string) => `${API_BASE_URL}/incidents/${id}/status-history`,
   mapSummary: `${API_BASE_URL}/incidents/map-summary`,
   incidentMessages: (id: string) => `${API_BASE_URL}/incidents/${id}/messages`,
