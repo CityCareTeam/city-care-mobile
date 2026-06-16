@@ -30,6 +30,6 @@ export const CLUSTER_DEBOUNCE_MS = 300;
 
 // Rafraîchissement silencieux périodique tant que l'écran concerné est au premier plan
 export const POLL_INTERVAL_MS = {
-  incidents: 5_000,
-  votes: 5_000,
+  incidents: 15_000,
+  votes: 15_000,
 } as const;
