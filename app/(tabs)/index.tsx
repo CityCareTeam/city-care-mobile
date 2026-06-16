@@ -10,7 +10,7 @@ import { STRINGS } from "@/constants/strings";
 import { useAuth } from "@/context/AuthContext";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
-import { INCIDENTS_PAGE_SIZE } from "@/constants/config";
+import { INCIDENTS_PAGE_SIZE, POLL_INTERVAL_MS } from "@/constants/config";
 import { applyFilters, useIncidentFilters } from "@/hooks/use-incident-filters";
 import { getIncidents } from "@/services/incidents";
 import { getMyIncidents } from "@/services/users";
@@ -519,10 +519,12 @@ export default function HomeScreen() {
 
   const { active: dogActive, onTap: onLogoTap, dismiss: dismissDog } = useEasterEgg();
 
-  const load = useCallback(async (isRefresh = false) => {
+  const load = useCallback(async (isRefresh = false, silent = false) => {
     if (role === null) return;
-    if (isRefresh) setRefreshing(true);
-    else setIncidentsLoading(true);
+    if (!silent) {
+      if (isRefresh) setRefreshing(true);
+      else setIncidentsLoading(true);
+    }
 
     try {
       const token = await getValidToken();
@@ -542,14 +544,20 @@ export default function HomeScreen() {
     } catch {
       // silencieux
     } finally {
-      setIncidentsLoading(false);
-      setRefreshing(false);
+      if (!silent) {
+        setIncidentsLoading(false);
+        setRefreshing(false);
+      }
     }
   }, [role]);
 
+  // Recharge à l'arrivée sur l'écran, puis en silence à intervalle régulier
+  // tant que l'écran reste au premier plan.
   useFocusEffect(
     useCallback(() => {
       load();
+      const timer = setInterval(() => void load(false, true), POLL_INTERVAL_MS.incidents);
+      return () => clearInterval(timer);
     }, [load]),
   );
 

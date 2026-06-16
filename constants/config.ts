@@ -27,3 +27,9 @@ export const INCIDENTS_PAGE_SIZE = {
 
 export const CLUSTER_ZOOM_THRESHOLD = 15;
 export const CLUSTER_DEBOUNCE_MS = 300;
+
+// Rafraîchissement silencieux périodique tant que l'écran concerné est au premier plan
+export const POLL_INTERVAL_MS = {
+  incidents: 15_000,
+  votes: 15_000,
+} as const;

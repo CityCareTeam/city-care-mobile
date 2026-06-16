@@ -1,3 +1,4 @@
+import { POLL_INTERVAL_MS } from "@/constants/config";
 import { addVote, getVotes, removeVote } from "@/services/incidents";
 import { getValidToken } from "@/storage/tokens";
 import type { VoteResponse } from "@/types/incidents";
@@ -10,12 +11,19 @@ export function useIncidentVotes(incidentId: string | null) {
 
   useEffect(() => {
     if (!incidentId) { setVotes(null); return; }
-    setLoading(true);
-    getValidToken()
-      .then((token) => getVotes(incidentId, token ?? undefined))
-      .then(setVotes)
-      .catch(() => {})
-      .finally(() => setLoading(false));
+
+    const fetchVotes = (silent = false) => {
+      if (!silent) setLoading(true);
+      return getValidToken()
+        .then((token) => getVotes(incidentId, token ?? undefined))
+        .then(setVotes)
+        .catch(() => {})
+        .finally(() => { if (!silent) setLoading(false); });
+    };
+
+    void fetchVotes();
+    const timer = setInterval(() => void fetchVotes(true), POLL_INTERVAL_MS.votes);
+    return () => clearInterval(timer);
   }, [incidentId]);
 
   const toggleVote = async () => {

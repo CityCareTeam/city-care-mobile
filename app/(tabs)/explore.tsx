@@ -2,7 +2,7 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { IncidentFilterBar } from "@/components/incident-filter-bar";
 import { IncidentDetailSheet } from "@/components/explore/IncidentDetailSheet";
 import { ClusterPin, MapPin } from "@/components/ui/MapPin";
-import { CLUSTER_ZOOM_THRESHOLD, DEFAULT_LOCATION, MAP_ANIMATION_MS, MAP_DELTAS } from "@/constants/config";
+import { CLUSTER_ZOOM_THRESHOLD, DEFAULT_LOCATION, MAP_ANIMATION_MS, MAP_DELTAS, POLL_INTERVAL_MS } from "@/constants/config";
 import { STATUS_COLOR } from "@/constants/incidents";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
@@ -114,15 +114,15 @@ export default function SignalementsScreen() {
   const pendingSelectRef = useRef<string | null>(null);
 
   // ── Load incidents ──
-  const loadIncidents = useCallback(async () => {
-    setLoading(true);
+  const loadIncidents = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const res = await getIncidents();
       setIncidents(res.data);
     } catch {
       // réseau indisponible — liste vide
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
 
@@ -183,9 +183,23 @@ export default function SignalementsScreen() {
         loadIncidents();
         reloadClusters();
       }
-      return () => { pendingSelectRef.current = null; };
+      const timer = setInterval(() => {
+        void loadIncidents(true);
+        reloadClusters();
+      }, POLL_INTERVAL_MS.incidents);
+      return () => {
+        pendingSelectRef.current = null;
+        clearInterval(timer);
+      };
     }, [loadIncidents, reloadClusters, selectId]),
   );
+
+  // Garde le statut du signalement ouvert dans la fiche à jour avec le polling
+  useEffect(() => {
+    if (!selected) return;
+    const updated = incidents.find((i) => i.id === selected.id);
+    if (updated && updated.status !== selected.status) setSelected(updated);
+  }, [incidents, selected]);
 
   // ── Markers ──
   const isClusterMode = currentZoom < CLUSTER_ZOOM_THRESHOLD;
