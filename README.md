@@ -23,9 +23,9 @@ CityCare+ connecte les citoyens à leur mairie. Les signalements remontent en te
 
 | Rôle        | Accès                                                                                                        |
 | ----------- | ------------------------------------------------------------------------------------------------------------ |
-| **Citoyen** | Déclare des incidents avec photos, consulte ses signalements (avec stats) et tous ceux de la ville           |
-| **Agent**   | Voit sa file de travail (déclarés + en cours), filtre par catégorie et statut, change les statuts            |
-| **Admin**   | Vue globale — statistiques, filtres type & statut, suppression d'incidents et de photos                      |
+| **Citoyen** | Déclare des incidents avec photos, consulte ses signalements (avec stats), vote pour soutenir un incident, chat en temps réel |
+| **Agent**   | Voit sa file de travail (déclarés + en cours), filtre par catégorie et statut, change les statuts, chat      |
+| **Admin**   | Vue globale — statistiques, filtres type & statut, suppression d'incidents et de photos, chat                |
 
 ---
 
@@ -38,7 +38,10 @@ CityCare+ connecte les citoyens à leur mairie. Les signalements remontent en te
 - Upload des photos après création du signalement
 
 ### Carte interactive (`explore.tsx`)
-- Clustering des marqueurs colorés par statut
+- **Clustering serveur** via `GET /incidents/map-summary` — marqueurs regroupés par viewport avec debounce 300 ms
+  - Couleur dominante par statut (rouge / orange / vert)
+  - Tap cluster → zoom in → re-fetch automatique
+  - Zoom ≥ 15 → bascule vers les incidents individuels
 - Filtres overlay (statut + type) sans quitter la carte
 - **Bottom sheet détail** au tap sur un marqueur :
   - Timeline horizontale Déclaré → En cours → Résolu avec dates
@@ -47,32 +50,49 @@ CityCare+ connecte les citoyens à leur mairie. Les signalements remontent en te
   - Suppression de photo (admin ou uploadeur uniquement)
   - Changement de statut (agents / admins)
   - Suppression d'incident (admin uniquement)
+  - **Vote / Soutien** (citoyens) — compteur en temps réel
+  - **Chat temps réel** (SignalR) — fil de discussion lié à l'incident
 
 ### Liste des signalements (`index.tsx`)
 - Vue adaptée au rôle (Citoyen / Agent / Admin)
-- **Citoyen** : section "Mes stats" (Déclarés / En cours / Résolus) + "Mes signalements" + "Tous les signalements"
+- **Citoyen** : section "Mes stats" (Déclarés / En cours / Résolus) + onglets "Les miens" / "Communauté"
+  - Badge **"Le mien"** sur les incidents de l'utilisateur dans la vue Communauté
 - Chaque ligne affiche : type (gras), début de description (30 chars), ville extraite de l'adresse, date, badge statut
 - Barre colorée latérale par statut, chevron de navigation
 - En-têtes de section avec barre d'accent et compteur
+
+### Notifications (`notifications.tsx`)
+- Écran dédié avec liste de toutes les notifications
+- Badge non-lus en temps réel sur l'onglet de navigation (polling 30 s + listener temps réel)
+- **Swipe gauche** pour supprimer une notification
+- Marquer comme lu au tap, tout lire, tout supprimer
+- Tap → navigation directe vers l'incident concerné
+- Types gérés : nouveau signalement, changement de statut, nouveau message
+- **Push notifications** sur Android via Expo + Firebase FCM V1 (token enregistré après login, vidé au logout)
+
+### Préférences de notifications (`profile.tsx`)
+- Toggles email / push
+- Sélection des types d'incidents suivis (Voirie, Éclairage, Déchets, Graffiti, Sécurité, Autre)
 
 ---
 
 ## Stack technique
 
-| Technologie                 | Version    | Usage                              |
-| --------------------------- | ---------- | ---------------------------------- |
-| Expo SDK                    | ~54.0.35   | Socle applicatif                   |
-| expo-router                 | ~6.0.24    | Navigation basée sur les fichiers  |
-| React Native                | 0.81.5     |                                    |
-| React                       | 19.1.0     |                                    |
-| TypeScript                  | 5          |                                    |
-| react-native-maps           | 1.20.1     | Carte + marqueurs                  |
-| react-native-map-clustering | ^4.0.0     | Clustering des pins                |
-| expo-image                  | ~3.0.11    | Affichage optimisé des photos      |
-| expo-image-picker           | ~17.0.11   | Capture photo / galerie            |
-| expo-location               | ~19.0.8    | Géolocalisation                    |
-| expo-secure-store           | ~15.0.8    | Stockage sécurisé des tokens JWT   |
-| Jest / jest-expo            | ~29.7 / ~54 | Tests unitaires (169 tests)       |
+| Technologie                 | Version     | Usage                                      |
+| --------------------------- | ----------- | ------------------------------------------ |
+| Expo SDK                    | ~54.0.35    | Socle applicatif                           |
+| expo-router                 | ~6.0.24     | Navigation basée sur les fichiers          |
+| React Native                | 0.81.5      |                                            |
+| React                       | 19.1.0      |                                            |
+| TypeScript                  | 5           |                                            |
+| react-native-maps           | 1.20.1      | Carte + marqueurs individuels              |
+| @microsoft/signalr          | ^10.0.0     | Chat temps réel (WebSocket)                |
+| expo-image                  | ~3.0.11     | Affichage optimisé des photos              |
+| expo-image-picker           | ~17.0.11    | Capture photo / galerie                    |
+| expo-location               | ~19.0.8     | Géolocalisation                            |
+| expo-notifications          | ~0.32.17    | Push notifications                         |
+| expo-secure-store           | ~15.0.8     | Stockage sécurisé des tokens JWT           |
+| Jest / jest-expo            | ~29.7 / ~54 | Tests unitaires (300 tests)                |
 
 ---
 
@@ -85,6 +105,8 @@ npm install
 # Lancer l'app (scan QR avec Expo Go)
 npx expo start --clear
 ```
+
+> **Note** : les push notifications ne fonctionnent pas dans Expo Go depuis SDK 53. Utiliser un build EAS.
 
 Cibles directes :
 
@@ -100,53 +122,75 @@ npm run ios
 ```
 app/
   (tabs)/
-    index.tsx        # Dashboard rôle-adaptatif (Citoyen / Agent / Admin)
-    explore.tsx      # Carte plein écran + clustering + bottom sheet détail
-    profile.tsx      # Profil utilisateur & déconnexion
-  login.tsx          # Authentification (Keycloak)
-  register.tsx       # Création de compte
-  report.tsx         # Formulaire de signalement + capture photo
+    index.tsx          # Dashboard rôle-adaptatif (Citoyen / Agent / Admin)
+    explore.tsx        # Carte plein écran + clustering serveur + bottom sheet détail + chat
+    notifications.tsx  # Centre de notifications (liste, swipe, push)
+    profile.tsx        # Profil utilisateur, préférences notifs & déconnexion
+  login.tsx            # Authentification (Keycloak)
+  register.tsx         # Création de compte
+  report.tsx           # Formulaire de signalement + capture photo
 
 components/
   incident-filter-bar.tsx  # Barre de filtres chips (overlay carte)
-  incident-row.tsx         # Ligne d'incident (stripe couleur, type, description, ville, statut)
+  incident-row.tsx         # Ligne d'incident (stripe couleur, type, description, ville, statut, badge "Le mien")
   ui/                      # Button, Card, Input, Logo, Toast, GlassPillSelector, MapPin…
 
 constants/
-  api.ts          # API_BASE_URL + tous les endpoints (incidents, photos, status-history…)
-  config.ts       # Valeurs centralisées : DEFAULT_LOCATION, MAP_DELTAS, MAP_ANIMATION_MS, INCIDENTS_PAGE_SIZE
+  api.ts          # API_BASE_URL + tous les endpoints
+  config.ts       # Valeurs centralisées : DEFAULT_LOCATION, MAP_DELTAS, CLUSTER_ZOOM_THRESHOLD, INCIDENTS_PAGE_SIZE
   incidents.ts    # STATUS_COLOR, STATUS_LABEL, TYPE_LABEL, NEXT_STATUSES, MAX_INCIDENT_PHOTOS
-  strings.ts      # Toutes les chaînes UI (y compris messages d'erreur photos)
+  strings.ts      # Toutes les chaînes UI
   theme.ts        # CityCareColors
 
+context/
+  AuthContext.tsx          # Authentification, rôle, logout (vide le push token)
+  NotificationContext.tsx  # Compteur non-lus, polling, listener temps réel, enregistrement push token
+
 hooks/
-  use-user-location.ts     # Géolocalisation partagée (explore + report)
-  use-incident-filters.ts  # Filtres type + statut réutilisables
-  use-app-colors.ts        # Thème clair/sombre
+  use-user-location.ts         # Géolocalisation partagée (explore + report)
+  use-incident-filters.ts      # Filtres type + statut réutilisables
+  use-incident-chat.ts         # Chat SignalR (connexion, messages, send)
+  use-incident-votes.ts        # Vote / soutien (toggle, compteur)
+  use-incident-photos.ts       # Photos d'un incident
+  use-incident-permissions.ts  # Droits de l'utilisateur sur un incident
+  use-map-clusters.ts          # Clustering serveur (debounce, zoom, bounds)
+  use-notification-settings.ts # Préférences de notifications (toggle, save)
+  use-push-token.ts            # Enregistrement du token push après login
+  use-app-colors.ts            # Thème clair/sombre
 
 services/
-  api-client.ts  # fetchWithTimeout, throwFromResponse (couche HTTP de base)
-  incidents.ts   # getIncidents, createIncident, updateIncidentStatus, deleteIncident,
-                 # getPhotos, uploadPhoto, deletePhoto, getStatusHistory, reverseGeocode
-  users.ts       # getUserMe, getMyIncidents, updateMe, deleteAccount
-  auth.ts        # login, register, refresh, logout
+  api-client.ts   # fetchWithTimeout, authFetch, throwFromResponse
+  incidents.ts    # getIncidents, createIncident, updateIncidentStatus, deleteIncident,
+                  # getPhotos, uploadPhoto, deletePhoto, getStatusHistory, reverseGeocode,
+                  # getMapSummary, addVote, removeVote, getVotes
+  messages.ts     # getMessages, sendMessage
+  users.ts        # getUserMe, getMyIncidents, updateMe, deleteAccount
+  auth.ts         # login, register, refresh, logout
+  notifications.ts # getNotifications, getUnreadCount, markAsRead, markAllAsRead,
+                   # deleteNotification, deleteAllNotifications,
+                   # registerPushToken, getNotificationSettings, updateNotificationSettings
 
 storage/
   tokens.ts      # Stockage sécurisé des tokens JWT (access + refresh)
 
 types/
-  incidents.ts   # IncidentResponse, PhotoResponse, StatusHistoryEntry, CreateIncidentPayload, ReverseGeocodeResult…
-  users.ts       # UserMeResponse, MyIncidentItem, MyIncidentsResponse, UpdateMePayload
-  auth.ts        # LoginPayload, LoginResponse, RegisterPayload, RegisterResponse, MeResponse
+  incidents.ts      # IncidentResponse, PhotoResponse, StatusHistoryEntry, VoteResponse, MapClusterDto…
+  users.ts          # UserMeResponse, MyIncidentItem, MyIncidentsResponse, UpdateMePayload
+  auth.ts           # LoginPayload, LoginResponse, RegisterPayload, RegisterResponse, MeResponse
+  messages.ts       # MessageResponse, CreateMessageRequest
+  notifications.ts  # NotificationResponse, NotificationSettingsResponse, UpdateNotificationSettingsRequest…
 
 utils/
-  format-date.ts  # formatDateShort, formatDate, formatIncidentDateTime, extractCity
+  format-date.ts     # formatDateShort, formatDate, formatIncidentDateTime, extractCity, timeAgo
+  format-address.ts  # extractCity
 
 tests/
   unit/
-    services/    # api-client, incidents, users, auth
-    hooks/       # use-incident-filters, use-app-colors, use-easter-egg, use-user-location, use-color-scheme-web
-    utils/       # format-date (extractCity, formatDateShort…)
+    services/    # api-client, incidents, users, auth, notifications, messages
+    hooks/       # use-incident-filters, use-app-colors, use-easter-egg, use-user-location,
+                 # use-color-scheme-web, use-incident-votes, use-incident-chat,
+                 # use-map-clusters, use-notification-settings, use-push-token
+    utils/       # format-date, format-address
     storage/     # tokens
 ```
 
@@ -156,7 +200,7 @@ tests/
 
 La config Expo est centralisée dans `app.config.ts`. La version de l'app est lue depuis `package.json` — c'est le seul fichier à modifier pour bumper la version.
 
-Les valeurs globales de l'application (coordonnées par défaut, deltas de carte, timings d'animation, tailles de pagination) sont centralisées dans `constants/config.ts`.
+Les valeurs globales de l'application sont centralisées dans `constants/config.ts`.
 
 ---
 
@@ -168,32 +212,73 @@ Créer un fichier `.env` à la racine pour le développement local :
 EXPO_PUBLIC_API_URL=http://192.168.x.x:5158
 ```
 
-> Utiliser l'IP locale de la machine (pas `localhost`) pour que l'app sur le téléphone puisse joindre l'API et le stockage MinIO.
+> Utiliser l'IP locale de la machine (pas `localhost`) pour que l'app sur le téléphone puisse joindre l'API.
 
-La clé Google Maps (`GOOGLE_MAPS_API_KEY`) est gérée comme secret EAS — pas besoin dans `.env`.
+La clé Google Maps (`GOOGLE_MAPS_API_KEY`) est gérée comme secret EAS.
+
+---
+
+## Push Notifications (Android)
+
+Les push notifications Android nécessitent Firebase FCM V1. La configuration est en deux parties :
+
+**Client (embarqué dans l'APK) :**
+- `google-services.json` à la racine du projet (téléchargé depuis la console Firebase)
+- Déclaré dans `app.config.ts` : `android.googleServicesFile: "./google-services.json"`
+
+**Serveur (credentials EAS) :**
+```bash
+npx eas credentials --platform android
+# → Google Service Account → Push Notifications (FCM V1)
+# → uploader le JSON de compte de service Firebase (Project Settings → Service Accounts)
+```
+
+> Les push notifications ne fonctionnent pas dans Expo Go depuis SDK 53 — utiliser un build EAS.
+
+**Flow :**
+- Login → token Expo Push enregistré sur le backend via `PATCH /users/me/push-token`
+- Logout → token vidé (`null`) pour éviter les notifications sur le mauvais compte
 
 ---
 
 ## API — Endpoints utilisés
 
-| Méthode  | Endpoint                                    | Usage                              |
-| -------- | ------------------------------------------- | ---------------------------------- |
-| POST     | `/auth/login`                               | Connexion                          |
-| POST     | `/auth/register`                            | Inscription                        |
-| POST     | `/auth/refresh`                             | Renouvellement token               |
-| POST     | `/auth/logout`                              | Déconnexion                        |
-| GET      | `/auth/me`                                  | Infos utilisateur connecté         |
-| GET      | `/users/me`                                 | Profil DB utilisateur              |
-| GET      | `/users/me/incidents`                       | Mes signalements                   |
-| GET      | `/incidents`                                | Liste avec filtres & pagination    |
-| POST     | `/incidents`                                | Créer un signalement               |
-| PATCH    | `/incidents/{id}/status`                    | Changer le statut                  |
-| DELETE   | `/incidents/{id}`                           | Supprimer (admin)                  |
-| GET      | `/incidents/{id}/photos`                    | Photos d'un incident               |
-| POST     | `/incidents/{id}/photos`                    | Upload photo (multipart)           |
-| DELETE   | `/incidents/{id}/photos/{photoId}`          | Supprimer une photo                |
-| GET      | `/incidents/{id}/status-history`            | Historique des changements statut  |
-| GET      | `/geocode/reverse`                          | Géocodage inverse                  |
+| Méthode  | Endpoint                                        | Usage                                  |
+| -------- | ----------------------------------------------- | -------------------------------------- |
+| POST     | `/auth/login`                                   | Connexion                              |
+| POST     | `/auth/register`                                | Inscription                            |
+| POST     | `/auth/refresh`                                 | Renouvellement token                   |
+| POST     | `/auth/logout`                                  | Déconnexion                            |
+| GET      | `/auth/me`                                      | Infos utilisateur connecté             |
+| GET      | `/users/me`                                     | Profil DB utilisateur                  |
+| PATCH    | `/users/me`                                     | Mise à jour du profil                  |
+| DELETE   | `/users/me`                                     | Suppression du compte                  |
+| GET      | `/users/me/incidents`                           | Mes signalements                       |
+| PATCH    | `/users/me/push-token`                          | Enregistrement / vidage token push     |
+| GET      | `/users/me/notification-settings`              | Préférences de notifications           |
+| PATCH    | `/users/me/notification-settings`              | Mise à jour des préférences            |
+| GET      | `/users/me/notifications`                       | Liste des notifications                |
+| GET      | `/users/me/notifications/unread-count`          | Compteur non-lus                       |
+| PATCH    | `/users/me/notifications/{id}/read`             | Marquer comme lu                       |
+| POST     | `/users/me/notifications/read-all`              | Tout marquer comme lu                  |
+| DELETE   | `/users/me/notifications/{id}`                  | Supprimer une notification             |
+| DELETE   | `/users/me/notifications`                       | Supprimer toutes les notifications     |
+| GET      | `/incidents`                                    | Liste avec filtres & pagination        |
+| POST     | `/incidents`                                    | Créer un signalement                   |
+| PATCH    | `/incidents/{id}/status`                        | Changer le statut                      |
+| DELETE   | `/incidents/{id}`                               | Supprimer (admin)                      |
+| GET      | `/incidents/{id}/photos`                        | Photos d'un incident                   |
+| POST     | `/incidents/{id}/photos`                        | Upload photo (multipart)               |
+| DELETE   | `/incidents/{id}/photos/{photoId}`              | Supprimer une photo                    |
+| GET      | `/incidents/{id}/status-history`                | Historique des changements statut      |
+| GET      | `/incidents/{id}/votes`                         | Votes d'un incident                    |
+| POST     | `/incidents/{id}/votes`                         | Voter pour un incident                 |
+| DELETE   | `/incidents/{id}/votes/me`                      | Retirer son vote                       |
+| GET      | `/incidents/{id}/messages`                      | Messages du chat                       |
+| POST     | `/incidents/{id}/messages`                      | Envoyer un message                     |
+| GET      | `/incidents/map-summary`                        | Clustering serveur (AllowAnonymous)    |
+| GET      | `/geocode/reverse`                              | Géocodage inverse                      |
+| WS       | `/hubs/incident-chat`                           | Hub SignalR chat temps réel            |
 
 ---
 
@@ -207,7 +292,7 @@ npm test
 npm run test:coverage
 ```
 
-169 tests unitaires couvrant les services, hooks, utilitaires et stockage.
+300 tests unitaires couvrant les services, hooks, utilitaires et stockage.
 
 ---
 
@@ -234,7 +319,7 @@ La pipeline GitHub Actions (`ci-cd.yml`) tourne sur chaque push/PR :
 eas build --profile preview --platform android
 
 # Build production
-eas build --profile production --platform android --clear-cache
+eas build --platform android --profile production --non-interactive --clear-cache
 ```
 
 ---
