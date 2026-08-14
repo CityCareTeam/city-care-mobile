@@ -1,5 +1,5 @@
 import { ConfigContext } from "expo/config";
-import { version as releasedVersion } from "./package.json";
+import versionPlan from "./version-plan.json";
 
 // ─── Version et canal de diffusion ────────────────────────────────────────────
 //
@@ -39,12 +39,6 @@ function resolveReleaseTag(): string | null {
 
 const releaseTag = resolveReleaseTag();
 
-/** 1.5.4 → 1.5.5 : une pré-version annonce la prochaine, pas celle déjà livrée. */
-function nextPatch(semver: string): string {
-  const [major, minor, patch] = semver.split(".").map(Number);
-  return `${major}.${minor}.${patch + 1}`;
-}
-
 /**
  * Repère de build, ajouté aux seules pré-versions.
  *
@@ -77,9 +71,14 @@ function buildLabel(): string {
   ].join("");
 }
 
+// `version-plan.json` est produit par `npm run changelog`, qui applique les
+// mêmes règles que semantic-release sur les commits en attente : un `feat:`
+// donne un mineur, une rupture un majeur, le reste un patch. Deviner un
+// `patch + 1` faisait annoncer une 1.5.5 là où la release serait sortie en
+// 1.6.0.
 const version = releaseTag
-  ? `${nextPatch(releasedVersion)}-${releaseTag}.${buildLabel()}`
-  : releasedVersion;
+  ? `${versionPlan.nextVersion}-${releaseTag}.${buildLabel()}`
+  : versionPlan.lastReleased;
 
 export default ({ config }: ConfigContext) => ({
   ...config,

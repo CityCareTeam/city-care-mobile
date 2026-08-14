@@ -16,7 +16,11 @@ import { execFileSync } from "node:child_process";
 import { writeFileSync } from "node:fs";
 
 const OUTPUT = "constants/changelog.generated.ts";
+const VERSION_PLAN = "version-plan.json";
 const LINE = String.fromCharCode(10);
+// Séparateurs ASCII, absents de tout message de commit.
+const UNIT = String.fromCharCode(31);
+const RECORD = String.fromCharCode(30);
 
 /** Types conventionnels retenus, et la nature qu'ils prennent dans l'app. */
 const KIND_BY_TYPE = {
@@ -65,20 +69,50 @@ function parseCommit(subject) {
   };
 }
 
-function changesBetween(from, to) {
-  const range = from ? `${from}..${to}` : to;
-  const subjects = git("log", "--no-merges", "--pretty=format:%s", range);
-  if (!subjects) return [];
+/**
+ * Lignes conventionnelles d'un commit : son sujet, **et** les puces de son corps.
+ *
+ * Les pull requests sont écrasées à la fusion : `main` ne reçoit qu'un commit
+ * par release, dont le sujet est le titre de la PR. Mais GitHub recopie la
+ * description de la PR dans le corps, et celle-ci liste les commits d'origine
+ * sous forme de puces. Ne lire que le sujet revenait à jeter tout le détail —
+ * la 1.4.0 y cachait dix commits.
+ */
+function conventionalLines(subject, body) {
+  const lines = [subject];
+  for (const raw of body.split(LINE)) {
+    const trimmed = raw.trim();
+    const bullet = trimmed.replace(/^[*-]\s+/, "");
+    if (bullet !== trimmed) lines.push(bullet);
+  }
+  return lines;
+}
+
+/** Parcourt un `git log` en lisant sujet et corps de chaque commit. */
+function parseLog(...logArgs) {
+  const raw = git("log", "--no-merges", `--pretty=format:%s${UNIT}%b${RECORD}`, ...logArgs);
+  if (!raw) return [];
 
   const seen = new Set();
-  return subjects
-    .split("\n")
-    .map(parseCommit)
-    .filter((change) => {
-      if (!change || seen.has(change.text)) return false;
+  const changes = [];
+
+  for (const record of raw.split(RECORD)) {
+    const [subject = "", body = ""] = record.split(UNIT);
+    if (!subject.trim()) continue;
+
+    for (const line of conventionalLines(subject.trim(), body)) {
+      const change = parseCommit(line);
+      if (!change || seen.has(change.text)) continue;
       seen.add(change.text);
-      return true;
-    });
+      changes.push(change);
+    }
+  }
+
+  return changes;
+}
+
+function changesBetween(from, to) {
+  return parseLog(from ? `${from}..${to}` : to);
 }
 
 function build() {
@@ -122,22 +156,71 @@ const alreadyReleased = new Set(
 );
 
 function changesSince(isoDate) {
-  const subjects = git("log", "--no-merges", `--since=${isoDate}`, "--pretty=format:%s", "HEAD");
-  if (!subjects) return [];
-  const seen = new Set();
-  return subjects
-    .split(LINE)
-    .map(parseCommit)
-    .filter((change) => {
-      if (!change || seen.has(change.text) || alreadyReleased.has(change.text)) return false;
-      seen.add(change.text);
-      return true;
-    });
+  return parseLog(`--since=${isoDate}`, "HEAD").filter(
+    (change) => !alreadyReleased.has(change.text),
+  );
 }
 
-const unreleased = lastTag
-  ? changesSince(git("log", "-1", "--format=%aI", lastTag))
-  : [];
+const lastReleaseDate = lastTag ? git("log", "-1", "--format=%aI", lastTag) : null;
+const unreleased = lastReleaseDate ? changesSince(lastReleaseDate) : [];
+
+// ─── Prédiction du prochain numéro ───────────────────────────────────────────
+//
+// Une pré-version doit annoncer la version qu'elle prépare. Incrémenter le
+// patch à l'aveugle était faux : un seul `feat:` fait sortir semantic-release
+// en mineur, et la beta aurait annoncé une 1.5.5 qui n'existerait jamais.
+//
+// On applique donc les mêmes règles que le preset angular de semantic-release.
+// Seuls `feat`, `fix` et `perf` déclenchent une release ; le reste ne compte pas.
+
+const BUMP_BY_TYPE = { feat: "minor", fix: "patch", perf: "patch" };
+const BUMP_RANK = { none: 0, patch: 1, minor: 2, major: 3 };
+
+/** Le palier le plus fort l'emporte, comme chez semantic-release. */
+function predictBump(isoDate) {
+  if (!isoDate) return "none";
+
+  const raw = git("log", "--no-merges", `--since=${isoDate}`, `--pretty=format:%s${UNIT}%b${RECORD}`, "HEAD");
+  let bump = "none";
+
+  for (const record of raw.split(RECORD)) {
+    const [subject = "", body = ""] = record.split(UNIT);
+    if (!subject.trim()) continue;
+
+    // Une rupture peut être déclarée dans le corps plutôt que par le `!`.
+    if (body.includes("BREAKING CHANGE")) return "major";
+
+    for (const line of conventionalLines(subject.trim(), body)) {
+      const match = line.match(/^(\w+)(?:\([^)]+\))?(!)?:/);
+      if (!match) continue;
+
+      const [, type, breaking] = match;
+      const level = breaking ? "major" : BUMP_BY_TYPE[type];
+      if (level && BUMP_RANK[level] > BUMP_RANK[bump]) bump = level;
+    }
+  }
+
+  return bump;
+}
+
+function applyBump(version, bump) {
+  const [major, minor, patch] = version.split(".").map(Number);
+  if (bump === "major") return `${major + 1}.0.0`;
+  if (bump === "minor") return `${major}.${minor + 1}.0`;
+  return `${major}.${minor}.${patch + 1}`;
+}
+
+const lastReleased = lastTag ? lastTag.replace(/^v/, "") : "0.0.0";
+const bump = predictBump(lastReleaseDate);
+// Rien de publiable en attente : la prochaine sera malgré tout un patch, c'est
+// le plancher que retiendra semantic-release dès qu'un `fix:` arrivera.
+const nextVersion = applyBump(lastReleased, bump === "none" ? "patch" : bump);
+
+writeFileSync(
+  VERSION_PLAN,
+  JSON.stringify({ lastReleased, bump, nextVersion }, null, 2) + LINE,
+  "utf8",
+);
 
 const file = `// Généré par \`npm run changelog\` — ne pas modifier à la main.
 // Pour reformuler une version à destination des utilisateurs, passez par
@@ -159,3 +242,18 @@ console.log(
   `${OUTPUT} — ${notes.length} versions, ${notes.reduce((n, r) => n + r.changes.length, 0)} changements` +
   `, ${unreleased.length} en attente depuis ${lastTag ?? "l'origine"}.`,
 );
+console.log(`${VERSION_PLAN} — ${lastReleased} + ${bump} → ${nextVersion}`);
+
+// Les pull requests sont écrasées à la fusion : seul le **titre** de la PR
+// devient un commit sur `main`, et c'est donc lui seul que semantic-release
+// analyse. Si son type diverge de ce que contient la branche, la release sortira
+// sur un autre palier que celui annoncé par la beta. On rappelle donc le
+// préfixe qui fait coïncider les deux.
+if (unreleased.length > 0) {
+  const PREFIX_FOR = { major: "feat!", minor: "feat", patch: "fix", none: "fix" };
+  console.log(
+    `${LINE}Titre de PR à utiliser pour sortir en ${nextVersion} :` +
+    `${LINE}  ${PREFIX_FOR[bump]}: <résumé court>` +
+    `${LINE}Le détail va dans la description, il est repris dans les notes.`,
+  );
+}

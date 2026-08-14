@@ -12,6 +12,10 @@ export const GENERATED_CHANGELOG: ReleaseNote[] = [
       {
         "kind": "fix",
         "text": "Add silent auto-refresh polling for incidents list, status and votes"
+      },
+      {
+        "kind": "fix",
+        "text": "Reload silence to 15s"
       }
     ]
   },
@@ -32,6 +36,10 @@ export const GENERATED_CHANGELOG: ReleaseNote[] = [
       {
         "kind": "fix",
         "text": "Add Firebase FCM config for Android push notifications"
+      },
+      {
+        "kind": "fix",
+        "text": "Add Firebase FCM config for Android push notification"
       }
     ]
   },
@@ -52,6 +60,18 @@ export const GENERATED_CHANGELOG: ReleaseNote[] = [
       {
         "kind": "feature",
         "text": "Add vote for citizen"
+      },
+      {
+        "kind": "fix",
+        "text": "Photo upload timeout and silent error on incident report"
+      },
+      {
+        "kind": "fix",
+        "text": "Security patch"
+      },
+      {
+        "kind": "feature",
+        "text": "Incident vote (soutien) for citizens"
       }
     ]
   },
@@ -62,6 +82,10 @@ export const GENERATED_CHANGELOG: ReleaseNote[] = [
       {
         "kind": "fix",
         "text": "Input display"
+      },
+      {
+        "kind": "fix",
+        "text": "Input padding"
       }
     ]
   },
@@ -72,6 +96,10 @@ export const GENERATED_CHANGELOG: ReleaseNote[] = [
       {
         "kind": "fix",
         "text": "Chat in détail incident"
+      },
+      {
+        "kind": "fix",
+        "text": "Chat in detail incident"
       }
     ]
   },
@@ -82,6 +110,62 @@ export const GENERATED_CHANGELOG: ReleaseNote[] = [
       {
         "kind": "feature",
         "text": "Add chat, add notifs, refonte app and fix photo incident"
+      },
+      {
+        "kind": "fix",
+        "text": "City extraction, description in my incidents and photo zoom in detail modal"
+      },
+      {
+        "kind": "feature",
+        "text": "Edit profile, change password & delete account with full UI rework"
+      },
+      {
+        "kind": "fix",
+        "text": "Validation champs formulaires (caractères spéciaux, longueur max) & décompte description signalement"
+      },
+      {
+        "kind": "fix",
+        "text": "Resolve TypeScript strict literal type errors on coords and map delta"
+      },
+      {
+        "kind": "fix",
+        "text": "Username char validation & add tests for easter-egg, user-location, color-scheme-web"
+      },
+      {
+        "kind": "improvement",
+        "text": "Reorganise architecture & fix session expiry redirect"
+      },
+      {
+        "kind": "feature",
+        "text": "In-app notification center, push token & preferences"
+      },
+      {
+        "kind": "feature",
+        "text": "Server-side map clustering, replace react-native-map-clustering"
+      },
+      {
+        "kind": "feature",
+        "text": "Incident chat (SignalR), notification fixes & message_count badge"
+      },
+      {
+        "kind": "improvement",
+        "text": "SOLID split, modal redesign & map marker fixes"
+      },
+      {
+        "kind": "feature",
+        "text": "Notifications UX overhaul & swipe-to-delete"
+      },
+      {
+        "kind": "feature",
+        "text": "Refonte UI complète et déduplication des composants partagés"
+      },
+      {
+        "kind": "fix",
+        "text": "Image in app"
+      },
+      {
+        "kind": "fix",
+        "text": "App photo"
       }
     ]
   },
@@ -92,6 +176,38 @@ export const GENERATED_CHANGELOG: ReleaseNote[] = [
       {
         "kind": "feature",
         "text": "Photos, profile management, form validation & architecture cleanup"
+      },
+      {
+        "kind": "feature",
+        "text": "Add photo option dans les signalement"
+      },
+      {
+        "kind": "feature",
+        "text": "Photo upload, refonte UI detail & liste incidents"
+      },
+      {
+        "kind": "fix",
+        "text": "City extraction, description in my incidents and photo zoom in detail modal"
+      },
+      {
+        "kind": "feature",
+        "text": "Edit profile, change password & delete account with full UI rework"
+      },
+      {
+        "kind": "fix",
+        "text": "Validation champs formulaires (caractères spéciaux, longueur max) & décompte description signalement"
+      },
+      {
+        "kind": "fix",
+        "text": "Resolve TypeScript strict literal type errors on coords and map delta"
+      },
+      {
+        "kind": "fix",
+        "text": "Username char validation & add tests for easter-egg, user-location, color-scheme-web"
+      },
+      {
+        "kind": "improvement",
+        "text": "Reorganise architecture & fix session expiry redirect"
       }
     ]
   },
@@ -113,6 +229,10 @@ export const GENERATED_CHANGELOG: ReleaseNote[] = [
       {
         "kind": "fix",
         "text": "Pins maps android"
+      },
+      {
+        "kind": "fix",
+        "text": "Pins map"
       }
     ]
   },
@@ -133,6 +253,14 @@ export const GENERATED_CHANGELOG: ReleaseNote[] = [
       {
         "kind": "fix",
         "text": "Rewrite MapPin with react-native-svg for clean Android rendering and imag splash"
+      },
+      {
+        "kind": "fix",
+        "text": "Rewrite MapPin with react-native-svg for clean Android rendering"
+      },
+      {
+        "kind": "fix",
+        "text": "Use fond-splash.png on Android with cover mode, drop incorrect imageWidth"
       }
     ]
   },
@@ -153,6 +281,22 @@ export const GENERATED_CHANGELOG: ReleaseNote[] = [
       {
         "kind": "fix",
         "text": "Message error and placement bouton signaler"
+      },
+      {
+        "kind": "fix",
+        "text": "Bouton de signalement + token"
+      },
+      {
+        "kind": "fix",
+        "text": "Messages errors"
+      },
+      {
+        "kind": "fix",
+        "text": "Resolve insets declaration order in explore and update tests for new error message"
+      },
+      {
+        "kind": "fix",
+        "text": "ThrowFromResponse falls back correctly on empty JSON body"
       }
     ]
   },
@@ -203,6 +347,10 @@ export const GENERATED_CHANGELOG: ReleaseNote[] = [
       {
         "kind": "fix",
         "text": "Add port url prod"
+      },
+      {
+        "kind": "fix",
+        "text": "Test update"
       }
     ]
   },
@@ -223,6 +371,10 @@ export const GENERATED_CHANGELOG: ReleaseNote[] = [
       {
         "kind": "fix",
         "text": "Config apk avec la prod"
+      },
+      {
+        "kind": "fix",
+        "text": "Config avec la prod no OK"
       }
     ]
   },
@@ -236,11 +388,35 @@ export const GENERATED_CHANGELOG: ReleaseNote[] = [
       },
       {
         "kind": "fix",
+        "text": "Add CI/CD step to sync dev with main branch"
+      },
+      {
+        "kind": "fix",
+        "text": "Downgrade version to 1.2.0 in package-lock.json"
+      },
+      {
+        "kind": "fix",
+        "text": "Downgrade version from 1.2.2 to 1.2.0"
+      },
+      {
+        "kind": "fix",
         "text": "Use merge with theirs strategy for dev sync after release"
       },
       {
         "kind": "fix",
         "text": "Ci et suppression du code mort"
+      },
+      {
+        "kind": "fix",
+        "text": "Alignment de dev après le release push sur main"
+      },
+      {
+        "kind": "fix",
+        "text": "Connexion avec le back en prod"
+      },
+      {
+        "kind": "fix",
+        "text": "Add json-summary reporter to generate coverage-summary.json"
       }
     ]
   },
@@ -255,6 +431,18 @@ export const GENERATED_CHANGELOG: ReleaseNote[] = [
       {
         "kind": "feature",
         "text": "Semantic-release and auto release pipeline and liquide glasse"
+      },
+      {
+        "kind": "feature",
+        "text": "Semantic-release and auto release pipeline"
+      },
+      {
+        "kind": "feature",
+        "text": "Liquid  bottom tab bar and filter  with spring animation"
+      },
+      {
+        "kind": "fix",
+        "text": "Move semantic-release plugins to devDeps and sync lockfile on release"
       }
     ]
   },
@@ -265,6 +453,89 @@ export const GENERATED_CHANGELOG: ReleaseNote[] = [
       {
         "kind": "fix",
         "text": "Production config alignée avec prod"
+      },
+      {
+        "kind": "feature",
+        "scope": "auth",
+        "text": "Login, register, logout, token storage"
+      },
+      {
+        "kind": "feature",
+        "text": "Incidents — signalement form, map screen, changement de statut agent/admin"
+      },
+      {
+        "kind": "feature",
+        "text": "Incidents — suppression admin, style bottom sheet, fix marker iOS"
+      },
+      {
+        "kind": "feature",
+        "text": "Dashboard role-based redesign + refactor (useRole hook, shared constants, IncidentRow, pagination, tab icon)"
+      },
+      {
+        "kind": "feature",
+        "scope": "tests",
+        "text": "Add unit test suite with coverage reporting"
+      },
+      {
+        "kind": "improvement",
+        "text": "Centralise shared logic across services, hooks and constants"
+      },
+      {
+        "kind": "fix",
+        "scope": "ci",
+        "text": "Add push trigger on main/dev for coverage and auto-tag"
+      },
+      {
+        "kind": "fix",
+        "scope": "ci",
+        "text": "Use GH_PAT to trigger build workflow on tag push"
+      },
+      {
+        "kind": "fix",
+        "scope": "ci",
+        "text": "Trigger EAS build on push to main"
+      },
+      {
+        "kind": "fix",
+        "scope": "eas",
+        "text": "Add android package name for production build"
+      },
+      {
+        "kind": "improvement",
+        "text": "Centralise user auth state in AuthContext"
+      },
+      {
+        "kind": "improvement",
+        "text": "Centralise all UI strings in constants/strings"
+      },
+      {
+        "kind": "feature",
+        "text": "Add dark mode theme support"
+      },
+      {
+        "kind": "feature",
+        "scope": "test",
+        "text": "Add new tests"
+      },
+      {
+        "kind": "fix",
+        "text": "Enforce linear incident status flow (one transition at a time)"
+      },
+      {
+        "kind": "feature",
+        "text": "Add production API URL and cleartext traffic config"
+      },
+      {
+        "kind": "fix",
+        "text": "Center map on selected incident and cluster nearby markers"
+      },
+      {
+        "kind": "fix",
+        "text": "Custom MapPin with active state and remove expo-maps"
+      },
+      {
+        "kind": "feature",
+        "text": "Dark mode, AuthContext, tests, prod config & new branding (v1.1.0)"
       }
     ]
   },
@@ -275,6 +546,31 @@ export const GENERATED_CHANGELOG: ReleaseNote[] = [
       {
         "kind": "fix",
         "text": "Map clustering, MapPin active state & pipeline cleanup"
+      },
+      {
+        "kind": "fix",
+        "text": "Center map on selected incident and cluster nearby markers"
+      },
+      {
+        "kind": "fix",
+        "text": "Custom MapPin with active state and remove expo-maps"
+      },
+      {
+        "kind": "fix",
+        "scope": "eas",
+        "text": "Add android package name for production build"
+      },
+      {
+        "kind": "feature",
+        "text": "Dark mode, AuthContext, tests, prod config & new branding (v1.1.0)"
+      },
+      {
+        "kind": "fix",
+        "text": "Enforce linear incident status flow (one transition at a time)"
+      },
+      {
+        "kind": "feature",
+        "text": "Add production API URL and cleartext traffic config"
       }
     ]
   },
@@ -285,6 +581,14 @@ export const GENERATED_CHANGELOG: ReleaseNote[] = [
       {
         "kind": "feature",
         "text": "Dark mode, AuthContext, tests, prod config & new branding (v1.1.0)"
+      },
+      {
+        "kind": "fix",
+        "text": "Enforce linear incident status flow (one transition at a time)"
+      },
+      {
+        "kind": "feature",
+        "text": "Add production API URL and cleartext traffic config"
       },
       {
         "kind": "fix",
@@ -303,22 +607,13 @@ export const GENERATED_CHANGELOG: ReleaseNote[] = [
         "text": "Trigger EAS build on push to main"
       },
       {
-        "kind": "fix",
-        "scope": "ci",
-        "text": "Add push trigger on main/dev for coverage and auto-tag"
-      },
-      {
-        "kind": "improvement",
-        "text": "Centralise shared logic across services, hooks and constants"
+        "kind": "feature",
+        "scope": "auth",
+        "text": "Login, register, logout, token storage"
       },
       {
         "kind": "feature",
-        "scope": "tests",
-        "text": "Add unit test suite with coverage reporting"
-      },
-      {
-        "kind": "feature",
-        "text": "Dashboard role-based redesign + refactor (useRole hook, shared constants, IncidentRow, pagination, tab icon)"
+        "text": "Incidents — signalement form, map screen, changement de statut agent/admin"
       },
       {
         "kind": "feature",
@@ -326,7 +621,26 @@ export const GENERATED_CHANGELOG: ReleaseNote[] = [
       },
       {
         "kind": "feature",
-        "text": "Incidents — signalement form, map screen, changement de statut agent/admin"
+        "text": "Dashboard role-based redesign + refactor (useRole hook, shared constants, IncidentRow, pagination, tab icon)"
+      },
+      {
+        "kind": "feature",
+        "scope": "tests",
+        "text": "Add unit test suite with coverage reporting"
+      },
+      {
+        "kind": "improvement",
+        "text": "Centralise shared logic across services, hooks and constants"
+      },
+      {
+        "kind": "fix",
+        "scope": "ci",
+        "text": "Add push trigger on main/dev for coverage and auto-tag"
+      },
+      {
+        "kind": "fix",
+        "scope": "ci",
+        "text": "Use GH_PAT to trigger build workflow on tag push"
       }
     ]
   }
@@ -337,6 +651,16 @@ export const LAST_RELEASED_VERSION = "1.5.4";
 
 /** Changements accumulés depuis, donc embarqués par les pré-versions. */
 export const UNRELEASED_CHANGES: Change[] = [
+  {
+    "kind": "fix",
+    "scope": "ci",
+    "text": "Fail the audit only on unreviewed advisories"
+  },
+  {
+    "kind": "fix",
+    "scope": "tests",
+    "text": "Decouple pending-changes test from git state"
+  },
   {
     "kind": "fix",
     "scope": "release",
