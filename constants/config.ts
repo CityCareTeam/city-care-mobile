@@ -32,4 +32,5 @@ export const CLUSTER_DEBOUNCE_MS = 300;
 export const POLL_INTERVAL_MS = {
   incidents: 15_000,
   votes: 15_000,
+  notifications: 30_000,
 } as const;

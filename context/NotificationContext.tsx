@@ -1,3 +1,4 @@
+import { POLL_INTERVAL_MS } from "@/constants/config";
 import Constants from "expo-constants";
 import { getUnreadCount } from "@/services/notifications";
 import { getValidToken } from "@/storage/tokens";
@@ -37,8 +38,6 @@ export function useNotificationContext() {
   return useContext(NotificationContext);
 }
 
-const POLL_INTERVAL_MS = 30_000;
-
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, loading } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
@@ -60,7 +59,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       return;
     }
     void fetchCount();
-    timerRef.current = setInterval(() => void fetchCount(), POLL_INTERVAL_MS);
+    timerRef.current = setInterval(() => void fetchCount(), POLL_INTERVAL_MS.notifications);
 
     let unsub: (() => void) | undefined;
     if (!isExpoGo) {
