@@ -48,6 +48,30 @@ function resolveReleaseTag(): string | null {
 
 const releaseTag = resolveReleaseTag();
 
+// ─── Clé Google Maps ─────────────────────────────────────────────────────────
+//
+// Elle est fournie par un secret EAS, rattaché aux environnements dans lesquels
+// les profils de build résolvent. Une clé absente ne se voyait pas au build :
+// l'APK se construisait, s'installait, et l'application se fermait net à
+// l'ouverture de la carte — `MapView` natif refuse de s'instancier sans clé.
+//
+//   IllegalStateException: API key not found.
+//     at com.rnmaps.maps.MapView.<init>
+//
+// Un build EAS s'arrête donc désormais avec la raison, plutôt que de produire
+// un binaire cassé. En local on reste tolérant : `expo start` doit démarrer même
+// sans clé, la carte étant le seul écran concerné.
+
+const googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY ?? "";
+
+if (!googleMapsApiKey && process.env.EAS_BUILD) {
+  throw new Error(
+    "GOOGLE_MAPS_API_KEY est absente : la carte planterait au lancement.\n" +
+    `Profil « ${process.env.EAS_BUILD_PROFILE ?? "inconnu"} ». Rattachez le secret ` +
+    "à l'environnement dans lequel ce profil résout (eas env:list <environnement>).",
+  );
+}
+
 /**
  * Repère de build, ajouté aux seules pré-versions.
  *
@@ -118,7 +142,7 @@ export default ({ config }: ConfigContext) => ({
     usesCleartextTraffic: true,
     config: {
       googleMaps: {
-        apiKey: process.env.GOOGLE_MAPS_API_KEY ?? "",
+        apiKey: googleMapsApiKey,
       },
     },
   },
