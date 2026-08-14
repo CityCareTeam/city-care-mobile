@@ -1,7 +1,7 @@
 import { CHANGELOG } from '@/constants/changelog';
 import { minorOf } from '@/utils/app-version';
 import { changelogFor, groupByMinor, isReleased } from '@/utils/changelog';
-import { GENERATED_CHANGELOG } from '@/constants/changelog.generated';
+import { GENERATED_CHANGELOG, UNRELEASED_CHANGES } from '@/constants/changelog.generated';
 
 describe('changelog', () => {
   it('reprend tout l’historique git', () => {
@@ -67,9 +67,21 @@ describe('changelog', () => {
       expect(notes.filter((n) => n.version === '1.5.5')).toHaveLength(1);
     });
 
-    it('n’invente rien quand rien n’est en attente', () => {
-      // Aucun commit fonctionnel depuis le dernier tag dans ce dépôt.
-      expect(changelogFor('9.9.9')).toBe(CHANGELOG);
+    // Ce cas dépend de l'historique git au moment de la génération : on décrit
+    // donc le contrat des deux côtés plutôt que de figer l'état du dépôt. La
+    // version précédente de ce test supposait la liste vide et cassait dès le
+    // premier commit non publié.
+    it('rattache les changements en attente à la version demandée', () => {
+      const notes = changelogFor('9.9.9');
+
+      if (UNRELEASED_CHANGES.length === 0) {
+        expect(notes).toBe(CHANGELOG);
+        return;
+      }
+
+      expect(notes[0].version).toBe('9.9.9');
+      expect(notes[0].changes).toBe(UNRELEASED_CHANGES);
+      expect(notes.slice(1)).toEqual(CHANGELOG);
     });
   });
 
