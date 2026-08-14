@@ -81,7 +81,9 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm audit --audit-level=high
+      # Échoue sur les advisories non examinées, pas sur celles que le SDK
+      # Expo traîne et qu'on a acceptées dans .audit-allowlist.json.
+      - run: npm run audit
       - name: Notify Discord (failure)
         if: failure()
         run: |
