@@ -67,6 +67,14 @@ describe('AppVersion', () => {
     expect(getByLabelText("Version 1.5.5, version d'essai beta")).toBeTruthy();
   });
 
+  // EAS refuse une chaîne vide dans `env` : production déclare donc `none`.
+  // Sans ce filtre, le badge aurait affiché « NONE » en production.
+  it('traite la sentinelle « none » comme une absence de canal', () => {
+    const { getByText, queryByText } = renderVersion('1.5.4', { releaseTag: 'none' });
+    expect(getByText('v1.5.4')).toBeTruthy();
+    expect(queryByText('NONE')).toBeNull();
+  });
+
   it('ignore une étiquette qui n’est pas une chaîne', () => {
     const { queryByText } = renderVersion('1.5.4', { releaseTag: {} });
     expect(queryByText('BETA')).toBeNull();

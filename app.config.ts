@@ -11,28 +11,37 @@ import versionPlan from "./version-plan.json";
 // EAS renseigne `EAS_BUILD_PROFILE` pendant un build. En son absence on est en
 // développement local, donc en beta.
 
+/**
+ * Valeur déclarant explicitement l'absence d'étiquette. EAS refuse une chaîne
+ * vide dans `env` — d'où une sentinelle plutôt qu'une clé absente : on veut que
+ * production *déclare* n'avoir aucun canal, pas qu'on le déduise d'un silence.
+ */
+const NO_TAG = "none";
+
 const TAG_BY_PROFILE: Record<string, string> = {
   "dev-local": "beta",
   preview: "rc",
-  production: "",
+  production: NO_TAG,
 };
 
 /**
  * Trois sources, de la plus explicite à la plus permissive :
  *
- *   1. `APP_RELEASE_TAG`, posé par le profil dans `eas.json` — chaîne vide en
- *      production, ce qui rend l'absence d'étiquette explicite plutôt que
- *      déduite. C'est le garde-fou : un build production ne peut pas retomber
- *      sur le défaut et sortir badgé « beta ».
+ *   1. `APP_RELEASE_TAG`, posé par le profil dans `eas.json` — `none` en
+ *      production. C'est le garde-fou : un build production ne peut pas
+ *      retomber sur le défaut et sortir badgé « beta ».
  *   2. Le nom du profil, si seul `EAS_BUILD_PROFILE` est disponible.
  *   3. `beta` par défaut — on est alors en développement local, jamais en prod.
  */
 function resolveReleaseTag(): string | null {
   const explicit = process.env.APP_RELEASE_TAG;
-  if (explicit !== undefined) return explicit || null;
+  if (explicit !== undefined) return explicit && explicit !== NO_TAG ? explicit : null;
 
   const profile = process.env.EAS_BUILD_PROFILE;
-  if (profile) return TAG_BY_PROFILE[profile] || null;
+  if (profile) {
+    const tag = TAG_BY_PROFILE[profile];
+    return tag && tag !== NO_TAG ? tag : null;
+  }
 
   return "beta";
 }

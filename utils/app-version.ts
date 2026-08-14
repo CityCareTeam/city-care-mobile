@@ -25,7 +25,12 @@ export function releaseTag(): string | null {
   const tag = Constants.expoConfig?.extra?.releaseTag;
   // La sérialisation de la config transforme `null` en objet vide, qui est
   // truthy : on exige donc une vraie chaîne.
-  return typeof tag === "string" && tag.length > 0 ? tag : null;
+  if (typeof tag !== "string" || tag.length === 0) return null;
+  // `none` est la sentinelle d'absence de canal utilisée par `eas.json`, qui
+  // n'accepte pas de chaîne vide dans `env`. `app.config.ts` la neutralise déjà
+  // en amont ; on la refuse aussi ici, pour qu'aucun chemin ne puisse afficher
+  // un badge « NONE » en production.
+  return tag === "none" ? null : tag;
 }
 
 /** `1.5.5-beta.2608142035` → `1.5.5` : la version livrée que la build vise. */
