@@ -13,7 +13,7 @@
     "test:coverage": "jest --coverage --watchAll=false",
     "audit": "node scripts/audit.mjs",
     "changelog": "node scripts/generate-changelog.mjs",
-    "build:beta": "npm run changelog && eas build --profile dev-local --platform android",
+    "build:beta": "node scripts/generate-changelog.mjs --commit && eas build --profile dev-local --platform android",
     "build:prod": "eas build --profile production --platform android"
   },
   "dependencies": {

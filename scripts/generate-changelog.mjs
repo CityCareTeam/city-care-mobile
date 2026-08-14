@@ -244,6 +244,28 @@ console.log(
 );
 console.log(`${VERSION_PLAN} — ${lastReleased} + ${bump} → ${nextVersion}`);
 
+// ─── `--commit` : referme la boucle avant un build ───────────────────────────
+//
+// Sans ça, `build:beta` régénérait le journal, salissait l'arbre, et EAS
+// s'interrompait pour demander quoi en faire — au milieu d'un build qu'on venait
+// de lancer. Avec, la synchronisation est faite et actée avant qu'EAS ne
+// démarre, donc rien à relancer.
+//
+// Seuls les deux fichiers générés sont indexés : un travail en cours à côté
+// n'est jamais emporté par mégarde.
+if (process.argv.includes("--commit")) {
+  const generated = [OUTPUT, VERSION_PLAN];
+  git("add", "--", ...generated);
+
+  const staged = git("diff", "--staged", "--name-only", "--", ...generated);
+  if (staged) {
+    git("commit", "-m", "chore(changelog): sync release notes");
+    console.log(`${LINE}Journal synchronisé et commité.`);
+  } else {
+    console.log(`${LINE}Journal déjà à jour, rien à commiter.`);
+  }
+}
+
 // Les pull requests sont écrasées à la fusion : seul le **titre** de la PR
 // devient un commit sur `main`, et c'est donc lui seul que semantic-release
 // analyse. Si son type diverge de ce que contient la branche, la release sortira
