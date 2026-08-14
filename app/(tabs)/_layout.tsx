@@ -33,6 +33,9 @@ const TABS = [
   { name: "profile",       label: "Profil",  icon: "person.fill" as const },
 ];
 
+/** Capturé hors composant : un worklet ne doit lire que des valeurs simples. */
+const TAB_COUNT = TABS.length;
+
 const TAB_BAR_HEIGHT = 60;
 const MARGIN_H = 20;
 const PAD = 6;
@@ -121,8 +124,10 @@ function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
       .onFinalize(() => {
         if (!held.value) return;
         held.value = false;
-        const landing = Math.min(Math.max(Math.round((x.value - PAD) / tabWidth), 0), TABS.length - 1);
-        x.value = withSpring(restingX(landing), SPRING);
+        const landing = Math.min(Math.max(Math.round((x.value - PAD) / tabWidth), 0), TAB_COUNT - 1);
+        // Position recalculée sur place : `restingX` est une fonction JS
+        // ordinaire, et l'appeler depuis un worklet fait planter l'application.
+        x.value = withSpring(PAD + landing * tabWidth, SPRING);
         stretch.value = withSpring(1, SPRING);
         hoveredOnUi.value = landing;
         runOnJS(settle)(landing);

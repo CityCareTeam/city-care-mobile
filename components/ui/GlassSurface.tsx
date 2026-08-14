@@ -2,7 +2,7 @@ import { useAppColors } from "@/hooks/use-app-colors";
 import type { AppColors } from "@/types/theme";
 import { BlurView } from "expo-blur";
 import type { ReactNode } from "react";
-import { useMemo } from "react";
+import { forwardRef, useMemo } from "react";
 import { Platform, StyleProp, StyleSheet, View, ViewProps, ViewStyle } from "react-native";
 
 type Props = {
@@ -24,12 +24,21 @@ type Props = {
  */
 const USE_BLUR = Platform.OS === "ios";
 
-export function GlassSurface({ children, style, transparentToTouch = false, onLayout }: Props) {
+/**
+ * La ref est transmise à la vue native : `GestureDetector` a besoin d'une cible
+ * réelle pour attacher son détecteur, et un composant de fonction sans
+ * `forwardRef` ne lui en offre aucune.
+ */
+export const GlassSurface = forwardRef<View, Props>(function GlassSurface(
+  { children, style, transparentToTouch = false, onLayout },
+  ref,
+) {
   const { colors, isDark } = useAppColors();
   const styles = useMemo(() => makeStyles(colors, isDark), [colors, isDark]);
 
   return (
     <View
+      ref={ref}
       style={[styles.surface, style]}
       pointerEvents={transparentToTouch ? "none" : "auto"}
       onLayout={onLayout}
@@ -47,7 +56,7 @@ export function GlassSurface({ children, style, transparentToTouch = false, onLa
       {children}
     </View>
   );
-}
+});
 
 function makeStyles(colors: AppColors, isDark: boolean) {
   return StyleSheet.create({
