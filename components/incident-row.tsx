@@ -4,7 +4,7 @@ import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
 import { extractCity } from "@/utils/format-address";
 import { formatDateShort } from "@/utils/format-date";
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 type Props = {
@@ -101,7 +101,7 @@ function makeStyles(c: AppColors) {
   });
 }
 
-export function IncidentRow({ id, type, status, description, address, createdAt, onPress, isMine }: Props) {
+function IncidentRowBase({ id, type, status, description, address, createdAt, onPress, isMine }: Props) {
   const { colors } = useAppColors();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
@@ -144,3 +144,7 @@ export function IncidentRow({ id, type, status, description, address, createdAt,
     </TouchableOpacity>
   );
 }
+
+// La liste se re-rend à chaque sondage : sans mémoïsation, toutes les lignes
+// visibles seraient reconstruites toutes les quinze secondes pour rien.
+export const IncidentRow = memo(IncidentRowBase);

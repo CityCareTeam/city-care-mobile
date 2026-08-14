@@ -1,5 +1,5 @@
+import { GlassSurface } from "@/components/ui/GlassSurface";
 import { useAppColors } from "@/hooks/use-app-colors";
-import { BlurView } from "expo-blur";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
@@ -55,37 +55,12 @@ export function GlassPillSelector<T>({
   const color = indicatorColor ?? colors.primary;
 
   return (
-    <View
-      style={[
-        styles.wrapper,
-        {
-          borderColor: isDark
-            ? "rgba(255,255,255,0.12)"
-            : "rgba(255,255,255,0.7)",
-        },
-        style,
-      ]}
+    <GlassSurface
+      style={[styles.wrapper, style]}
       onLayout={(e: LayoutChangeEvent) =>
         setContainerWidth(e.nativeEvent.layout.width)
       }
     >
-      <BlurView
-        style={StyleSheet.absoluteFillObject}
-        intensity={isDark ? 55 : 75}
-        tint={isDark ? "dark" : "light"}
-      />
-      <View
-        style={[
-          StyleSheet.absoluteFillObject,
-          {
-            backgroundColor: isDark
-              ? "rgba(25, 25, 30, 0.40)"
-              : "rgba(255, 255, 255, 0.30)",
-          },
-        ]}
-        pointerEvents="none"
-      />
-
       {tabWidth > 0 && (
         <Animated.View
           style={[
@@ -143,23 +118,17 @@ export function GlassPillSelector<T>({
           </Pressable>
         );
       })}
-    </View>
+    </GlassSurface>
   );
 }
 
 const styles = StyleSheet.create({
+  // Flou, voile, liseré et ombre viennent de GlassSurface.
   wrapper: {
     flexDirection: "row",
     alignSelf: "stretch",
     borderRadius: 30,
-    borderWidth: 1,
-    overflow: "hidden",
     height: 40,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.10,
-    shadowRadius: 12,
-    elevation: 6,
   },
   indicator: {
     position: "absolute",

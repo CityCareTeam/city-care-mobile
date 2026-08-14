@@ -2,10 +2,9 @@ import { STATUS_COLOR, STATUS_LABEL, TYPE_LABEL } from "@/constants/incidents";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
 import { GlassPillSelector, PillOption } from "@/components/ui/GlassPillSelector";
-import { BlurView } from "expo-blur";
+import { GlassSurface } from "@/components/ui/GlassSurface";
 import { useMemo } from "react";
 import {
-    ActivityIndicator,
     ScrollView,
     StyleSheet,
     Text,
@@ -18,8 +17,6 @@ type Props = {
   setFilterStatus: (v: string | null) => void;
   filterType: string | null;
   setFilterType: (v: string | null) => void;
-  onRefresh?: () => void;
-  loading?: boolean;
   paddingTop?: number;
 };
 
@@ -38,45 +35,16 @@ function makeStyles(c: AppColors, isDark: boolean) {
       gap: 8,
       paddingBottom: 10,
     },
+    // Le rafraîchissement est automatique — focus, sondage et reprise après
+    // coupure. Le sélecteur occupe donc toute la largeur.
     statusRow: {
-      flexDirection: "row",
-      alignItems: "center",
       paddingHorizontal: 12,
-      gap: 8,
     },
-    selectorWrapper: {
-      flex: 1,
-    },
-    refreshBtn: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      backgroundColor: c.primary,
-      justifyContent: "center",
-      alignItems: "center",
-      flexShrink: 0,
-    },
-    refreshBtnDisabled: { opacity: 0.55 },
-    refreshIcon: { fontSize: 18, color: "#fff", fontWeight: "700" },
+    // Flou, voile et liseré viennent de GlassSurface — commun à tout ce qui
+    // flotte sur la carte.
     typeContainer: {
       marginHorizontal: 12,
       borderRadius: 24,
-      borderWidth: 1,
-      borderColor: isDark
-        ? "rgba(255,255,255,0.12)"
-        : "rgba(255,255,255,0.7)",
-      overflow: "hidden",
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.10,
-      shadowRadius: 12,
-      elevation: 6,
-    },
-    typeOverlay: {
-      ...StyleSheet.absoluteFillObject,
-      backgroundColor: isDark
-        ? "rgba(25, 25, 30, 0.40)"
-        : "rgba(255, 255, 255, 0.30)",
     },
     typeScroll: {
       flexDirection: "row",
@@ -112,8 +80,6 @@ export function IncidentFilterBar({
   setFilterStatus,
   filterType,
   setFilterType,
-  onRefresh,
-  loading = false,
   paddingTop = 0,
 }: Props) {
   const { colors, isDark } = useAppColors();
@@ -123,37 +89,15 @@ export function IncidentFilterBar({
     <View style={[styles.bar, { paddingTop: paddingTop + 6 }]}>
       {/* Statuts — pill selector animé */}
       <View style={styles.statusRow}>
-        <View style={styles.selectorWrapper}>
-          <GlassPillSelector
-            options={STATUS_OPTIONS}
-            activeValue={filterStatus}
-            onSelect={setFilterStatus}
-          />
-        </View>
-        {onRefresh ? (
-          <TouchableOpacity
-            style={[styles.refreshBtn, loading && styles.refreshBtnDisabled]}
-            onPress={onRefresh}
-            disabled={loading}
-            activeOpacity={0.8}
-          >
-            {loading ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Text style={styles.refreshIcon}>↻</Text>
-            )}
-          </TouchableOpacity>
-        ) : null}
+        <GlassPillSelector
+          options={STATUS_OPTIONS}
+          activeValue={filterStatus}
+          onSelect={setFilterStatus}
+        />
       </View>
 
       {/* Types — container verre unique avec chips */}
-      <View style={styles.typeContainer}>
-        <BlurView
-          style={StyleSheet.absoluteFillObject}
-          intensity={isDark ? 55 : 75}
-          tint={isDark ? "dark" : "light"}
-        />
-        <View style={styles.typeOverlay} pointerEvents="none" />
+      <GlassSurface style={styles.typeContainer}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -176,7 +120,7 @@ export function IncidentFilterBar({
             );
           })}
         </ScrollView>
-      </View>
+      </GlassSurface>
     </View>
   );
 }

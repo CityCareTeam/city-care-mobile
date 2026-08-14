@@ -3,19 +3,25 @@ import { NotificationProvider, useNotificationContext } from "@/context/Notifica
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { Tabs } from "expo-router";
 import * as Haptics from "expo-haptics";
-import { BlurView } from "expo-blur";
-import React, { useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Animated,
-  Dimensions,
   Platform,
   Pressable,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { GlassSurface } from "@/components/ui/GlassSurface";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { CityCareColors, CityCareColorsDark } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -31,6 +37,14 @@ const TAB_BAR_HEIGHT = 60;
 const MARGIN_H = 20;
 const PAD = 6;
 
+const SPRING = { mass: 0.5, stiffness: 200, damping: 18 };
+
+/** Déplacement horizontal à franchir avant que le glissement prenne la main. */
+const DRAG_SLOP = 8;
+/** Étirement maximal de la pastille lancée à pleine vitesse. */
+const MAX_STRETCH = 0.14;
+const STRETCH_VELOCITY = 4000;
+
 function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
   const { unreadCount } = useNotificationContext();
   const colorScheme = useColorScheme();
@@ -39,21 +53,87 @@ function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
   const { bottom: bottomInset } = useSafeAreaInsets();
   const marginBottom = bottomInset + (Platform.OS === "ios" ? 0 : 8);
 
-  const screenWidth = Dimensions.get("window").width;
+  // `useWindowDimensions` plutôt qu'un `Dimensions.get` figé au premier rendu :
+  // la barre se recalcule à la rotation.
+  const { width: screenWidth } = useWindowDimensions();
   const barWidth = screenWidth - MARGIN_H * 2;
   const tabWidth = (barWidth - PAD * 2) / TABS.length;
+  const restingX = (index: number) => PAD + index * tabWidth;
+  const maxX = restingX(TABS.length - 1);
 
-  const translateX = useRef(new Animated.Value(PAD + state.index * tabWidth)).current;
+  const x = useSharedValue(restingX(state.index));
+  const grabbedAt = useSharedValue(0);
+  const stretch = useSharedValue(1);
+  const held = useSharedValue(false);
+  const hoveredOnUi = useSharedValue(state.index);
 
+  // Onglet sous la pastille pendant le glissement ; retombe sur l'onglet réel
+  // dès qu'on lâche.
+  const [hovered, setHovered] = useState<number | null>(null);
+  const activeIndex = hovered ?? state.index;
+
+  const tap = useCallback((index: number) => {
+    if (Platform.OS === "ios") Haptics.selectionAsync();
+    setHovered(index);
+  }, []);
+
+  const settle = useCallback((index: number) => {
+    setHovered(null);
+    if (state.index !== index) navigation.navigate(state.routes[index].name);
+  }, [state.index, state.routes, navigation]);
+
+  // Suit la navigation venue d'ailleurs — retour arrière, lien profond — mais
+  // jamais pendant qu'un doigt tient la pastille.
   useEffect(() => {
-    Animated.spring(translateX, {
-      toValue: PAD + state.index * tabWidth,
-      useNativeDriver: true,
-      mass: 0.5,
-      stiffness: 200,
-      damping: 18,
-    }).start();
+    if (!held.value) x.value = withSpring(restingX(state.index), SPRING);
+    hoveredOnUi.value = state.index;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.index, tabWidth]);
+
+  /**
+   * Glissement de la pastille. Tout se joue sur le thread UI : la position
+   * suit le doigt image par image sans repasser par le JS, et seul le
+   * franchissement d'un onglet déclenche un aller-retour — trois fois par
+   * geste au maximum, au lieu d'une fois par image.
+   */
+  const pan = useMemo(
+    () => Gesture.Pan()
+      // Laisse les appuis simples atteindre les onglets en dessous.
+      .activeOffsetX([-DRAG_SLOP, DRAG_SLOP])
+      .onStart(() => {
+        held.value = true;
+        grabbedAt.value = x.value;
+      })
+      .onUpdate((e) => {
+        const next = Math.min(Math.max(grabbedAt.value + e.translationX, PAD), maxX);
+        x.value = next;
+
+        // L'étirement suit la vitesse : la pastille s'allonge quand on la
+        // lance et se retasse quand on la pose. C'est là qu'est le « liquide ».
+        stretch.value = 1 + Math.min(Math.abs(e.velocityX) / STRETCH_VELOCITY, MAX_STRETCH);
+
+        const under = Math.round((next - PAD) / tabWidth);
+        if (under !== hoveredOnUi.value) {
+          hoveredOnUi.value = under;
+          runOnJS(tap)(under);
+        }
+      })
+      .onFinalize(() => {
+        if (!held.value) return;
+        held.value = false;
+        const landing = Math.min(Math.max(Math.round((x.value - PAD) / tabWidth), 0), TABS.length - 1);
+        x.value = withSpring(restingX(landing), SPRING);
+        stretch.value = withSpring(1, SPRING);
+        hoveredOnUi.value = landing;
+        runOnJS(settle)(landing);
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [tabWidth, maxX, tap, settle],
+  );
+
+  const indicatorStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: x.value }, { scaleX: stretch.value }],
+  }));
 
   const handlePress = (index: number) => {
     if (Platform.OS === "ios") {
@@ -71,47 +151,18 @@ function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
       pointerEvents="box-none"
       style={[styles.wrapper, { bottom: marginBottom }]}
     >
-      <View
-        style={[
-          styles.bar,
-          {
-            borderColor: isDark
-              ? "rgba(255,255,255,0.12)"
-              : "rgba(255,255,255,0.7)",
-          },
-        ]}
-      >
-        {/* Glass blur layer */}
-        <BlurView
-          style={StyleSheet.absoluteFillObject}
-          intensity={isDark ? 55 : 75}
-          tint={isDark ? "dark" : "light"}
-        />
-        {/* Tinted overlay for glass depth */}
-        <View
-          style={[
-            StyleSheet.absoluteFillObject,
-            {
-              backgroundColor: isDark
-                ? "rgba(25, 25, 30, 0.40)"
-                : "rgba(255, 255, 255, 0.30)",
-            },
-          ]}
-          pointerEvents="none"
-        />
+      <GestureDetector gesture={pan}>
+      <GlassSurface style={styles.bar}>
         <Animated.View
           style={[
             styles.indicator,
-            {
-              width: tabWidth - PAD,
-              backgroundColor: colors.primary,
-              transform: [{ translateX }],
-            },
+            { width: tabWidth - PAD, backgroundColor: colors.primary },
+            indicatorStyle,
           ]}
           pointerEvents="none"
         />
         {TABS.map((tab, index) => {
-          const isFocused = state.index === index;
+          const isFocused = activeIndex === index;
           const showBadge = tab.name === "notifications" && unreadCount > 0;
           return (
             <Pressable
@@ -142,7 +193,8 @@ function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
             </Pressable>
           );
         })}
-      </View>
+      </GlassSurface>
+      </GestureDetector>
     </View>
   );
 }
@@ -181,14 +233,13 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 10,
   },
+  // Flou, voile, liseré et ombre viennent de GlassSurface.
   bar: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     borderRadius: 30,
-    borderWidth: 1,
     paddingHorizontal: PAD,
-    overflow: "hidden",
   },
   indicator: {
     position: "absolute",
