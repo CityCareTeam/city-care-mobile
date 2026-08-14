@@ -653,6 +653,21 @@ export const LAST_RELEASED_VERSION = "1.5.4";
 export const UNRELEASED_CHANGES: Change[] = [
   {
     "kind": "fix",
+    "scope": "build",
+    "text": "Fail early when the Google Maps key is missing"
+  },
+  {
+    "kind": "fix",
+    "scope": "ui",
+    "text": "Stop the tab bar crashing when releasing the indicator"
+  },
+  {
+    "kind": "fix",
+    "scope": "release",
+    "text": "Commit the synced changelog before building"
+  },
+  {
+    "kind": "fix",
     "scope": "release",
     "text": "Use an explicit sentinel for the production channel"
   },
