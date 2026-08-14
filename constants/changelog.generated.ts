@@ -653,6 +653,16 @@ export const LAST_RELEASED_VERSION = "1.5.4";
 export const UNRELEASED_CHANGES: Change[] = [
   {
     "kind": "fix",
+    "scope": "release",
+    "text": "Use an explicit sentinel for the production channel"
+  },
+  {
+    "kind": "fix",
+    "scope": "release",
+    "text": "Predict the next version from pending commits"
+  },
+  {
+    "kind": "fix",
     "scope": "ci",
     "text": "Fail the audit only on unreviewed advisories"
   },
