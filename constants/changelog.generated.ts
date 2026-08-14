@@ -336,4 +336,39 @@ export const GENERATED_CHANGELOG: ReleaseNote[] = [
 export const LAST_RELEASED_VERSION = "1.5.4";
 
 /** Changements accumulés depuis, donc embarqués par les pré-versions. */
-export const UNRELEASED_CHANGES: Change[] = [];
+export const UNRELEASED_CHANGES: Change[] = [
+  {
+    "kind": "fix",
+    "scope": "release",
+    "text": "Build release notes from git history"
+  },
+  {
+    "kind": "fix",
+    "scope": "release",
+    "text": "Label pre-release builds and auto-increment versionCode"
+  },
+  {
+    "kind": "fix",
+    "scope": "ui",
+    "text": "Remove grey slab on Android surfaces and make the tab indicator draggable"
+  },
+  {
+    "kind": "fix",
+    "scope": "notifications",
+    "text": "Require an explicit tap to delete and virtualise the list"
+  },
+  {
+    "kind": "fix",
+    "text": "Refresh screens on focus and recover after network loss"
+  },
+  {
+    "kind": "fix",
+    "scope": "map",
+    "text": "Use majority status for cluster colour and flag dense areas"
+  },
+  {
+    "kind": "fix",
+    "scope": "map",
+    "text": "Repair marker rasterisation and restore missing pins when zoomed"
+  }
+];
