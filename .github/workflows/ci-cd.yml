@@ -201,6 +201,24 @@ jobs:
           GIT_COMMITTER_NAME: github-ci
           GIT_COMMITTER_EMAIL: ci@github.com
         run: npx semantic-release
+
+      # Le tag vient d'être posé : le journal est régénéré depuis git et
+      # commité sur main, avant la synchro de dev qui l'emportera avec elle.
+      - name: Sync release notes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          git config user.name "github-ci"
+          git config user.email "ci@github.com"
+          npm run changelog
+          git add constants/changelog.generated.ts
+          if git diff --staged --quiet; then
+            echo "Journal déjà à jour."
+          else
+            git commit -m "chore(changelog): sync release notes [skip ci]"
+            git push origin HEAD:main
+          fi
+
       - name: Sync dev with main
         run: |
          git config user.name "github-ci"
