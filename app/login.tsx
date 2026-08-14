@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { AppVersion } from "@/components/ui/AppVersion";
 import { Logo } from "@/components/ui/Logo";
 import { Toast } from "@/components/ui/ToastMessage";
 import { STRINGS } from "@/constants/strings";
@@ -8,7 +9,6 @@ import { DEBUG_NETWORK } from "@/constants/config";
 import { useAppColors } from "@/hooks/use-app-colors";
 import { login } from "@/services/auth";
 import { saveTokens } from "@/storage/tokens";
-import Constants from "expo-constants";
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
 import {
@@ -77,7 +77,6 @@ function makeStyles(c: AppColors) {
     },
     dividerLine: { flex: 1, height: 1, backgroundColor: c.inputBorder },
     dividerText: { fontSize: 12, color: c.text, opacity: 0.35, fontWeight: "500" },
-    version: { marginTop: 24, fontSize: 12, color: c.text, opacity: 0.3, textAlign: "center" },
     debug: { marginTop: 4, fontSize: 10, color: c.text, opacity: 0.4, fontFamily: "monospace" },
   });
 }
@@ -174,7 +173,7 @@ export default function LoginScreen() {
             disabled={loading}
           />
 
-          <Text style={styles.version}>v {Constants.expoConfig?.version ?? "1.0.0"}</Text>
+          <AppVersion />
 
           {DEBUG_NETWORK && (
             <>
