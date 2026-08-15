@@ -6,6 +6,95 @@ import type { Change, ReleaseNote } from "@/types/changelog";
 
 export const GENERATED_CHANGELOG: ReleaseNote[] = [
   {
+    "version": "1.5.5",
+    "date": "2026-08-15",
+    "changes": [
+      {
+        "kind": "fix",
+        "text": "Carte, rafraîchissement automatique et notes de version"
+      },
+      {
+        "kind": "fix",
+        "scope": "map",
+        "text": "Repair marker rasterisation and restore missing pins when zoomed"
+      },
+      {
+        "kind": "fix",
+        "scope": "map",
+        "text": "Use majority status for cluster colour and flag dense areas"
+      },
+      {
+        "kind": "fix",
+        "text": "Refresh screens on focus and recover after network loss"
+      },
+      {
+        "kind": "fix",
+        "scope": "notifications",
+        "text": "Require an explicit tap to delete and virtualise the list"
+      },
+      {
+        "kind": "fix",
+        "scope": "ui",
+        "text": "Remove grey slab on Android surfaces and make the tab indicator draggable"
+      },
+      {
+        "kind": "fix",
+        "scope": "release",
+        "text": "Label pre-release builds and auto-increment versionCode"
+      },
+      {
+        "kind": "fix",
+        "scope": "release",
+        "text": "Build release notes from git history"
+      },
+      {
+        "kind": "fix",
+        "scope": "tests",
+        "text": "Decouple pending-changes test from git state"
+      },
+      {
+        "kind": "fix",
+        "scope": "ci",
+        "text": "Fail the audit only on unreviewed advisories"
+      },
+      {
+        "kind": "fix",
+        "scope": "release",
+        "text": "Predict the next version from pending commits"
+      },
+      {
+        "kind": "fix",
+        "scope": "release",
+        "text": "Use an explicit sentinel for the production channel"
+      },
+      {
+        "kind": "fix",
+        "scope": "release",
+        "text": "Commit the synced changelog before building"
+      },
+      {
+        "kind": "fix",
+        "scope": "ui",
+        "text": "Stop the tab bar crashing when releasing the indicator"
+      },
+      {
+        "kind": "fix",
+        "scope": "build",
+        "text": "Fail early when the Google Maps key is missing"
+      },
+      {
+        "kind": "fix",
+        "scope": "ci",
+        "text": "Commit the version plan alongside the release notes"
+      },
+      {
+        "kind": "fix",
+        "scope": "photos",
+        "text": "Keep the storage port when rewriting photo URLs in dev"
+      }
+    ]
+  },
+  {
     "version": "1.5.4",
     "date": "2026-06-16",
     "changes": [
@@ -647,87 +736,7 @@ export const GENERATED_CHANGELOG: ReleaseNote[] = [
 ];
 
 /** Dernière version publiée au moment de la génération. */
-export const LAST_RELEASED_VERSION = "1.5.4";
+export const LAST_RELEASED_VERSION = "1.5.5";
 
 /** Changements accumulés depuis, donc embarqués par les pré-versions. */
-export const UNRELEASED_CHANGES: Change[] = [
-  {
-    "kind": "fix",
-    "scope": "photos",
-    "text": "Keep the storage port when rewriting photo URLs in dev"
-  },
-  {
-    "kind": "fix",
-    "scope": "ci",
-    "text": "Commit the version plan alongside the release notes"
-  },
-  {
-    "kind": "fix",
-    "scope": "build",
-    "text": "Fail early when the Google Maps key is missing"
-  },
-  {
-    "kind": "fix",
-    "scope": "ui",
-    "text": "Stop the tab bar crashing when releasing the indicator"
-  },
-  {
-    "kind": "fix",
-    "scope": "release",
-    "text": "Commit the synced changelog before building"
-  },
-  {
-    "kind": "fix",
-    "scope": "release",
-    "text": "Use an explicit sentinel for the production channel"
-  },
-  {
-    "kind": "fix",
-    "scope": "release",
-    "text": "Predict the next version from pending commits"
-  },
-  {
-    "kind": "fix",
-    "scope": "ci",
-    "text": "Fail the audit only on unreviewed advisories"
-  },
-  {
-    "kind": "fix",
-    "scope": "tests",
-    "text": "Decouple pending-changes test from git state"
-  },
-  {
-    "kind": "fix",
-    "scope": "release",
-    "text": "Build release notes from git history"
-  },
-  {
-    "kind": "fix",
-    "scope": "release",
-    "text": "Label pre-release builds and auto-increment versionCode"
-  },
-  {
-    "kind": "fix",
-    "scope": "ui",
-    "text": "Remove grey slab on Android surfaces and make the tab indicator draggable"
-  },
-  {
-    "kind": "fix",
-    "scope": "notifications",
-    "text": "Require an explicit tap to delete and virtualise the list"
-  },
-  {
-    "kind": "fix",
-    "text": "Refresh screens on focus and recover after network loss"
-  },
-  {
-    "kind": "fix",
-    "scope": "map",
-    "text": "Use majority status for cluster colour and flag dense areas"
-  },
-  {
-    "kind": "fix",
-    "scope": "map",
-    "text": "Repair marker rasterisation and restore missing pins when zoomed"
-  }
-];
+export const UNRELEASED_CHANGES: Change[] = [];
