@@ -73,35 +73,25 @@ if (!googleMapsApiKey && process.env.EAS_BUILD) {
 }
 
 /**
- * Repère de build, ajouté aux seules pré-versions.
+ * Rang de la pré-version, ajouté aux seuls builds hors production.
  *
  * Le numéro d'une pré-version ne bouge pas d'un build à l'autre : il est
- * recalculé depuis `package.json`, que seul semantic-release met à jour, sur
- * `main`. Deux APK beta successives porteraient donc le même `1.5.5-beta` et
- * seraient indiscernables — sur une distribution interne, c'est la garantie de
- * ne plus savoir laquelle est installée.
+ * recalculé depuis le dernier tag, que seul semantic-release pose, sur `main`.
+ * Deux APK beta successives porteraient donc le même `1.5.6-beta` et seraient
+ * indiscernables — sur une distribution interne, c'est la garantie de ne plus
+ * savoir laquelle est installée.
  *
- * Horodatage UTC en `AAMMJJHHmm`, surchargeable par `APP_BUILD_LABEL` si tu
- * veux poser un repère parlant (`APP_BUILD_LABEL=fix-clusters`).
+ * D'où un compteur : `1.5.6-beta.1`, puis `.2`, `.3`. Il est tenu dans
+ * `version-plan.json` par `npm run changelog --prerelease`, qu'appelle
+ * `npm run build:beta` juste avant de lancer EAS ; il repart à 1 dès que la
+ * version visée change. Un horodatage tenait le même rôle, mais
+ * `1.5.5-beta.2608142035` ne se lit ni ne s'annonce.
  *
- * L'année ouvre la chaîne pour deux raisons : semver interdit le zéro initial
- * sur un identifiant numérique de pré-version — `1.5.5-beta.08142023` est
- * invalide — et il rend l'ordre correct, chaque build étant strictement
- * supérieur au précédent.
+ * `APP_BUILD_LABEL` reste prioritaire pour poser un repère parlant sur un build
+ * ponctuel (`APP_BUILD_LABEL=fix-clusters`), hors de toute numérotation.
  */
 function buildLabel(): string {
-  const explicit = process.env.APP_BUILD_LABEL;
-  if (explicit) return explicit;
-
-  const now = new Date();
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return [
-    String(now.getUTCFullYear()).slice(2),
-    pad(now.getUTCMonth() + 1),
-    pad(now.getUTCDate()),
-    pad(now.getUTCHours()),
-    pad(now.getUTCMinutes()),
-  ].join("");
+  return process.env.APP_BUILD_LABEL || String(versionPlan.prerelease ?? 0);
 }
 
 // `version-plan.json` est produit par `npm run changelog`, qui applique les

@@ -12,6 +12,15 @@ import { StyleSheet, Text, View } from "react-native";
  * n'y a ni suffixe ni badge — un utilisateur final n'a pas à se demander ce
  * qu'est une « beta ».
  */
+/**
+ * Le repère de build est désormais un rang — `1.5.6-beta.3`. Un « 3 » posé seul
+ * à côté du badge ne se lit pas comme un numéro de build ; le croisillon le dit.
+ * Un repère nommé (`fix-clusters`) se suffit à lui-même.
+ */
+function decorate(label: string): string {
+  return /^\d+$/.test(label) ? `#${label}` : label;
+}
+
 export function AppVersion() {
   const { colors, isDark } = useAppColors();
   const styles = useMemo(() => makeStyles(isDark), [isDark]);
@@ -47,7 +56,7 @@ export function AppVersion() {
         </View>
       )}
       {tag && label !== "" && (
-        <Text style={[styles.label, { color: colors.text }]}>{label}</Text>
+        <Text style={[styles.label, { color: colors.text }]}>{decorate(label)}</Text>
       )}
     </View>
   );

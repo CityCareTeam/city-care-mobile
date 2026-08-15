@@ -40,17 +40,17 @@ describe('AppVersion', () => {
     expect(queryByText('BETA')).toBeNull();
   });
 
-  // `null` sérialisé par la config Expo devient un objet vide, donc truthy :
-  // le badge s'affichait en production et plantait sur `.toUpperCase()`.
-  // Deux beta successives portent le même numéro : le repère de build est la
-  // seule chose qui les distingue.
-  it('affiche le repère de build à côté du badge', () => {
-    const { getByText } = renderVersion('1.5.5-beta.2608142030', { releaseTag: 'beta' });
+  // Deux beta successives portent le même numéro de version : leur rang est la
+  // seule chose qui les distingue. Le croisillon le donne à lire comme tel —
+  // « 3 » posé seul à côté du badge ne veut rien dire.
+  it('affiche le rang de la pré-version à côté du badge', () => {
+    const { getByText } = renderVersion('1.5.5-beta.3', { releaseTag: 'beta' });
     expect(getByText('v1.5.5')).toBeTruthy();
     expect(getByText('BETA')).toBeTruthy();
-    expect(getByText('2608142030')).toBeTruthy();
+    expect(getByText('#3')).toBeTruthy();
   });
 
+  // Un repère nommé se suffit à lui-même : pas de croisillon devant.
   it('accepte un repère nommé', () => {
     const { getByText } = renderVersion('1.5.5-beta.fix-clusters', { releaseTag: 'beta' });
     expect(getByText('fix-clusters')).toBeTruthy();

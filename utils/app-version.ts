@@ -12,7 +12,7 @@ import Constants from "expo-constants";
  * rechargement à chaud.
  */
 
-/** `1.5.5-beta.2608142035` tel quel. */
+/** `1.5.6-beta.3` tel quel. */
 export function appVersion(): string {
   return Constants.expoConfig?.version ?? "0.0.0";
 }
@@ -33,18 +33,18 @@ export function releaseTag(): string | null {
   return tag === "none" ? null : tag;
 }
 
-/** `1.5.5-beta.2608142035` → `1.5.5` : la version livrée que la build vise. */
+/** `1.5.6-beta.3` → `1.5.6` : la version livrée que la build vise. */
 export function baseVersion(full: string = appVersion()): string {
   const dash = full.indexOf("-");
   return dash === -1 ? full : full.slice(0, dash);
 }
 
-/** `1.5.5-beta.2608142035` → `2608142035`, vide s'il n'y a pas de repère. */
+/** `1.5.6-beta.3` → `3`, vide s'il n'y a pas de repère. */
 export function buildLabel(full: string = appVersion()): string {
   const dash = full.indexOf("-");
   if (dash === -1) return "";
   // Découpage au *premier* tiret : un repère nommé peut en contenir
-  // (`1.5.5-beta.fix-clusters`), et un `split("-")` le tronquerait à « fix ».
+  // (`1.5.6-beta.fix-clusters`), et un `split("-")` le tronquerait à « fix ».
   return full.slice(dash + 1).split(".").slice(1).join(".");
 }
 

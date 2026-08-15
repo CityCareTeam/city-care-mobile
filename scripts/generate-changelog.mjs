@@ -13,7 +13,7 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 
 const OUTPUT = "constants/changelog.generated.ts";
 const VERSION_PLAN = "version-plan.json";
@@ -216,9 +216,34 @@ const bump = predictBump(lastReleaseDate);
 // le plancher que retiendra semantic-release dès qu'un `fix:` arrivera.
 const nextVersion = applyBump(lastReleased, bump === "none" ? "patch" : bump);
 
+// ─── Rang de la pré-version ──────────────────────────────────────────────────
+//
+// Les beta se distinguaient par un horodatage — `1.5.5-beta.2608142035` — donc
+// par dix chiffres qu'on ne sait ni lire ni annoncer. On compte désormais les
+// builds du cycle : beta.1, beta.2, beta.3.
+//
+// Le compteur vit dans `version-plan.json`, à côté de la version qu'il numérote,
+// et repart de zéro dès que cette version change : une release referme le cycle,
+// la suivante rouvre à beta.1. Seul `--prerelease` l'incrémente — une simple
+// régénération du journal (la CI en fait une à chaque release) ne doit pas
+// consommer un numéro.
+
+function previousPlan() {
+  try {
+    return JSON.parse(readFileSync(VERSION_PLAN, "utf8"));
+  } catch {
+    return null; // Premier passage, ou fichier illisible : on repart de zéro.
+  }
+}
+
+const previous = previousPlan();
+const sameCycle = previous?.nextVersion === nextVersion;
+const alreadyBuilt = sameCycle && Number.isInteger(previous.prerelease) ? previous.prerelease : 0;
+const prerelease = alreadyBuilt + (process.argv.includes("--prerelease") ? 1 : 0);
+
 writeFileSync(
   VERSION_PLAN,
-  JSON.stringify({ lastReleased, bump, nextVersion }, null, 2) + LINE,
+  JSON.stringify({ lastReleased, bump, nextVersion, prerelease }, null, 2) + LINE,
   "utf8",
 );
 
@@ -242,7 +267,10 @@ console.log(
   `${OUTPUT} — ${notes.length} versions, ${notes.reduce((n, r) => n + r.changes.length, 0)} changements` +
   `, ${unreleased.length} en attente depuis ${lastTag ?? "l'origine"}.`,
 );
-console.log(`${VERSION_PLAN} — ${lastReleased} + ${bump} → ${nextVersion}`);
+console.log(
+  `${VERSION_PLAN} — ${lastReleased} + ${bump} → ${nextVersion}` +
+  (prerelease > 0 ? ` (pré-version n° ${prerelease})` : ""),
+);
 
 // ─── `--commit` : referme la boucle avant un build ───────────────────────────
 //

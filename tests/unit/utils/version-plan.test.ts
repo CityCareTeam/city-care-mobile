@@ -40,4 +40,11 @@ describe('version-plan.json', () => {
   it('ne vise pas une version déjà publiée', () => {
     expect(GENERATED_CHANGELOG.map((n) => n.version)).not.toContain(plan.nextVersion);
   });
+
+  // Le rang des beta du cycle en cours : `1.5.6-beta.1`, `.2`, `.3`. Zéro tant
+  // qu'aucune n'est sortie — une release remet le compteur à plat.
+  it('compte les pré-versions du cycle en cours', () => {
+    expect(Number.isInteger(plan.prerelease)).toBe(true);
+    expect(plan.prerelease).toBeGreaterThanOrEqual(0);
+  });
 });
