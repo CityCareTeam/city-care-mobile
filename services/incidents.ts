@@ -123,27 +123,54 @@ export async function deleteIncident(
   }
 }
 
+/**
+ * Rend joignable une URL de photo renvoyée par le stockage.
+ *
+ * Le back expose `Minio.PublicBaseUrl`, qui vaut `http://localhost:9000` en
+ * développement — inatteignable depuis un téléphone ou un émulateur. Deux
+ * topologies coexistent, et c'est la présence d'un **port explicite** sur
+ * l'API qui les distingue :
+ *
+ *   direct  `http://192.168.1.152:5158`  on parle à l'API et au stockage en
+ *                                        direct : on remplace l'hôte de la
+ *                                        photo, en gardant le port du stockage.
+ *   proxifié `http://172.20.10.245/api`  un reverse proxy sert `/photos` :
+ *                                        on reconstruit ce chemin.
+ *
+ * L'ancienne version écrasait le port (`split(":")[0]`) et appliquait la
+ * réécriture proxifiée partout. En développement les photos pointaient donc sur
+ * le port 80 d'une machine qui n'y écoute pas — invisibles, sans erreur.
+ * En production rien ne change : l'URL y est déjà publique, donc jamais réécrite.
+ */
 function resolvePhotoUrl(url: string): string {
   if (!url) return url;
+
   const afterProto = API_BASE_URL.split("//")[1] ?? "";
-  const apiHost = afterProto.split(":")[0].split("/")[0];
+  const authority = afterProto.split("/")[0];
+  const [apiHost, apiPort] = authority.split(":");
   const apiProto = API_BASE_URL.startsWith("https") ? "https" : "http";
-  const isDevLocalhost = apiHost === "localhost" || apiHost === "127.0.0.1";
+  const isDirect = Boolean(apiPort);
+
   if (url.startsWith("/")) {
-    return isDevLocalhost
-      ? `${apiProto}://${apiHost}${url}`
+    return isDirect
+      ? `${apiProto}://${authority}${url}`
       : `${apiProto}://${apiHost}/photos${url}`;
   }
+
   try {
     const u = new URL(url);
     const isInternal = u.hostname === "localhost"
       || u.hostname === "127.0.0.1"
       || !u.hostname.includes(".");
     if (isInternal) {
-      if (isDevLocalhost) { u.hostname = "localhost"; return u.toString(); }
+      if (isDirect) {
+        u.hostname = apiHost;
+        return u.toString();
+      }
       return `${apiProto}://${apiHost}/photos${u.pathname}${u.search}`;
     }
   } catch { return url; }
+
   return url;
 }
 
