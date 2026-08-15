@@ -10,6 +10,8 @@ import { STRINGS } from "@/constants/strings";
 import { useAuth } from "@/context/AuthContext";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
+import { ErrorNotice } from "@/components/ui/ErrorNotice";
+import { useAutoRefresh } from "@/hooks/use-auto-refresh";
 import { INCIDENTS_PAGE_SIZE, POLL_INTERVAL_MS } from "@/constants/config";
 import { applyFilters, useIncidentFilters } from "@/hooks/use-incident-filters";
 import { getIncidents } from "@/services/incidents";
@@ -19,7 +21,6 @@ import type { IncidentResponse } from "@/types/incidents";
 import type { MyIncidentItem } from "@/types/users";
 import { EasterEggDog } from "@/components/easter-egg-dog";
 import { useEasterEgg } from "@/hooks/use-easter-egg";
-import { useFocusEffect } from "@react-navigation/native";
 import { router } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
@@ -55,6 +56,17 @@ const TODAY = (() => {
   });
   return s.charAt(0).toUpperCase() + s.slice(1);
 })();
+
+/** Compte les trois statuts en une seule passe. */
+function countByStatus(incidents: { status: string }[]) {
+  let reported = 0, inProgress = 0, resolved = 0;
+  for (const { status } of incidents) {
+    if (status === "reported") reported++;
+    else if (status === "in_progress") inProgress++;
+    else if (status === "resolved") resolved++;
+  }
+  return { reported, inProgress, resolved };
+}
 
 // ── Composants partagés ───────────────────────────────────────────────────
 
@@ -193,17 +205,11 @@ function CitizenView({
 
   const isMineTab = activeTab === "mine";
 
-  const mineReported   = incidents.filter((i) => i.status === "reported").length;
-  const mineInProgress = incidents.filter((i) => i.status === "in_progress").length;
-  const mineResolved   = incidents.filter((i) => i.status === "resolved").length;
+  // Une passe par jeu plutôt que trois, et seulement quand les données bougent.
+  const mineCounts = useMemo(() => countByStatus(incidents), [incidents]);
+  const allCounts = useMemo(() => countByStatus(allIncidents), [allIncidents]);
 
-  const allReported   = allIncidents.filter((i) => i.status === "reported").length;
-  const allInProgress = allIncidents.filter((i) => i.status === "in_progress").length;
-  const allResolved   = allIncidents.filter((i) => i.status === "resolved").length;
-
-  const reported   = isMineTab ? mineReported   : allReported;
-  const inProgress = isMineTab ? mineInProgress : allInProgress;
-  const resolved   = isMineTab ? mineResolved   : allResolved;
+  const { reported, inProgress, resolved } = isMineTab ? mineCounts : allCounts;
 
   const {
     filterType: mineType, setFilterType: setMineType,
@@ -325,11 +331,17 @@ function AgentView({
 }) {
   const { isDark } = useAppColors();
   const styles = isDark ? darkStyles : lightStyles;
-  const toHandle = incidents.filter(
-    (i) => i.status === "reported" || i.status === "in_progress",
+  // Sans mémoïsation, ce tableau était recréé à chaque rendu — et comme
+  // `typeCount` en dépend, son `useMemo` ne servait à rien : il recalculait à
+  // tous les coups.
+  const toHandle = useMemo(
+    () => incidents.filter((i) => i.status === "reported" || i.status === "in_progress"),
+    [incidents],
   );
-  const reportedCount = toHandle.filter((i) => i.status === "reported").length;
-  const inProgressCount = toHandle.filter((i) => i.status === "in_progress").length;
+  const { reported: reportedCount, inProgress: inProgressCount } = useMemo(
+    () => countByStatus(toHandle),
+    [toHandle],
+  );
 
   const { filterType, setFilterType, filterStatus, setFilterStatus, filteredIncidents: filteredToHandle } =
     useIncidentFilters(toHandle);
@@ -416,9 +428,7 @@ function AdminView({
 }) {
   const { isDark } = useAppColors();
   const styles = isDark ? darkStyles : lightStyles;
-  const reported = incidents.filter((i) => i.status === "reported").length;
-  const inProgress = incidents.filter((i) => i.status === "in_progress").length;
-  const resolved = incidents.filter((i) => i.status === "resolved").length;
+  const { reported, inProgress, resolved } = useMemo(() => countByStatus(incidents), [incidents]);
 
   const { filterType, setFilterType, filterStatus, setFilterStatus, filteredIncidents } =
     useIncidentFilters(incidents);
@@ -514,6 +524,7 @@ export default function HomeScreen() {
   const { role, firstName, loading: authLoading } = useAuth();
   const [incidentsLoading, setIncidentsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [failed, setFailed] = useState(false);
   const [myIncidents, setMyIncidents] = useState<MyIncidentItem[]>([]);
   const [allIncidents, setAllIncidents] = useState<IncidentResponse[]>([]);
 
@@ -541,8 +552,9 @@ export default function HomeScreen() {
         const res = await getIncidents({ pageSize: INCIDENTS_PAGE_SIZE.load });
         setAllIncidents(res.data);
       }
+      setFailed(false);
     } catch {
-      // silencieux
+      setFailed(true);
     } finally {
       if (!silent) {
         setIncidentsLoading(false);
@@ -551,14 +563,11 @@ export default function HomeScreen() {
     }
   }, [role]);
 
-  // Recharge à l'arrivée sur l'écran, puis en silence à intervalle régulier
-  // tant que l'écran reste au premier plan.
-  useFocusEffect(
-    useCallback(() => {
-      load();
-      const timer = setInterval(() => void load(false, true), POLL_INTERVAL_MS.incidents);
-      return () => clearInterval(timer);
-    }, [load]),
+  // Recharge à l'arrivée sur l'écran puis en silence, et resserre la cadence
+  // tant qu'un chargement échoue — c'est ce qui rattrape le retour du réseau.
+  useAutoRefresh(
+    useCallback((silent: boolean) => void load(false, silent), [load]),
+    { interval: POLL_INTERVAL_MS.incidents, failed, enabled: role !== null },
   );
 
   const navigateToIncident = useCallback((id: string) => {
@@ -570,7 +579,10 @@ export default function HomeScreen() {
 
   const insets = useSafeAreaInsets();
 
-  if (authLoading || incidentsLoading) {
+  // Voile plein réservé au premier chargement : il effaçait l'écran entier à
+  // chaque retour sur l'onglet, alors qu'il y avait déjà quelque chose à voir.
+  const hasContent = allIncidents.length > 0 || myIncidents.length > 0;
+  if (authLoading || (incidentsLoading && !hasContent)) {
     return (
       <View style={[styles.centered, { paddingTop: insets.top }]}>
         <ActivityIndicator color={colors.primary} size="large" />
@@ -591,6 +603,13 @@ export default function HomeScreen() {
         />
       }
     >
+      {failed && (
+        <ErrorNotice
+          detail="Les signalements affichés peuvent être obsolètes."
+          onRetry={() => void load(true)}
+        />
+      )}
+
       {/* Header card */}
       <View style={styles.headerCard}>
         <View style={styles.headerRow}>

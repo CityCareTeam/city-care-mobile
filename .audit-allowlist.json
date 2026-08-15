@@ -1,0 +1,135 @@
+{
+  "GHSA-3jxr-9vmj-r5cp": {
+    "package": "brace-expansion",
+    "severity": "high",
+    "title": "brace-expansion: DoS via exponential-time expansion of consecutive non-expanding {} groups",
+    "reason": "Outillage de build du SDK Expo 54, absent de l'APK livre. Non corrigeable sans casser l'alignement du SDK.",
+    "acceptedOn": "2026-08-15"
+  },
+  "GHSA-mh99-v99m-4gvg": {
+    "package": "brace-expansion",
+    "severity": "high",
+    "title": "brace-expansion: DoS via unbounded expansion length causing an out-of-memory process crash",
+    "reason": "Outillage de build du SDK Expo 54, absent de l'APK livre. Non corrigeable sans casser l'alignement du SDK.",
+    "acceptedOn": "2026-08-15"
+  },
+  "GHSA-rgw5-rvv9-x895": {
+    "package": "brace-expansion",
+    "severity": "high",
+    "title": "brace-expansion: DoS via unbounded intermediate arrays, bypassing the CVE-2026-14257 mitigation",
+    "reason": "Outillage de build du SDK Expo 54, absent de l'APK livre. Non corrigeable sans casser l'alignement du SDK.",
+    "acceptedOn": "2026-08-15"
+  },
+  "GHSA-5p2g-fcmc-qvqq": {
+    "package": "image-size",
+    "severity": "high",
+    "title": "image-size: JXL and HEIF parsers allow denial of service through infinite loops",
+    "reason": "Outillage de build du SDK Expo 54, absent de l'APK livre. Non corrigeable sans casser l'alignement du SDK.",
+    "acceptedOn": "2026-08-15"
+  },
+  "GHSA-w3rx-r6r6-pgpr": {
+    "package": "image-size",
+    "severity": "high",
+    "title": "image-size: ICNS parser allows denial of service through an infinite loop",
+    "reason": "Outillage de build du SDK Expo 54, absent de l'APK livre. Non corrigeable sans casser l'alignement du SDK.",
+    "acceptedOn": "2026-08-15"
+  },
+  "GHSA-mwp4-54f8-5fhr": {
+    "package": "ip-address",
+    "severity": "high",
+    "title": "ip-address: Address4 decodes leading-zero octets as decimal while resolvers decode them as octal, allowing SSRF and trust-boundary bypass",
+    "reason": "Outillage de build du SDK Expo 54, absent de l'APK livre. Non corrigeable sans casser l'alignement du SDK.",
+    "acceptedOn": "2026-08-15"
+  },
+  "GHSA-52cp-r559-cp3m": {
+    "package": "js-yaml",
+    "severity": "high",
+    "title": "js-yaml: YAML merge-key chains can force quadratic CPU consumption",
+    "reason": "Outillage de build du SDK Expo 54, absent de l'APK livre. Non corrigeable sans casser l'alignement du SDK.",
+    "acceptedOn": "2026-08-15"
+  },
+  "GHSA-5p4m-2wfm-xmqj": {
+    "package": "js-yaml",
+    "severity": "high",
+    "title": "JS-YAML: Quadratic CPU consumption in !!omap resolution (3.x and 4.x) â€” CVE-2026-59870 fix not backported",
+    "reason": "Outillage de build du SDK Expo 54, absent de l'APK livre. Non corrigeable sans casser l'alignement du SDK.",
+    "acceptedOn": "2026-08-15"
+  },
+  "GHSA-28wg-ghj8-5hjv": {
+    "package": "nanoid",
+    "severity": "high",
+    "title": "nanoid: non-secure generators can loop indefinitely with negative size",
+    "reason": "Outillage de build du SDK Expo 54, absent de l'APK livre. Non corrigeable sans casser l'alignement du SDK.",
+    "acceptedOn": "2026-08-15"
+  },
+  "GHSA-2v37-7h3g-55p8": {
+    "package": "nanoid",
+    "severity": "high",
+    "title": "nanoid: custom generators can loop indefinitely when size is zero",
+    "reason": "Outillage de build du SDK Expo 54, absent de l'APK livre. Non corrigeable sans casser l'alignement du SDK.",
+    "acceptedOn": "2026-08-15"
+  },
+  "GHSA-6g55-p6wh-862q": {
+    "package": "postcss",
+    "severity": "high",
+    "title": "PostCSS: Arbitrary file read and information disclosure via attacker-controlled sourceMappingURL in CSS comments",
+    "reason": "Outillage de build du SDK Expo 54, absent de l'APK livre. Non corrigeable sans casser l'alignement du SDK.",
+    "acceptedOn": "2026-08-15"
+  },
+  "GHSA-r28c-9q8g-f849": {
+    "package": "postcss",
+    "severity": "high",
+    "title": "PostCSS: Path Traversal in Previous Source Map Auto-Loading (sourceMappingURL) leads to Arbitrary .map File Disclosure",
+    "reason": "Outillage de build du SDK Expo 54, absent de l'APK livre. Non corrigeable sans casser l'alignement du SDK.",
+    "acceptedOn": "2026-08-15"
+  },
+  "GHSA-395f-4hp3-45gv": {
+    "package": "shell-quote",
+    "severity": "high",
+    "title": "shell-quote: Quadratic-complexity Denial of Service in `parse()` (CWE-407)",
+    "reason": "Outillage de build du SDK Expo 54, absent de l'APK livre. Non corrigeable sans casser l'alignement du SDK.",
+    "acceptedOn": "2026-08-15"
+  },
+  "GHSA-23hp-3jrh-7fpw": {
+    "package": "tar",
+    "severity": "critical",
+    "title": "node-tar: Decompression/parse DoS via unlimited input",
+    "reason": "Outillage de build du SDK Expo 54, absent de l'APK livre. Non corrigeable sans casser l'alignement du SDK.",
+    "acceptedOn": "2026-08-15"
+  },
+  "GHSA-8x88-c5mf-7j5w": {
+    "package": "tar",
+    "severity": "high",
+    "title": "node-tar: Negative tar entry size causes infinite loop in archive replace",
+    "reason": "Outillage de build du SDK Expo 54, absent de l'APK livre. Non corrigeable sans casser l'alignement du SDK.",
+    "acceptedOn": "2026-08-15"
+  },
+  "GHSA-4cwx-7wf7-3272": {
+    "package": "undici",
+    "severity": "high",
+    "title": "undici vulnerable to cross-user information disclosure and parse-time crash via degenerate private cache directives",
+    "reason": "Outillage de build du SDK Expo 54, absent de l'APK livre. Non corrigeable sans casser l'alignement du SDK.",
+    "acceptedOn": "2026-08-15"
+  },
+  "GHSA-hm92-r4w5-c3mj": {
+    "package": "undici",
+    "severity": "high",
+    "title": "undici vulnerable to cross-origin request routing via SOCKS5 proxy pool reuse",
+    "reason": "Outillage de build du SDK Expo 54, absent de l'APK livre. Non corrigeable sans casser l'alignement du SDK.",
+    "acceptedOn": "2026-08-15"
+  },
+  "GHSA-vmh5-mc38-953g": {
+    "package": "undici",
+    "severity": "high",
+    "title": "undici vulnerable to TLS certificate validation bypass via dropped requestTls in SOCKS5 ProxyAgent",
+    "reason": "Outillage de build du SDK Expo 54, absent de l'APK livre. Non corrigeable sans casser l'alignement du SDK.",
+    "acceptedOn": "2026-08-15"
+  },
+  "GHSA-vxpw-j846-p89q": {
+    "package": "undici",
+    "severity": "high",
+    "title": "undici WebSocket client vulnerable to denial of service via fragment count bypass",
+    "reason": "Outillage de build du SDK Expo 54, absent de l'APK livre. Non corrigeable sans casser l'alignement du SDK.",
+    "acceptedOn": "2026-08-15"
+  }
+}

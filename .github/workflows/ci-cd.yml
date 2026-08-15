@@ -81,7 +81,9 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm audit --audit-level=high
+      # Échoue sur les advisories non examinées, pas sur celles que le SDK
+      # Expo traîne et qu'on a acceptées dans .audit-allowlist.json.
+      - run: npm run audit
       - name: Notify Discord (failure)
         if: failure()
         run: |
@@ -201,6 +203,27 @@ jobs:
           GIT_COMMITTER_NAME: github-ci
           GIT_COMMITTER_EMAIL: ci@github.com
         run: npx semantic-release
+
+      # Le tag vient d'être posé : le journal est régénéré depuis git et
+      # commité sur main, avant la synchro de dev qui l'emportera avec elle.
+      - name: Sync release notes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          git config user.name "github-ci"
+          git config user.email "ci@github.com"
+          npm run changelog
+          # Les deux fichiers produits par le générateur. Oublier
+          # version-plan.json ferait sortir le build de production sous le
+          # numéro de la version précédente.
+          git add constants/changelog.generated.ts version-plan.json
+          if git diff --staged --quiet; then
+            echo "Journal déjà à jour."
+          else
+            git commit -m "chore(changelog): sync release notes [skip ci]"
+            git push origin HEAD:main
+          fi
+
       - name: Sync dev with main
         run: |
          git config user.name "github-ci"

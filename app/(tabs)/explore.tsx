@@ -1,13 +1,17 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { IncidentFilterBar } from "@/components/incident-filter-bar";
+import { ClusterLegend } from "@/components/explore/ClusterLegend";
 import { IncidentDetailSheet } from "@/components/explore/IncidentDetailSheet";
-import { ClusterPin, MapPin } from "@/components/ui/MapPin";
-import { CLUSTER_ZOOM_THRESHOLD, DEFAULT_LOCATION, MAP_ANIMATION_MS, MAP_DELTAS, POLL_INTERVAL_MS } from "@/constants/config";
-import { STATUS_COLOR } from "@/constants/incidents";
+import { MapNotice, MapNoticeKind } from "@/components/explore/MapNotice";
+import { CLUSTER_PIN_ANCHOR, ClusterPin, MAP_PIN_ANCHOR, MapPin } from "@/components/ui/MapPin";
+import { CLUSTER_ZOOM_THRESHOLD, DEFAULT_LOCATION, INCIDENTS_PAGE_SIZE, MAP_ANIMATION_MS, MAP_DELTAS, POLL_INTERVAL_MS } from "@/constants/config";
+import { CLUSTER_DENSITY, MAP_STATUS_COLOR, STATUS_LABEL, TYPE_LABEL } from "@/constants/incidents";
+import { clusterColor } from "@/utils/cluster-color";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
 import { useIncidentFilters } from "@/hooks/use-incident-filters";
 import { useIncidentPermissions } from "@/hooks/use-incident-permissions";
+import { useAutoRefresh } from "@/hooks/use-auto-refresh";
 import { useMapClusters } from "@/hooks/use-map-clusters";
 import { useUserLocation } from "@/hooks/use-user-location";
 import { getIncidents } from "@/services/incidents";
@@ -26,19 +30,24 @@ import {
 import MapView, { Marker, Region } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function regionToZoom(latitudeDelta: number): number {
-  return Math.round(Math.log(360 / latitudeDelta) / Math.LN2);
-}
-
-function clusterDominantColor(c: MapClusterDto): string {
-  if (c.in_progress > 0) return STATUS_COLOR.in_progress;
-  if (c.reported > 0)    return STATUS_COLOR.reported;
-  return STATUS_COLOR.resolved;
-}
-
 // ─── Markers ──────────────────────────────────────────────────────────────────
+
+/**
+ * Android rasterise la vue du marker : tant que `tracksViewChanges` est faux,
+ * il réutilise le bitmap précédent. Il faut donc rouvrir une fenêtre de capture
+ * dès qu'un pixel du marker change — la signature liste tout ce qui est dessiné.
+ */
+function useMarkerCapture(signature: string) {
+  const [tracksViewChanges, setTracksViewChanges] = useState(true);
+
+  useEffect(() => {
+    setTracksViewChanges(true);
+    const t = setTimeout(() => setTracksViewChanges(false), MAP_ANIMATION_MS.trackViewChange);
+    return () => clearTimeout(t);
+  }, [signature]);
+
+  return tracksViewChanges;
+}
 
 function IncidentMarker({ incident, color, active, onPress }: {
   incident: IncidentResponse;
@@ -46,48 +55,63 @@ function IncidentMarker({ incident, color, active, onPress }: {
   active: boolean;
   onPress: () => void;
 }) {
-  const [tracksViewChanges, setTracksViewChanges] = useState(true);
-
-  useEffect(() => {
-    setTracksViewChanges(true);
-    const t = setTimeout(() => setTracksViewChanges(false), MAP_ANIMATION_MS.trackViewChange);
-    return () => clearTimeout(t);
-  }, [active, color]);
+  const tracksViewChanges = useMarkerCapture(`${color}|${incident.type}|${active}`);
 
   return (
     <Marker
       coordinate={{ latitude: incident.latitude, longitude: incident.longitude }}
       tracksViewChanges={active || tracksViewChanges}
-      anchor={{ x: 0.5, y: 1 }}
+      anchor={active ? MAP_PIN_ANCHOR.active : MAP_PIN_ANCHOR.rest}
+      zIndex={active ? 1000 : 1}
+      accessibilityLabel={`${TYPE_LABEL[incident.type] ?? incident.type}, ${STATUS_LABEL[incident.status] ?? incident.status}`}
       onPress={onPress}
     >
-      <MapPin color={color} active={active} />
+      <MapPin color={color} type={incident.type} active={active} />
     </Marker>
   );
 }
 
-function ClusterMarker({ cluster, onPress }: { cluster: MapClusterDto; onPress: () => void }) {
-  const [tracksViewChanges, setTracksViewChanges] = useState(true);
+function ClusterMarker({ cluster, singleType, onPress }: {
+  cluster: MapClusterDto;
+  /** Type du signalement lorsque la cellule n'en contient qu'un seul. */
+  singleType?: string;
+  onPress: () => void;
+}) {
+  // Une cellule à un seul signalement se lit mieux en épingle qu'en pastille « 1 »
+  const isSingle = cluster.count <= 1;
+  const color = clusterColor(cluster);
 
-  useEffect(() => {
-    setTracksViewChanges(true);
-    const t = setTimeout(() => setTracksViewChanges(false), MAP_ANIMATION_MS.trackViewChange);
-    return () => clearTimeout(t);
-  }, [cluster.count]);
+  // La rasterisation permanente n'est plus nécessaire : le bitmap d'un marker
+  // Android est dimensionné à la première capture et ne grandit plus, or la
+  // pastille a désormais la même taille quel que soit le compteur. On revient
+  // donc à une fenêtre de capture courte — re-rasteriser à chaque image pendant
+  // qu'on fait glisser la carte est le poste le plus coûteux de l'écran.
+  const tracksViewChanges = useMarkerCapture(`${cluster.count}|${color}|${singleType ?? ""}`);
 
   return (
     <Marker
       coordinate={{ latitude: cluster.latitude, longitude: cluster.longitude }}
       tracksViewChanges={tracksViewChanges}
-      anchor={{ x: 0.5, y: 0.5 }}
+      // Pastille et épingle sont la même larme : la pointe désigne la coordonnée
+      anchor={isSingle ? MAP_PIN_ANCHOR.rest : CLUSTER_PIN_ANCHOR}
+      // Les petits clusters passent au-dessus des gros, qui les masqueraient
+      zIndex={1000 - Math.min(cluster.count, 999)}
+      accessibilityLabel={isSingle ? "1 signalement" : `${cluster.count} signalements regroupés`}
       onPress={onPress}
     >
-      <ClusterPin count={cluster.count} color={clusterDominantColor(cluster)} />
+      {isSingle
+        ? <MapPin color={color} type={singleType} />
+        : <ClusterPin count={cluster.count} color={color} />}
     </Marker>
   );
 }
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
+
+/** Recul des filtres sous l'encoche — ils étaient collés à la barre d'état. */
+const FILTER_BAR_TOP = 22;
+/** Hauteur des deux rangées de filtres, pour poser le panneau juste dessous. */
+const FILTER_BAR_HEIGHT = 100;
 
 const INITIAL_REGION: Region = {
   ...DEFAULT_LOCATION,
@@ -98,6 +122,7 @@ const INITIAL_REGION: Region = {
 export default function SignalementsScreen() {
   const [incidents, setIncidents] = useState<IncidentResponse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [incidentsFailed, setIncidentsFailed] = useState(false);
   const [selected, setSelected] = useState<IncidentResponse | null>(null);
   const [initialTab, setInitialTab] = useState<"details" | "chat">("details");
 
@@ -107,7 +132,8 @@ export default function SignalementsScreen() {
   const styles = useMemo(() => makeStyles(colors, insets.bottom), [colors, insets.bottom]);
   const { canReportIncident } = useIncidentPermissions(null);
   const { filterType, setFilterType, filterStatus, setFilterStatus, filteredIncidents } = useIncidentFilters(incidents);
-  const { clusters, currentZoom, currentRegionRef, onRegionChangeComplete, reload: reloadClusters } = useMapClusters(filterStatus, filterType);
+  const { clusters, failed: clustersFailed, currentZoom, onRegionChangeComplete, reload: reloadClusters } =
+    useMapClusters(filterStatus, filterType, userRegion ?? INITIAL_REGION);
 
   const mapRef = useRef<MapView>(null);
   const markerJustPressed = useRef(false);
@@ -117,10 +143,13 @@ export default function SignalementsScreen() {
   const loadIncidents = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const res = await getIncidents();
+      // Sans pageSize le back renvoie sa page par défaut : les épingles
+      // manquaient une fois zoomé alors que les clusters les comptaient.
+      const res = await getIncidents({ pageSize: INCIDENTS_PAGE_SIZE.load });
       setIncidents(res.data);
+      setIncidentsFailed(false);
     } catch {
-      // réseau indisponible — liste vide
+      setIncidentsFailed(true);
     } finally {
       if (!silent) setLoading(false);
     }
@@ -148,14 +177,23 @@ export default function SignalementsScreen() {
   }, []);
 
   // ── Cluster tap → zoom in ──
+  // Le zoom passe par une ref : s'il entrait dans les dépendances, ce callback
+  // changerait à chaque déplacement de carte et ferait recréer tous les
+  // marqueurs de regroupement au fil du geste.
+  const zoomRef = useRef(currentZoom);
+  useEffect(() => { zoomRef.current = currentZoom; }, [currentZoom]);
+
   const handleClusterPress = useCallback((cluster: MapClusterDto) => {
-    const newZoom = Math.min(currentZoom + 3, CLUSTER_ZOOM_THRESHOLD + 1);
+    // Un cluster isolé va directement au niveau détail, sinon on zoome par paliers
+    const newZoom = cluster.count <= 1
+      ? CLUSTER_ZOOM_THRESHOLD + 2
+      : Math.min(zoomRef.current + 3, CLUSTER_ZOOM_THRESHOLD + 1);
     const delta = 360 / Math.pow(2, newZoom);
     mapRef.current?.animateToRegion(
       { latitude: cluster.latitude, longitude: cluster.longitude, latitudeDelta: delta, longitudeDelta: delta },
       MAP_ANIMATION_MS.animateRegion,
     );
-  }, [currentZoom]);
+  }, []);
 
   // ── selectId (depuis une notification) ──
   const { selectId, tab: tabParam } = useLocalSearchParams<{ selectId?: string; tab?: string }>();
@@ -177,22 +215,19 @@ export default function SignalementsScreen() {
     }
   }, [incidents, selectIncident, tabParam]);
 
-  useFocusEffect(
-    useCallback(() => {
-      if (!selectId) {
-        loadIncidents();
-        reloadClusters();
-      }
-      const timer = setInterval(() => {
-        void loadIncidents(true);
-        reloadClusters();
-      }, POLL_INTERVAL_MS.incidents);
-      return () => {
-        pendingSelectRef.current = null;
-        clearInterval(timer);
-      };
-    }, [loadIncidents, reloadClusters, selectId]),
-  );
+  const refreshAll = useCallback((silent: boolean) => {
+    // Un selectId venu d'une notification déclenche déjà son propre chargement
+    if (!silent && selectId) return;
+    void loadIncidents(silent);
+    reloadClusters();
+  }, [loadIncidents, reloadClusters, selectId]);
+
+  useAutoRefresh(refreshAll, {
+    interval: POLL_INTERVAL_MS.incidents,
+    failed: clustersFailed || incidentsFailed,
+  });
+
+  useFocusEffect(useCallback(() => () => { pendingSelectRef.current = null; }, []));
 
   // Garde le statut du signalement ouvert dans la fiche à jour avec le polling
   useEffect(() => {
@@ -204,15 +239,51 @@ export default function SignalementsScreen() {
   // ── Markers ──
   const isClusterMode = currentZoom < CLUSTER_ZOOM_THRESHOLD;
 
+  // Ne légender que les paliers réellement présents à l'écran : expliquer un
+  // rouge que l'utilisateur n'a pas sous les yeux ne fait qu'encombrer.
+  const visibleDensityTiers = useMemo(
+    () => CLUSTER_DENSITY.filter((tier) => clusters.some((c) => c.count >= tier.min)),
+    [clusters],
+  );
+
+  const notice: MapNoticeKind | null = useMemo(() => {
+    if (loading) return null;
+    if (isClusterMode ? clustersFailed : incidentsFailed) return "offline";
+    const nothingToShow = isClusterMode ? clusters.length === 0 : filteredIncidents.length === 0;
+    if (!nothingToShow) return null;
+    return filterStatus || filterType ? "filtered" : "empty";
+  }, [
+    loading, isClusterMode, clustersFailed, incidentsFailed,
+    clusters.length, filteredIncidents.length, filterStatus, filterType,
+  ]);
+
+  // Le résumé carte ne renvoie pas le type des signalements. Mais une cellule
+  // qui n'en contient qu'un a pour centroïde ses coordonnées exactes : on le
+  // retrouve donc dans la liste déjà chargée, ce qui permet d'afficher son
+  // icône plutôt qu'une épingle muette. Tolérance ~1 m, le back arrondit les
+  // centroïdes à la sixième décimale.
+  const findIncidentAt = useCallback(
+    (latitude: number, longitude: number) => incidents.find(
+      (i) => Math.abs(i.latitude - latitude) < 1e-5 && Math.abs(i.longitude - longitude) < 1e-5,
+    ),
+    [incidents],
+  );
+
   const clusterMarkers = useMemo(
-    () => clusters.map((c, i) => (
+    // Pas d'index dans la clé : le back itère un Dictionary, l'ordre du tableau
+    // n'est pas garanti d'un appel à l'autre. Le centroïde identifie la cellule.
+    // Le compteur y figure aussi car il pilote l'échelle de la pastille : un
+    // changement de taille doit repartir sur un marker natif neuf, sinon Android
+    // conserve le bitmap dimensionné pour l'ancienne.
+    () => clusters.map((c) => (
       <ClusterMarker
-        key={`cluster-${i}-${c.latitude}-${c.longitude}`}
+        key={`cluster-${c.latitude}-${c.longitude}-${c.count}`}
         cluster={c}
+        singleType={c.count <= 1 ? findIncidentAt(c.latitude, c.longitude)?.type : undefined}
         onPress={() => handleClusterPress(c)}
       />
     )),
-    [clusters, handleClusterPress],
+    [clusters, handleClusterPress, findIncidentAt],
   );
 
   const individualMarkers = useMemo(
@@ -220,7 +291,7 @@ export default function SignalementsScreen() {
       <IncidentMarker
         key={inc.id}
         incident={inc}
-        color={STATUS_COLOR[inc.status] ?? colors.primary}
+        color={MAP_STATUS_COLOR[inc.status] ?? colors.primary}
         active={selected?.id === inc.id}
         onPress={() => {
           markerJustPressed.current = true;
@@ -229,7 +300,7 @@ export default function SignalementsScreen() {
         }}
       />
     )),
-    [filteredIncidents, colors.primary, selected?.id],
+    [filteredIncidents, colors.primary, selected?.id, selectIncident],
   );
 
   return (
@@ -251,16 +322,31 @@ export default function SignalementsScreen() {
           setFilterStatus={setFilterStatus}
           filterType={filterType}
           setFilterType={setFilterType}
-          onRefresh={handleRefresh}
-          loading={loading}
-          paddingTop={insets.top + 8}
+          paddingTop={insets.top + FILTER_BAR_TOP}
         />
       </View>
 
-      {loading && (
+      {/* Voile plein uniquement au tout premier chargement : ensuite il y a
+          déjà quelque chose à l'écran, et le bouton rafraîchir porte son propre
+          indicateur. Assombrir la carte à chaque retour sur l'onglet donnait un
+          clignotement inutile. */}
+      {loading && incidents.length === 0 && (
         <View style={styles.loader}>
           <ActivityIndicator color={colors.primary} size="large" />
         </View>
+      )}
+
+      {notice && !selected && (
+        <MapNotice
+          kind={notice}
+          top={insets.top + FILTER_BAR_TOP + FILTER_BAR_HEIGHT}
+          onRetry={notice === "offline" ? handleRefresh : undefined}
+        />
+      )}
+
+      {/* Les pastilles rouges n'existent qu'en mode groupé — la légende non plus */}
+      {isClusterMode && !selected && (
+        <ClusterLegend tiers={visibleDensityTiers} bottom={styles.fab.bottom} />
       )}
 
       <IncidentDetailSheet

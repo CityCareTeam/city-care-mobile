@@ -1,0 +1,733 @@
+// Généré par `npm run changelog` — ne pas modifier à la main.
+// Pour reformuler une version à destination des utilisateurs, passez par
+// `constants/changelog-overrides.ts`.
+
+import type { Change, ReleaseNote } from "@/types/changelog";
+
+export const GENERATED_CHANGELOG: ReleaseNote[] = [
+  {
+    "version": "1.5.4",
+    "date": "2026-06-16",
+    "changes": [
+      {
+        "kind": "fix",
+        "text": "Add silent auto-refresh polling for incidents list, status and votes"
+      },
+      {
+        "kind": "fix",
+        "text": "Reload silence to 15s"
+      }
+    ]
+  },
+  {
+    "version": "1.5.3",
+    "date": "2026-06-15",
+    "changes": [
+      {
+        "kind": "fix",
+        "text": "Clear push token on logout to prevent multi-account notification leak"
+      }
+    ]
+  },
+  {
+    "version": "1.5.2",
+    "date": "2026-06-15",
+    "changes": [
+      {
+        "kind": "fix",
+        "text": "Add Firebase FCM config for Android push notifications"
+      },
+      {
+        "kind": "fix",
+        "text": "Add Firebase FCM config for Android push notification"
+      }
+    ]
+  },
+  {
+    "version": "1.5.1",
+    "date": "2026-06-15",
+    "changes": [
+      {
+        "kind": "fix",
+        "text": "Add \"Le mien\" badge on community incidents"
+      }
+    ]
+  },
+  {
+    "version": "1.5.0",
+    "date": "2026-06-15",
+    "changes": [
+      {
+        "kind": "feature",
+        "text": "Add vote for citizen"
+      },
+      {
+        "kind": "fix",
+        "text": "Photo upload timeout and silent error on incident report"
+      },
+      {
+        "kind": "fix",
+        "text": "Security patch"
+      },
+      {
+        "kind": "feature",
+        "text": "Incident vote (soutien) for citizens"
+      }
+    ]
+  },
+  {
+    "version": "1.4.2",
+    "date": "2026-06-15",
+    "changes": [
+      {
+        "kind": "fix",
+        "text": "Input display"
+      },
+      {
+        "kind": "fix",
+        "text": "Input padding"
+      }
+    ]
+  },
+  {
+    "version": "1.4.1",
+    "date": "2026-06-15",
+    "changes": [
+      {
+        "kind": "fix",
+        "text": "Chat in détail incident"
+      },
+      {
+        "kind": "fix",
+        "text": "Chat in detail incident"
+      }
+    ]
+  },
+  {
+    "version": "1.4.0",
+    "date": "2026-06-15",
+    "changes": [
+      {
+        "kind": "feature",
+        "text": "Add chat, add notifs, refonte app and fix photo incident"
+      },
+      {
+        "kind": "fix",
+        "text": "City extraction, description in my incidents and photo zoom in detail modal"
+      },
+      {
+        "kind": "feature",
+        "text": "Edit profile, change password & delete account with full UI rework"
+      },
+      {
+        "kind": "fix",
+        "text": "Validation champs formulaires (caractères spéciaux, longueur max) & décompte description signalement"
+      },
+      {
+        "kind": "fix",
+        "text": "Resolve TypeScript strict literal type errors on coords and map delta"
+      },
+      {
+        "kind": "fix",
+        "text": "Username char validation & add tests for easter-egg, user-location, color-scheme-web"
+      },
+      {
+        "kind": "improvement",
+        "text": "Reorganise architecture & fix session expiry redirect"
+      },
+      {
+        "kind": "feature",
+        "text": "In-app notification center, push token & preferences"
+      },
+      {
+        "kind": "feature",
+        "text": "Server-side map clustering, replace react-native-map-clustering"
+      },
+      {
+        "kind": "feature",
+        "text": "Incident chat (SignalR), notification fixes & message_count badge"
+      },
+      {
+        "kind": "improvement",
+        "text": "SOLID split, modal redesign & map marker fixes"
+      },
+      {
+        "kind": "feature",
+        "text": "Notifications UX overhaul & swipe-to-delete"
+      },
+      {
+        "kind": "feature",
+        "text": "Refonte UI complète et déduplication des composants partagés"
+      },
+      {
+        "kind": "fix",
+        "text": "Image in app"
+      },
+      {
+        "kind": "fix",
+        "text": "App photo"
+      }
+    ]
+  },
+  {
+    "version": "1.3.0",
+    "date": "2026-06-12",
+    "changes": [
+      {
+        "kind": "feature",
+        "text": "Photos, profile management, form validation & architecture cleanup"
+      },
+      {
+        "kind": "feature",
+        "text": "Add photo option dans les signalement"
+      },
+      {
+        "kind": "feature",
+        "text": "Photo upload, refonte UI detail & liste incidents"
+      },
+      {
+        "kind": "fix",
+        "text": "City extraction, description in my incidents and photo zoom in detail modal"
+      },
+      {
+        "kind": "feature",
+        "text": "Edit profile, change password & delete account with full UI rework"
+      },
+      {
+        "kind": "fix",
+        "text": "Validation champs formulaires (caractères spéciaux, longueur max) & décompte description signalement"
+      },
+      {
+        "kind": "fix",
+        "text": "Resolve TypeScript strict literal type errors on coords and map delta"
+      },
+      {
+        "kind": "fix",
+        "text": "Username char validation & add tests for easter-egg, user-location, color-scheme-web"
+      },
+      {
+        "kind": "improvement",
+        "text": "Reorganise architecture & fix session expiry redirect"
+      }
+    ]
+  },
+  {
+    "version": "1.2.14",
+    "date": "2026-06-11",
+    "changes": [
+      {
+        "kind": "fix",
+        "scope": "map",
+        "text": "Render custom pins on Android and center map on user location"
+      }
+    ]
+  },
+  {
+    "version": "1.2.13",
+    "date": "2026-06-11",
+    "changes": [
+      {
+        "kind": "fix",
+        "text": "Pins maps android"
+      },
+      {
+        "kind": "fix",
+        "text": "Pins map"
+      }
+    ]
+  },
+  {
+    "version": "1.2.12",
+    "date": "2026-06-11",
+    "changes": [
+      {
+        "kind": "fix",
+        "text": "MapPin back to View-based with larger triangle"
+      }
+    ]
+  },
+  {
+    "version": "1.2.11",
+    "date": "2026-06-11",
+    "changes": [
+      {
+        "kind": "fix",
+        "text": "Rewrite MapPin with react-native-svg for clean Android rendering and imag splash"
+      },
+      {
+        "kind": "fix",
+        "text": "Rewrite MapPin with react-native-svg for clean Android rendering"
+      },
+      {
+        "kind": "fix",
+        "text": "Use fond-splash.png on Android with cover mode, drop incorrect imageWidth"
+      }
+    ]
+  },
+  {
+    "version": "1.2.10",
+    "date": "2026-06-10",
+    "changes": [
+      {
+        "kind": "fix",
+        "text": "Render MapPin with react-native-svg to fix Android"
+      }
+    ]
+  },
+  {
+    "version": "1.2.9",
+    "date": "2026-06-10",
+    "changes": [
+      {
+        "kind": "fix",
+        "text": "Message error and placement bouton signaler"
+      },
+      {
+        "kind": "fix",
+        "text": "Bouton de signalement + token"
+      },
+      {
+        "kind": "fix",
+        "text": "Messages errors"
+      },
+      {
+        "kind": "fix",
+        "text": "Resolve insets declaration order in explore and update tests for new error message"
+      },
+      {
+        "kind": "fix",
+        "text": "ThrowFromResponse falls back correctly on empty JSON body"
+      }
+    ]
+  },
+  {
+    "version": "1.2.8",
+    "date": "2026-06-10",
+    "changes": [
+      {
+        "kind": "fix",
+        "text": "Resolve Android network issues, auth token decoding, tab bar insets and pipeline improvements"
+      }
+    ]
+  },
+  {
+    "version": "1.2.7",
+    "date": "2026-06-10",
+    "changes": [
+      {
+        "kind": "fix",
+        "text": "Mode debug add + injection du trafic réseaux"
+      }
+    ]
+  },
+  {
+    "version": "1.2.6",
+    "date": "2026-06-10",
+    "changes": [
+      {
+        "kind": "fix",
+        "text": "Debug endpoint"
+      }
+    ]
+  },
+  {
+    "version": "1.2.5",
+    "date": "2026-06-10",
+    "changes": [
+      {
+        "kind": "fix",
+        "text": "Bonne URL de connexion pour la prod avec /api"
+      }
+    ]
+  },
+  {
+    "version": "1.2.4",
+    "date": "2026-06-10",
+    "changes": [
+      {
+        "kind": "fix",
+        "text": "Add port url prod"
+      },
+      {
+        "kind": "fix",
+        "text": "Test update"
+      }
+    ]
+  },
+  {
+    "version": "1.2.3",
+    "date": "2026-06-10",
+    "changes": [
+      {
+        "kind": "fix",
+        "text": "Config url prod"
+      }
+    ]
+  },
+  {
+    "version": "1.2.2",
+    "date": "2026-06-10",
+    "changes": [
+      {
+        "kind": "fix",
+        "text": "Config apk avec la prod"
+      },
+      {
+        "kind": "fix",
+        "text": "Config avec la prod no OK"
+      }
+    ]
+  },
+  {
+    "version": "1.2.1",
+    "date": "2026-06-09",
+    "changes": [
+      {
+        "kind": "fix",
+        "text": "Pipeline and suppression du code more et optimisation"
+      },
+      {
+        "kind": "fix",
+        "text": "Add CI/CD step to sync dev with main branch"
+      },
+      {
+        "kind": "fix",
+        "text": "Downgrade version to 1.2.0 in package-lock.json"
+      },
+      {
+        "kind": "fix",
+        "text": "Downgrade version from 1.2.2 to 1.2.0"
+      },
+      {
+        "kind": "fix",
+        "text": "Use merge with theirs strategy for dev sync after release"
+      },
+      {
+        "kind": "fix",
+        "text": "Ci et suppression du code mort"
+      },
+      {
+        "kind": "fix",
+        "text": "Alignment de dev après le release push sur main"
+      },
+      {
+        "kind": "fix",
+        "text": "Connexion avec le back en prod"
+      },
+      {
+        "kind": "fix",
+        "text": "Add json-summary reporter to generate coverage-summary.json"
+      }
+    ]
+  },
+  {
+    "version": "1.2.0",
+    "date": "2026-06-09",
+    "changes": [
+      {
+        "kind": "fix",
+        "text": "Upgrade Node.js version from 20 to 22 in CI/CD"
+      },
+      {
+        "kind": "feature",
+        "text": "Semantic-release and auto release pipeline and liquide glasse"
+      },
+      {
+        "kind": "feature",
+        "text": "Semantic-release and auto release pipeline"
+      },
+      {
+        "kind": "feature",
+        "text": "Liquid  bottom tab bar and filter  with spring animation"
+      },
+      {
+        "kind": "fix",
+        "text": "Move semantic-release plugins to devDeps and sync lockfile on release"
+      }
+    ]
+  },
+  {
+    "version": "1.1.2",
+    "date": "2026-06-09",
+    "changes": [
+      {
+        "kind": "fix",
+        "text": "Production config alignée avec prod"
+      },
+      {
+        "kind": "feature",
+        "scope": "auth",
+        "text": "Login, register, logout, token storage"
+      },
+      {
+        "kind": "feature",
+        "text": "Incidents — signalement form, map screen, changement de statut agent/admin"
+      },
+      {
+        "kind": "feature",
+        "text": "Incidents — suppression admin, style bottom sheet, fix marker iOS"
+      },
+      {
+        "kind": "feature",
+        "text": "Dashboard role-based redesign + refactor (useRole hook, shared constants, IncidentRow, pagination, tab icon)"
+      },
+      {
+        "kind": "feature",
+        "scope": "tests",
+        "text": "Add unit test suite with coverage reporting"
+      },
+      {
+        "kind": "improvement",
+        "text": "Centralise shared logic across services, hooks and constants"
+      },
+      {
+        "kind": "fix",
+        "scope": "ci",
+        "text": "Add push trigger on main/dev for coverage and auto-tag"
+      },
+      {
+        "kind": "fix",
+        "scope": "ci",
+        "text": "Use GH_PAT to trigger build workflow on tag push"
+      },
+      {
+        "kind": "fix",
+        "scope": "ci",
+        "text": "Trigger EAS build on push to main"
+      },
+      {
+        "kind": "fix",
+        "scope": "eas",
+        "text": "Add android package name for production build"
+      },
+      {
+        "kind": "improvement",
+        "text": "Centralise user auth state in AuthContext"
+      },
+      {
+        "kind": "improvement",
+        "text": "Centralise all UI strings in constants/strings"
+      },
+      {
+        "kind": "feature",
+        "text": "Add dark mode theme support"
+      },
+      {
+        "kind": "feature",
+        "scope": "test",
+        "text": "Add new tests"
+      },
+      {
+        "kind": "fix",
+        "text": "Enforce linear incident status flow (one transition at a time)"
+      },
+      {
+        "kind": "feature",
+        "text": "Add production API URL and cleartext traffic config"
+      },
+      {
+        "kind": "fix",
+        "text": "Center map on selected incident and cluster nearby markers"
+      },
+      {
+        "kind": "fix",
+        "text": "Custom MapPin with active state and remove expo-maps"
+      },
+      {
+        "kind": "feature",
+        "text": "Dark mode, AuthContext, tests, prod config & new branding (v1.1.0)"
+      }
+    ]
+  },
+  {
+    "version": "1.1.1",
+    "date": "2026-05-30",
+    "changes": [
+      {
+        "kind": "fix",
+        "text": "Map clustering, MapPin active state & pipeline cleanup"
+      },
+      {
+        "kind": "fix",
+        "text": "Center map on selected incident and cluster nearby markers"
+      },
+      {
+        "kind": "fix",
+        "text": "Custom MapPin with active state and remove expo-maps"
+      },
+      {
+        "kind": "fix",
+        "scope": "eas",
+        "text": "Add android package name for production build"
+      },
+      {
+        "kind": "feature",
+        "text": "Dark mode, AuthContext, tests, prod config & new branding (v1.1.0)"
+      },
+      {
+        "kind": "fix",
+        "text": "Enforce linear incident status flow (one transition at a time)"
+      },
+      {
+        "kind": "feature",
+        "text": "Add production API URL and cleartext traffic config"
+      }
+    ]
+  },
+  {
+    "version": "1.1.0",
+    "date": "2026-05-29",
+    "changes": [
+      {
+        "kind": "feature",
+        "text": "Dark mode, AuthContext, tests, prod config & new branding (v1.1.0)"
+      },
+      {
+        "kind": "fix",
+        "text": "Enforce linear incident status flow (one transition at a time)"
+      },
+      {
+        "kind": "feature",
+        "text": "Add production API URL and cleartext traffic config"
+      },
+      {
+        "kind": "fix",
+        "scope": "eas",
+        "text": "Add android package name for production build"
+      }
+    ]
+  },
+  {
+    "version": "1.0.0",
+    "date": "2026-05-23",
+    "changes": [
+      {
+        "kind": "fix",
+        "scope": "ci",
+        "text": "Trigger EAS build on push to main"
+      },
+      {
+        "kind": "feature",
+        "scope": "auth",
+        "text": "Login, register, logout, token storage"
+      },
+      {
+        "kind": "feature",
+        "text": "Incidents — signalement form, map screen, changement de statut agent/admin"
+      },
+      {
+        "kind": "feature",
+        "text": "Incidents — suppression admin, style bottom sheet, fix marker iOS"
+      },
+      {
+        "kind": "feature",
+        "text": "Dashboard role-based redesign + refactor (useRole hook, shared constants, IncidentRow, pagination, tab icon)"
+      },
+      {
+        "kind": "feature",
+        "scope": "tests",
+        "text": "Add unit test suite with coverage reporting"
+      },
+      {
+        "kind": "improvement",
+        "text": "Centralise shared logic across services, hooks and constants"
+      },
+      {
+        "kind": "fix",
+        "scope": "ci",
+        "text": "Add push trigger on main/dev for coverage and auto-tag"
+      },
+      {
+        "kind": "fix",
+        "scope": "ci",
+        "text": "Use GH_PAT to trigger build workflow on tag push"
+      }
+    ]
+  }
+];
+
+/** Dernière version publiée au moment de la génération. */
+export const LAST_RELEASED_VERSION = "1.5.4";
+
+/** Changements accumulés depuis, donc embarqués par les pré-versions. */
+export const UNRELEASED_CHANGES: Change[] = [
+  {
+    "kind": "fix",
+    "scope": "photos",
+    "text": "Keep the storage port when rewriting photo URLs in dev"
+  },
+  {
+    "kind": "fix",
+    "scope": "ci",
+    "text": "Commit the version plan alongside the release notes"
+  },
+  {
+    "kind": "fix",
+    "scope": "build",
+    "text": "Fail early when the Google Maps key is missing"
+  },
+  {
+    "kind": "fix",
+    "scope": "ui",
+    "text": "Stop the tab bar crashing when releasing the indicator"
+  },
+  {
+    "kind": "fix",
+    "scope": "release",
+    "text": "Commit the synced changelog before building"
+  },
+  {
+    "kind": "fix",
+    "scope": "release",
+    "text": "Use an explicit sentinel for the production channel"
+  },
+  {
+    "kind": "fix",
+    "scope": "release",
+    "text": "Predict the next version from pending commits"
+  },
+  {
+    "kind": "fix",
+    "scope": "ci",
+    "text": "Fail the audit only on unreviewed advisories"
+  },
+  {
+    "kind": "fix",
+    "scope": "tests",
+    "text": "Decouple pending-changes test from git state"
+  },
+  {
+    "kind": "fix",
+    "scope": "release",
+    "text": "Build release notes from git history"
+  },
+  {
+    "kind": "fix",
+    "scope": "release",
+    "text": "Label pre-release builds and auto-increment versionCode"
+  },
+  {
+    "kind": "fix",
+    "scope": "ui",
+    "text": "Remove grey slab on Android surfaces and make the tab indicator draggable"
+  },
+  {
+    "kind": "fix",
+    "scope": "notifications",
+    "text": "Require an explicit tap to delete and virtualise the list"
+  },
+  {
+    "kind": "fix",
+    "text": "Refresh screens on focus and recover after network loss"
+  },
+  {
+    "kind": "fix",
+    "scope": "map",
+    "text": "Use majority status for cluster colour and flag dense areas"
+  },
+  {
+    "kind": "fix",
+    "scope": "map",
+    "text": "Repair marker rasterisation and restore missing pins when zoomed"
+  }
+];

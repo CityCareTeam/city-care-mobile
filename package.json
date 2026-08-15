@@ -10,7 +10,11 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "test": "jest --watchAll=false",
-    "test:coverage": "jest --coverage --watchAll=false"
+    "test:coverage": "jest --coverage --watchAll=false",
+    "audit": "node scripts/audit.mjs",
+    "changelog": "node scripts/generate-changelog.mjs",
+    "build:beta": "node scripts/generate-changelog.mjs --commit && eas build --profile dev-local --platform android",
+    "build:prod": "eas build --profile production --platform android"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

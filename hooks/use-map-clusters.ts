@@ -1,4 +1,4 @@
-import { CLUSTER_DEBOUNCE_MS, CLUSTER_ZOOM_THRESHOLD, MAP_DELTAS } from "@/constants/config";
+import { CLUSTER_DEBOUNCE_MS, CLUSTER_ZOOM_THRESHOLD, DEFAULT_LOCATION, MAP_DELTAS } from "@/constants/config";
 import { getMapSummary } from "@/services/incidents";
 import type { MapClusterDto } from "@/types/incidents";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -8,17 +8,24 @@ function regionToZoom(latitudeDelta: number): number {
   return Math.round(Math.log(360 / latitudeDelta) / Math.LN2);
 }
 
-const INITIAL_REGION: Region = {
-  latitude: 0,
-  longitude: 0,
-  latitudeDelta: MAP_DELTAS.explore,
-  longitudeDelta: MAP_DELTAS.explore,
+// Doit refléter la région réellement affichée au montage de la carte, sinon le
+// premier chargement interroge une bbox vide (lat/lng 0,0) et aucun cluster
+// n'apparaît tant que l'utilisateur n'a pas bougé la carte.
+const FALLBACK_REGION: Region = {
+  ...DEFAULT_LOCATION,
+  latitudeDelta: MAP_DELTAS.user,
+  longitudeDelta: MAP_DELTAS.user,
 };
 
-export function useMapClusters(filterStatus: string | null, filterType: string | null) {
+export function useMapClusters(
+  filterStatus: string | null,
+  filterType: string | null,
+  initialRegion: Region = FALLBACK_REGION,
+) {
   const [clusters, setClusters] = useState<MapClusterDto[]>([]);
-  const [currentZoom, setCurrentZoom] = useState(() => regionToZoom(MAP_DELTAS.explore));
-  const currentRegionRef = useRef<Region>(INITIAL_REGION);
+  const [failed, setFailed] = useState(false);
+  const [currentZoom, setCurrentZoom] = useState(() => regionToZoom(initialRegion.latitudeDelta));
+  const currentRegionRef = useRef<Region>(initialRegion);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const loadClusters = useCallback(async (region: Region) => {
@@ -37,8 +44,12 @@ export function useMapClusters(filterStatus: string | null, filterType: string |
         type: filterType ?? undefined,
       });
       setClusters(res.data);
+      setFailed(false);
     } catch {
-      // silencieux — ne pas bloquer la carte
+      // La carte n'est pas bloquée, mais l'échec est signalé : sans ça, une
+      // panne réseau donnait exactement le même écran qu'une zone sans
+      // signalement.
+      setFailed(true);
     }
   }, [filterStatus, filterType]);
 
@@ -56,5 +67,5 @@ export function useMapClusters(filterStatus: string | null, filterType: string |
 
   const reload = useCallback(() => void loadClusters(currentRegionRef.current), [loadClusters]);
 
-  return { clusters, currentZoom, currentRegionRef, onRegionChangeComplete, reload };
+  return { clusters, failed, currentZoom, currentRegionRef, onRegionChangeComplete, reload };
 }

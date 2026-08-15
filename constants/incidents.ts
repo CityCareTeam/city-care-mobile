@@ -26,6 +26,29 @@ export const STATUS_COLOR: Record<string, string> = {
   resolved: "#4caf50",
 };
 
+/**
+ * Paliers de densité d'une pastille de regroupement, du plus dense au moins
+ * dense — l'ordre compte, le premier seuil atteint gagne. Les teintes sont
+ * volontairement hors de la palette des statuts pour rester lisibles comme un
+ * signal de volume et non de statut.
+ */
+export const CLUSTER_DENSITY = [
+  { min: 100, color: "#c62828", label: "100+" },
+  { min: 20, color: "#ef5350", label: "20+" },
+] as const;
+
+/**
+ * Couleurs des marqueurs de carte. Identiques aux couleurs de statut, sauf le
+ * résolu : au même poids visuel que le reste, il attirait l'œil sur ce qui est
+ * déjà réglé. Une teinte désaturée le fait reculer sans le faire disparaître.
+ * `STATUS_COLOR` reste la référence partout ailleurs — légende, fiche détail,
+ * frise de progression — où c'est le statut lui-même qu'on désigne.
+ */
+export const MAP_STATUS_COLOR: Record<string, string> = {
+  ...STATUS_COLOR,
+  resolved: "#86c08c",
+};
+
 export const STATUS_LABEL: Record<string, string> = {
   reported: "Déclaré",
   in_progress: "En cours",

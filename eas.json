@@ -1,26 +1,43 @@
 {
   "cli": {
     "version": ">= 12.0.0",
-    "appVersionSource": "local"
+    "appVersionSource": "remote"
   },
   "build": {
-    "preview": {
+    "dev-local": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://staging-api.citycare.fr"
+        "EXPO_PUBLIC_API_URL": "http://192.168.1.152:5158",
+        "EXPO_PUBLIC_DEBUG_NETWORK": "false",
+        "APP_RELEASE_TAG": "beta"
       },
       "android": {
         "buildType": "apk"
-      }
+      },
+      "autoIncrement": true
+    },
+    "preview": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://staging-api.citycare.fr",
+        "EXPO_PUBLIC_DEBUG_NETWORK": "false",
+        "APP_RELEASE_TAG": "rc"
+      },
+      "android": {
+        "buildType": "apk"
+      },
+      "autoIncrement": true
     },
     "production": {
       "env": {
         "EXPO_PUBLIC_API_URL": "http://172.20.10.245/api",
-        "EXPO_PUBLIC_DEBUG_NETWORK": "false"
+        "EXPO_PUBLIC_DEBUG_NETWORK": "false",
+        "APP_RELEASE_TAG": "none"
       },
       "android": {
         "buildType": "apk"
-      }
+      },
+      "autoIncrement": true
     }
   }
 }

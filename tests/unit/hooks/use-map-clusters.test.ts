@@ -1,7 +1,7 @@
 import { renderHook, act, waitFor } from '@testing-library/react-native';
 import { useMapClusters } from '@/hooks/use-map-clusters';
 import { getMapSummary } from '@/services/incidents';
-import { CLUSTER_ZOOM_THRESHOLD, CLUSTER_DEBOUNCE_MS } from '@/constants/config';
+import { CLUSTER_ZOOM_THRESHOLD, CLUSTER_DEBOUNCE_MS, DEFAULT_LOCATION } from '@/constants/config';
 import type { Region } from 'react-native-maps';
 
 jest.mock('@/services/incidents');
@@ -117,10 +117,55 @@ describe('useMapClusters', () => {
     await waitFor(() => expect(mockGetMapSummary).toHaveBeenCalledTimes(2));
   });
 
+  it('uses the default location for the first fetch (not lat/lng 0,0)', async () => {
+    renderHook(() => useMapClusters(null, null));
+    act(() => jest.runAllTimers());
+    await waitFor(() => expect(mockGetMapSummary).toHaveBeenCalledTimes(1));
+
+    const { latMin, latMax, lngMin, lngMax } = mockGetMapSummary.mock.calls[0][0];
+    expect((latMin + latMax) / 2).toBeCloseTo(DEFAULT_LOCATION.latitude, 5);
+    expect((lngMin + lngMax) / 2).toBeCloseTo(DEFAULT_LOCATION.longitude, 5);
+  });
+
+  it('honours a caller-provided initial region', async () => {
+    renderHook(() => useMapClusters(null, null, CLUSTER_REGION));
+    act(() => jest.runAllTimers());
+    await waitFor(() => expect(mockGetMapSummary).toHaveBeenCalledTimes(1));
+
+    const { latMin, latMax } = mockGetMapSummary.mock.calls[0][0];
+    expect(latMax - latMin).toBeCloseTo(CLUSTER_REGION.latitudeDelta, 5);
+  });
+
   it('does not throw when getMapSummary fails', async () => {
     mockGetMapSummary.mockRejectedValue(new Error('Network error'));
     const { result } = renderHook(() => useMapClusters(null, null));
     act(() => jest.runAllTimers());
     await waitFor(() => expect(result.current.clusters).toHaveLength(0));
+  });
+
+  // Sans ce drapeau, une panne réseau donnait le même écran qu'une zone
+  // réellement vide : carte nue, aucune explication.
+  it('signale un échec réseau', async () => {
+    mockGetMapSummary.mockRejectedValue(new Error('Network error'));
+    const { result } = renderHook(() => useMapClusters(null, null));
+    act(() => jest.runAllTimers());
+    await waitFor(() => expect(result.current.failed).toBe(true));
+  });
+
+  it('ne signale rien tant que tout se passe bien', async () => {
+    const { result } = renderHook(() => useMapClusters(null, null));
+    act(() => jest.runAllTimers());
+    await waitFor(() => expect(result.current.clusters).toHaveLength(1));
+    expect(result.current.failed).toBe(false);
+  });
+
+  it('lève le signalement dès qu’un chargement aboutit à nouveau', async () => {
+    mockGetMapSummary.mockRejectedValueOnce(new Error('Network error'));
+    const { result } = renderHook(() => useMapClusters(null, null));
+    act(() => jest.runAllTimers());
+    await waitFor(() => expect(result.current.failed).toBe(true));
+
+    act(() => { result.current.reload(); jest.runAllTimers(); });
+    await waitFor(() => expect(result.current.failed).toBe(false));
   });
 });
