@@ -2,6 +2,13 @@ import { CHANGELOG } from '@/constants/changelog';
 import { minorOf } from '@/utils/app-version';
 import { changelogFor, groupByMinor, isReleased } from '@/utils/changelog';
 import { GENERATED_CHANGELOG, UNRELEASED_CHANGES } from '@/constants/changelog.generated';
+import plan from '@/version-plan.json';
+
+// Les numéros sont lus, jamais écrits en dur : le journal est régénéré depuis
+// git à chaque release, et « 1.5.5 » figé dans un test avait la durée de vie
+// d'un cycle. La version la plus récente et celle en préparation se déduisent
+// des deux fichiers générés.
+const latest = CHANGELOG[0];
 
 describe('changelog', () => {
   it('reprend tout l’historique git', () => {
@@ -21,11 +28,11 @@ describe('changelog', () => {
     CHANGELOG.forEach((n) => expect(n.changes.length).toBeGreaterThan(0));
   });
 
-  // Une surcharge dont le numéro n'a pas de tag ajoute la version en préparation.
-  it('intègre une version non encore livrée', () => {
-    expect(CHANGELOG.some((n) => n.version === '1.5.5')).toBe(true);
-    expect(isReleased('1.5.5')).toBe(false);
-    expect(isReleased('1.5.4')).toBe(true);
+  // « Livrée » veut dire « tagguée », rien d'autre : la version que prépare la
+  // branche n'a pas de tag et ne doit pas passer pour publiée.
+  it('ne tient pour livrée qu’une version tagguée', () => {
+    expect(isReleased(GENERATED_CHANGELOG[0].version)).toBe(true);
+    expect(isReleased(plan.nextVersion)).toBe(false);
   });
 
   it('laisse les surcharges reformuler une version générée', () => {
@@ -50,21 +57,21 @@ describe('changelog', () => {
     });
 
     it('place la version la plus récente en tête du palier', () => {
-      const group = groupByMinor().find((g) => g.minor === '1.5');
-      expect(group!.releases[0].version).toBe('1.5.5');
+      const group = groupByMinor().find((g) => g.minor === minorOf(latest.version));
+      expect(group!.releases[0].version).toBe(latest.version);
       expect(group!.latestDate).toBe(group!.releases[0].date);
     });
   });
 
   describe('changelogFor', () => {
     it('renvoie le journal tel quel pour une version publiée', () => {
-      expect(changelogFor('1.5.4')).toBe(CHANGELOG);
+      expect(changelogFor(GENERATED_CHANGELOG[0].version)).toBe(CHANGELOG);
     });
 
     // Une version déjà décrite par une surcharge n'a pas à être reconstruite.
     it('ne double pas une version déjà présente au journal', () => {
-      const notes = changelogFor('1.5.5');
-      expect(notes.filter((n) => n.version === '1.5.5')).toHaveLength(1);
+      const notes = changelogFor(latest.version);
+      expect(notes.filter((n) => n.version === latest.version)).toHaveLength(1);
     });
 
     // Ce cas dépend de l'historique git au moment de la génération : on décrit

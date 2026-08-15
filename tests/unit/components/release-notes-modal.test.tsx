@@ -53,18 +53,16 @@ describe('ReleaseNotesModal', () => {
   // Une beta de la 1.5.5 doit se reconnaître dans le bloc 1.5.5 : sans retirer
   // le suffixe, elle ne correspondrait à aucune version du journal.
   it('reconnaît une pré-version comme étant sa version cible', () => {
-    const { getByText } = open('1.5.5-beta.2608142035', { releaseTag: 'beta' });
+    const { getByText } = open('1.5.5-beta.3', { releaseTag: 'beta' });
     expect(getByText('Votre version')).toBeTruthy();
   });
 
+  // La pastille « à venir » d'une version sans tag se teste sur un journal de
+  // fixture — voir `release-notes-modal-pending.test.tsx`. Branchée sur le
+  // journal réel, elle tombait le jour où la version visée sortait.
   describe('version non livrée', () => {
-    it('annonce qu’une version sans tag git n’est pas publiée', () => {
-      const { getByText } = open('1.5.5-beta.2608142035', { releaseTag: 'beta' });
-      expect(getByText('BETA · à venir')).toBeTruthy();
-    });
-
     it('explique en tête que la version installée est un essai', () => {
-      const { getByText } = open('1.5.5-beta.2608142035', { releaseTag: 'beta' });
+      const { getByText } = open('1.5.5-beta.3', { releaseTag: 'beta' });
       expect(getByText(/n'est pas encore publiée/)).toBeTruthy();
     });
 
