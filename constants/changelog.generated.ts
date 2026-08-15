@@ -653,6 +653,16 @@ export const LAST_RELEASED_VERSION = "1.5.4";
 export const UNRELEASED_CHANGES: Change[] = [
   {
     "kind": "fix",
+    "scope": "photos",
+    "text": "Keep the storage port when rewriting photo URLs in dev"
+  },
+  {
+    "kind": "fix",
+    "scope": "ci",
+    "text": "Commit the version plan alongside the release notes"
+  },
+  {
+    "kind": "fix",
     "scope": "build",
     "text": "Fail early when the Google Maps key is missing"
   },
