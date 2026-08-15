@@ -213,7 +213,10 @@ jobs:
           git config user.name "github-ci"
           git config user.email "ci@github.com"
           npm run changelog
-          git add constants/changelog.generated.ts
+          # Les deux fichiers produits par le générateur. Oublier
+          # version-plan.json ferait sortir le build de production sous le
+          # numéro de la version précédente.
+          git add constants/changelog.generated.ts version-plan.json
           if git diff --staged --quiet; then
             echo "Journal déjà à jour."
           else
