@@ -739,4 +739,35 @@ export const GENERATED_CHANGELOG: ReleaseNote[] = [
 export const LAST_RELEASED_VERSION = "1.5.5";
 
 /** Changements accumulés depuis, donc embarqués par les pré-versions. */
-export const UNRELEASED_CHANGES: Change[] = [];
+export const UNRELEASED_CHANGES: Change[] = [
+  {
+    "kind": "feature",
+    "scope": "offline",
+    "text": "Keep drafts, cache the feed and queue reports without network"
+  },
+  {
+    "kind": "feature",
+    "scope": "incidents",
+    "text": "Page the community feed instead of capping it at 50"
+  },
+  {
+    "kind": "feature",
+    "scope": "release",
+    "text": "Ship JS fixes over the air with expo-updates"
+  },
+  {
+    "kind": "fix",
+    "scope": "ui",
+    "text": "Move the build rank inside the channel badge"
+  },
+  {
+    "kind": "fix",
+    "scope": "release",
+    "text": "Number pre-releases beta.1, beta.2 instead of a timestamp"
+  },
+  {
+    "kind": "fix",
+    "scope": "tests",
+    "text": "Decouple the changelog tests from the released version"
+  }
+];
