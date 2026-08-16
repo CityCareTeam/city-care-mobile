@@ -741,6 +741,56 @@ export const LAST_RELEASED_VERSION = "1.5.5";
 /** Changements accumulés depuis, donc embarqués par les pré-versions. */
 export const UNRELEASED_CHANGES: Change[] = [
   {
+    "kind": "fix",
+    "scope": "ui",
+    "text": "Ease off the notifications title size"
+  },
+  {
+    "kind": "feature",
+    "scope": "ui",
+    "text": "Animate the clock digits and restore the tinted notifications header"
+  },
+  {
+    "kind": "fix",
+    "scope": "ui",
+    "text": "Keep a real view under the gesture detector"
+  },
+  {
+    "kind": "feature",
+    "scope": "ui",
+    "text": "Make the notifications header a page title"
+  },
+  {
+    "kind": "fix",
+    "scope": "ui",
+    "text": "Drive the edge gesture from the UI thread, and reshape the header"
+  },
+  {
+    "kind": "feature",
+    "scope": "ui",
+    "text": "Mount the menu above the tabs and rebuild the notifications header"
+  },
+  {
+    "kind": "fix",
+    "scope": "report",
+    "text": "Enlarge the discard-draft target and confirm the loss"
+  },
+  {
+    "kind": "feature",
+    "scope": "ui",
+    "text": "Pair the role badge with the name and split the notifications header"
+  },
+  {
+    "kind": "feature",
+    "scope": "home",
+    "text": "Rebuild the header block and name the city"
+  },
+  {
+    "kind": "feature",
+    "scope": "home",
+    "text": "Show current weather under the date"
+  },
+  {
     "kind": "feature",
     "scope": "ui",
     "text": "Show a clock opposite the logo on the home header"
