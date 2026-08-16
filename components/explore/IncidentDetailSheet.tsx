@@ -12,6 +12,7 @@ import { STRINGS } from "@/constants/strings";
 import { useAuth } from "@/context/AuthContext";
 import { useAppColors } from "@/hooks/use-app-colors";
 import { useStrings } from "@/hooks/use-strings";
+import { incidentShareMessage } from "@/utils/share-incident";
 import { useIncidentChat } from "@/hooks/use-incident-chat";
 import { useIncidentPermissions } from "@/hooks/use-incident-permissions";
 import { useIncidentPhotos } from "@/hooks/use-incident-photos";
@@ -25,6 +26,7 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Share,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -81,6 +83,22 @@ export function IncidentDetailSheet({ incident, initialTab, onClose, onStatusUpd
     }
   };
 
+  /**
+   * On ne choisit pas le destinataire : la feuille de partage du système s'en
+   * charge, et l'application n'a donc besoin ni d'accéder aux contacts ni de
+   * demander la moindre permission. Elle tend un texte, et s'arrête là.
+   */
+  const handleShare = () => {
+    if (!incident) return;
+    void Share.share({
+      title: t.incident.shareTitle,
+      message: incidentShareMessage(incident, t),
+    }).catch(() => {
+      // Partage annulé ou aucune application capable de le recevoir : il n'y a
+      // rien à dire à l'utilisateur, il vient de fermer la feuille lui-même.
+    });
+  };
+
   const handleDelete = () => {
     if (!incident) return;
     Alert.alert(STRINGS.alert.deleteIncidentTitle, STRINGS.alert.deleteIncidentMsg, [
@@ -132,6 +150,15 @@ export function IncidentDetailSheet({ incident, initialTab, onClose, onStatusUpd
     },
     header: { flexDirection: "row", alignItems: "center", marginBottom: 16, paddingHorizontal: 20, gap: 12 },
     titleBlock: { flex: 1, gap: 6 },
+    shareBtn: {
+      width: 34,
+      height: 34,
+      borderRadius: 17,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.chipBg,
+      marginRight: 8,
+    },
     typeIconBubble: { width: 42, height: 42, borderRadius: 13, alignItems: "center", justifyContent: "center", flexShrink: 0 },
     type: { fontSize: 20, fontWeight: "800", color: colors.text },
     statusBadge: { alignSelf: "flex-start", borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
@@ -235,6 +262,15 @@ export function IncidentDetailSheet({ incident, initialTab, onClose, onStatusUpd
                   <Text style={s.statusBadgeText}>{STATUS_LABEL[incident.status] ?? incident.status}</Text>
                 </View>
               </View>
+              <TouchableOpacity
+                style={s.shareBtn}
+                onPress={handleShare}
+                activeOpacity={0.75}
+                accessibilityRole="button"
+                accessibilityLabel={t.incident.shareA11y}
+              >
+                <MaterialIcons name="share" size={16} color={colors.text} style={{ opacity: 0.6 }} />
+              </TouchableOpacity>
               <TouchableOpacity
                 style={[s.voteBtn, votes?.hasVoted && s.voteBtnActive, toggling && { opacity: 0.5 }]}
                 onPress={toggleVote}

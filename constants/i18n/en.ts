@@ -267,6 +267,9 @@ export const en: typeof fr = {
   },
 
   incident: {
+    share: "Share",
+    shareA11y: "Share this report",
+    shareTitle: "CityCare+ report",
     details: "Details",
     chat: "Discussion",
     photos: "Photos",

@@ -277,6 +277,9 @@ export const fr = {
 
   // ── Carte : détail d'un incident ──
   incident: {
+    share: "Partager",
+    shareA11y: "Partager ce signalement",
+    shareTitle: "Signalement CityCare+",
     details: "Détails",
     chat: "Discussion",
     photos: "Photos",

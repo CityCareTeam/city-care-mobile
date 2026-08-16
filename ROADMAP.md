@@ -179,21 +179,21 @@ endpoints près : ce qui reste à gagner est du côté de la **livraison** et de
 
 ## Après la 1.6.0
 
-### 🔗 Partage & deep-link d'un incident — 1 j, 🟢 Facile
-`expo-linking` est installé et le scheme `citycaremobile` déclaré
-(`app.config.ts:114`), mais rien ne s'en sert. La navigation interne vers un
-incident existe déjà (`index.tsx:571` → `explore.tsx:199`, via `selectId`) : un
-deep-link n'aurait qu'à retomber au même endroit.
+### 🔗 Partage & deep-link d'un incident — ✅ livré
+Un bouton « partager » dans la fiche d'incident ouvre la feuille de partage du
+système : l'application ne choisit pas le destinataire, ne lit aucun contact et
+ne demande aucune permission. Elle tend un texte — type, adresse, puis le lien —
+et s'arrête là.
 
-Côté back, `GET /incidents/{id}/preview` est écrit, `AllowAnonymous`, renvoie
-l'adresse résolue — et n'est appelé nulle part, pas même déclaré dans
-`constants/api.ts`. C'est la charge utile d'un lien partagé : de quoi écrire un
-message qui dit où se trouve l'incident, plutôt qu'une URL nue.
+`app/incident/[id].tsx` reçoit `citycaremobile://incident/<id>` et le traduit en
+la navigation interne existante (`explore` + `selectId`), plutôt que de refaire
+un second écran de détail à tenir.
 
-**Réserve :** sans page web de repli, un lien reçu par quelqu'un qui n'a pas
-l'app ne fait rien. Utile entre utilisateurs équipés (agents, habitants du
-quartier), faible en diffusion. **Si on ne le fait pas, supprimer `preview`
-côté back** — un endpoint mort est une dette.
+**`GET /incidents/{id}/preview` n'est toujours pas appelé, et c'est délibéré :**
+la fiche possède déjà le type et l'adresse, l'appeler serait une requête pour
+rien. Il ne servirait qu'à une page web de repli — sans elle, un lien reçu par
+quelqu'un qui n'a pas l'application ne fait rien. **Tant que cette page n'existe
+pas, l'endpoint est à supprimer côté back.**
 
 ### ♿ Accessibilité — 1 à 2 j, 🟢 Facile
 7 fichiers sur ~30 portent un `accessibilityLabel`. Rien sur `Button.tsx`,
