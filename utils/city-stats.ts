@@ -8,13 +8,13 @@ export type CityStats = {
 };
 
 /**
- * Totaux de la ville, par statut.
+ * Totaux de tous les signalements, par statut.
  *
  * Les compteurs de l'accueil portaient sur **les pages chargées** du fil : ils
  * annonçaient « 50 déclarés » parce que cinquante incidents étaient en mémoire,
- * pas parce que la ville en comptait cinquante. `GET /incidents/map-summary`
- * appelé sans bornes couvre la ville entière et ventile déjà par statut — il
- * suffisait d'additionner ses cellules.
+ * pas parce qu'il en existait cinquante. `GET /incidents/map-summary` appelé
+ * sans bornes les couvre tous — où qu'ils soient posés sur la carte — et
+ * ventile déjà par statut : il suffisait d'additionner ses cellules.
  *
  * Le total est recalculé à partir des statuts plutôt que repris de `total` :
  * les deux doivent coïncider, et si le serveur venait à en ajouter un troisième

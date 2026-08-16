@@ -78,7 +78,7 @@ export const en: typeof fr = {
   emptyState: {
     noMyIncidents: "You haven’t reported anything yet.",
     noFilterResults: "Nothing matches these filters.",
-    noAllIncidents: "No reports in the city right now.",
+    noAllIncidents: "No reports right now.",
     agentAllDone: "All caught up — nice work.",
     noIncidents: "No reports.",
   },
@@ -181,11 +181,10 @@ export const en: typeof fr = {
   stats: {
     title: "My record",
     reports: (count: number) => `report${count > 1 ? "s" : ""}`,
-    cityShare: (percent: number) => `${percent}% of the city`,
     resolved: "resolved",
     pending: "in progress",
     open: "reported",
-    cityTitle: "The city",
+    cityTitle: "The community",
     resolutionRate: "Resolution rate",
     resolvedOf: (resolved: number, total: number) => `${resolved} resolved out of ${total}`,
     topCategory: "Most reported category",
@@ -400,7 +399,7 @@ export const en: typeof fr = {
         body: "A category, a description, a photo if you have one. Offline, your report is kept and sent on its own as soon as you’re back online.",
       },
       {
-        title: "Follow the city on the map",
+        title: "Follow reports on the map",
         body: "Pins group together as you zoom out. Filter by status, by category, or show only your own reports.",
       },
       {

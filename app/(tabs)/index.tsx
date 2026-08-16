@@ -4,6 +4,7 @@ import { IncidentSearchBar, NoSearchResults } from "@/components/incident-search
 import { PersonalStatsCard } from "@/components/personal-stats-card";
 import { StatusBreakdown } from "@/components/status-breakdown";
 import { useCityStats } from "@/hooks/use-city-stats";
+import { useFollowedIncidents } from "@/hooks/use-followed-incidents";
 import { FeedSkeleton } from "@/components/ui/Skeleton";
 import { useIncidentSearch } from "@/hooks/use-incident-search";
 import { HeaderClock } from "@/components/ui/HeaderClock";
@@ -200,6 +201,7 @@ function IncidentList({
   pageSize = INCIDENTS_PAGE_SIZE.list,
   isMine = false,
   myIds,
+  followedIds,
   onLoadMore,
   loadingMore = false,
 }: {
@@ -215,6 +217,7 @@ function IncidentList({
   pageSize?: number;
   isMine?: boolean;
   myIds?: Set<string>;
+  followedIds?: Set<string>;
   onLoadMore?: () => void;
   loadingMore?: boolean;
 }) {
@@ -240,6 +243,7 @@ function IncidentList({
             createdAt={inc.createdAt}
             onPress={onPress}
             isMine={myIds?.has(inc.id)}
+            isFollowed={followedIds?.has(inc.id)}
           />
         </View>
       ))}
@@ -336,6 +340,7 @@ function CitizenView({
   );
 
   const myIdsSet = useMemo(() => new Set(incidents.map((i) => i.id)), [incidents]);
+  const { followed } = useFollowedIncidents();
 
   const mineTypeCount = useMemo(() => {
     const acc: Record<string, number> = {};
@@ -437,6 +442,7 @@ function CitizenView({
         ) : (
           <IncidentList
             isMine
+            followedIds={followed}
             incidents={mineSearch.results.map((i) => {
               const full = allIncidents.find((a) => a.id === i.id);
               return {
@@ -464,6 +470,7 @@ function CitizenView({
             incidents={search.results.map((i) => ({ id: i.id, type: i.type, status: i.status, description: i.description, address: i.addressLabel, createdAt: i.createdAt }))}
             onPress={onPress}
             myIds={myIdsSet}
+            followedIds={followed}
             onLoadMore={paging.hasMore ? paging.onLoadMore : undefined}
             loadingMore={paging.loadingMore}
           />

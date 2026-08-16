@@ -75,7 +75,7 @@ export const fr = {
   emptyState: {
     noMyIncidents: "Vous n'avez pas encore fait de signalement.",
     noFilterResults: "Aucun résultat pour ces filtres.",
-    noAllIncidents: "Aucun signalement dans la ville pour le moment.",
+    noAllIncidents: "Aucun signalement pour le moment.",
     agentAllDone: "Tout est traité, bon travail !",
     noIncidents: "Aucun signalement.",
   },
@@ -185,11 +185,10 @@ export const fr = {
   stats: {
     title: "Mon bilan",
     reports: (count: number) => `signalement${count > 1 ? "s" : ""}`,
-    cityShare: (percent: number) => `${percent} % de la ville`,
     resolved: "résolus",
     pending: "en cours",
     open: "déclarés",
-    cityTitle: "La ville",
+    cityTitle: "La communauté",
     resolutionRate: "Taux de résolution",
     resolvedOf: (resolved: number, total: number) => `${resolved} résolu${resolved > 1 ? "s" : ""} sur ${total}`,
     topCategory: "Catégorie la plus signalée",
@@ -416,7 +415,7 @@ export const fr = {
         body: "Une catégorie, une description, une photo si vous en avez une. Sans réseau, le signalement est gardé et part tout seul dès que la connexion revient.",
       },
       {
-        title: "Suivez la ville sur la carte",
+        title: "Suivez les signalements sur la carte",
         body: "Les épingles se regroupent quand vous dézoomez. Filtrez par statut, par catégorie, ou n’affichez que vos propres signalements.",
       },
       {

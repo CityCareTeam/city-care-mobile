@@ -17,6 +17,8 @@ type Props = {
   createdAt: string;
   onPress: (id: string) => void;
   isMine?: boolean;
+  /** Suivi localement : le signet doit se voir dans la liste, pas seulement dans la fiche. */
+  isFollowed?: boolean;
 };
 
 
@@ -102,7 +104,7 @@ function makeStyles(c: AppColors) {
   });
 }
 
-function IncidentRowBase({ id, type, status, description, address, createdAt, onPress, isMine }: Props) {
+function IncidentRowBase({ id, type, status, description, address, createdAt, onPress, isMine, isFollowed }: Props) {
   const { colors } = useAppColors();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const t = useStrings();
@@ -139,6 +141,12 @@ function IncidentRowBase({ id, type, status, description, address, createdAt, on
             <MaterialIcons name="person" size={10} color="#fff" />
             <Text style={styles.mineBadgeText}>{t.incident.mine}</Text>
           </View>
+        )}
+        {/* Le signet n'était visible que dans la fiche : il fallait ouvrir un
+            signalement pour savoir qu'on le suivait. Une icône suffit ici — la
+            liste n'a pas la place d'un libellé de plus. */}
+        {isFollowed && (
+          <MaterialIcons name="bookmark" size={13} color={colors.primary} />
         )}
         <Text style={styles.date}>{formatDateShort(createdAt)}</Text>
       </View>

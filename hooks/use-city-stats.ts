@@ -3,11 +3,15 @@ import { sumClusters, type CityStats } from "@/utils/city-stats";
 import { useEffect, useState } from "react";
 
 /**
- * Bilan de la ville, exact.
+ * Bilan de tous les signalements, exact.
  *
  * Une requête de plus au chargement de l'accueil, et les compteurs cessent de
- * décrire ce qui est en mémoire pour décrire la ville. Elle est légère — le
- * serveur renvoie des cellules agrégées, pas des incidents.
+ * décrire ce qui est en mémoire. Elle est légère — le serveur renvoie des
+ * cellules agrégées, pas des incidents.
+ *
+ * Sans bornes géographiques, à dessein : rien n'oblige un signalement à tomber
+ * dans une commune donnée, on peut en poser où l'on veut sur la carte. Borner
+ * ce décompte reviendrait à écarter silencieusement ceux du dehors.
  *
  * Rend `null` tant qu'il n'y a rien à dire : l'écran affiche alors ce qu'il
  * peut, plutôt qu'un zéro qui passerait pour une ville sans problèmes.
