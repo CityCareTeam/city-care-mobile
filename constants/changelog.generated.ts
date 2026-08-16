@@ -741,6 +741,11 @@ export const LAST_RELEASED_VERSION = "1.5.5";
 /** Changements accumulés depuis, donc embarqués par les pré-versions. */
 export const UNRELEASED_CHANGES: Change[] = [
   {
+    "kind": "feature",
+    "scope": "app",
+    "text": "Add a side menu for release notes, updates and settings"
+  },
+  {
     "kind": "fix",
     "scope": "ui",
     "text": "Stop the refresh control from swallowing the whole screen"
