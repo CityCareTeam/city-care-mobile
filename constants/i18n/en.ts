@@ -170,6 +170,8 @@ export const en: typeof fr = {
 
   notifications: {
     title: "Notifications",
+    unreadSummary: (count: number) => `${count} unread`,
+    allRead: "All caught up",
     readAll: "Mark all read",
     clearAllA11y: "Clear all notifications",
     empty: "No notifications",

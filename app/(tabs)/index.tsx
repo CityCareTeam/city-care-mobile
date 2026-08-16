@@ -814,17 +814,25 @@ export default function HomeScreen() {
 
         <View style={styles.headerRow}>
           <View style={styles.identity}>
-            <Text style={styles.greeting} numberOfLines={1}>
-              {firstName ? t.home.greetingNamed(firstName) : t.home.greeting}
-            </Text>
             <View style={styles.metaRow}>
-              <Text style={styles.headerDate}>{TODAY}</Text>
-              {role && (
+              <Text style={styles.greeting} numberOfLines={1}>
+                {firstName ? t.home.greetingNamed(firstName) : t.home.greeting}
+              </Text>
+              {/* Le badge accompagne le prénom, pas la date : il dit qui on est,
+                  pas quand on est.
+
+                  Et il ne paraît que pour un agent ou un administrateur.
+                  « Citoyen » est le rôle par défaut : l'annoncer à un citoyen
+                  n'apprend rien et occupe la place. Un agent, lui, a besoin de
+                  savoir sous quelle casquette il regarde — son écran n'est pas
+                  le même. */}
+              {role && role !== "Citizen" && (
                 <View style={styles.rolePill}>
                   <Text style={styles.rolePillText}>{ROLE_LABELS[role] ?? role}</Text>
                 </View>
               )}
             </View>
+            <Text style={styles.headerDate}>{TODAY}</Text>
           </View>
           <TouchableOpacity onPress={onLogoTap} activeOpacity={1}>
             <Logo size={72} />

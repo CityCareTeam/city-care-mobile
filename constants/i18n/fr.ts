@@ -175,6 +175,8 @@ export const fr = {
   // ── Notifications ──
   notifications: {
     title: "Notifications",
+    unreadSummary: (count: number) => `${count} non lue${count > 1 ? "s" : ""}`,
+    allRead: "Tout est lu",
     readAll: "Tout lire",
     clearAllA11y: "Vider toutes les notifications",
     empty: "Aucune notification",

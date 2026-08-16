@@ -47,13 +47,18 @@ function makeStyles(c: AppColors, bottomInset: number) {
     },
 
     // ── Header ──
-    header: {
+    // Deux étages : ce qu'on regarde, puis ce qu'on peut faire. Sur une seule
+    // ligne, le compteur se faisait pousser hors du cadre dès que les deux
+    // boutons apparaissaient.
+    header: { marginBottom: 20, paddingHorizontal: 4, gap: 14 },
+    actionRow: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      marginBottom: 20,
-      paddingHorizontal: 4,
+      gap: 12,
     },
+    actions: { flexDirection: "row", alignItems: "center", gap: 8 },
+    summary: { fontSize: 13, color: c.text, opacity: 0.5, flexShrink: 1 },
     titleRow: { flexDirection: "row", alignItems: "center", gap: 10 },
     titleAccent: { width: 4, height: 26, borderRadius: 2, backgroundColor: c.primary },
     title: { fontSize: 28, fontWeight: "800", color: c.text },
@@ -78,7 +83,10 @@ function makeStyles(c: AppColors, bottomInset: number) {
     },
     unreadBadgeText: { fontSize: 12, fontWeight: "700", color: "#fff" },
     readAllBtn: {
-      paddingHorizontal: 14,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      paddingHorizontal: 13,
       paddingVertical: 7,
       borderRadius: 20,
       backgroundColor: c.primary + "18",
@@ -296,6 +304,10 @@ export default function NotificationsScreen() {
       refreshControl={refreshControl}
       ListHeaderComponent={
         <>
+          {/* Deux étages : ce qu'on regarde, puis ce qu'on peut faire.
+              Titre et actions se partageaient une seule ligne, et dès que les
+              deux boutons apparaissaient, le compteur se faisait pousser hors
+              du cadre. */}
           <View style={styles.header}>
             <View style={styles.titleRow}>
               <View style={styles.titleAccent} />
@@ -306,34 +318,47 @@ export default function NotificationsScreen() {
                 </View>
               )}
             </View>
+
             {items.length > 0 && (
-              <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
-                {unreadCount > 0 && (
+              <View style={styles.actionRow}>
+                {/* L'état en toutes lettres : le compteur dit combien, cette
+                    ligne dit quoi en faire — ou qu'il n'y a rien à faire. */}
+                <Text style={styles.summary}>
+                  {unreadCount > 0 ? t.notifications.unreadSummary(unreadCount) : t.notifications.allRead}
+                </Text>
+                <View style={styles.actions}>
+                  {unreadCount > 0 && (
+                    <TouchableOpacity
+                      style={styles.readAllBtn}
+                      onPress={handleMarkAllAsRead}
+                      disabled={markingAll}
+                      activeOpacity={0.7}
+                      accessibilityRole="button"
+                      accessibilityLabel={t.notifications.readAll}
+                    >
+                      {markingAll
+                        ? <ActivityIndicator size="small" color={colors.primary} />
+                        : <>
+                            <MaterialIcons name="done-all" size={15} color={colors.primary} />
+                            <Text style={styles.readAllText}>{t.notifications.readAll}</Text>
+                          </>
+                      }
+                    </TouchableOpacity>
+                  )}
                   <TouchableOpacity
-                    style={styles.readAllBtn}
-                    onPress={handleMarkAllAsRead}
-                    disabled={markingAll}
+                    style={styles.clearBtn}
+                    onPress={handleClearAll}
+                    disabled={clearingAll}
                     activeOpacity={0.7}
+                    accessibilityRole="button"
+                    accessibilityLabel={t.notifications.clearAllA11y}
                   >
-                    {markingAll
-                      ? <ActivityIndicator size="small" color={colors.primary} />
-                      : <Text style={styles.readAllText}>{t.notifications.readAll}</Text>
+                    {clearingAll
+                      ? <ActivityIndicator size="small" color="#e53e3e" />
+                      : <MaterialIcons name="delete-outline" size={18} color="#e53e3e" />
                     }
                   </TouchableOpacity>
-                )}
-                <TouchableOpacity
-                  style={styles.clearBtn}
-                  onPress={handleClearAll}
-                  disabled={clearingAll}
-                  activeOpacity={0.7}
-                  accessibilityRole="button"
-                  accessibilityLabel={t.notifications.clearAllA11y}
-                >
-                  {clearingAll
-                    ? <ActivityIndicator size="small" color="#e53e3e" />
-                    : <MaterialIcons name="delete-outline" size={18} color="#e53e3e" />
-                  }
-                </TouchableOpacity>
+                </View>
               </View>
             )}
           </View>
