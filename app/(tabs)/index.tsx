@@ -314,6 +314,14 @@ function CitizenView({
   // La recherche s'applique après les filtres : elle cherche dans ce qui est
   // affiché, pas dans ce qui a été écarté.
   const search = useIncidentSearch(filteredAll);
+  // Le même outil sur ses propres signalements : s'en passer sous prétexte
+  // qu'ils sont moins nombreux, c'est décider à la place de qui en a trente.
+  const mineSearch = useIncidentSearch(
+    useMemo(
+      () => filteredMine.map((i) => ({ ...i, addressLabel: i.address_label, createdAt: i.created_at })),
+      [filteredMine],
+    ),
+  );
 
   const myIdsSet = useMemo(() => new Set(incidents.map((i) => i.id)), [incidents]);
 
@@ -337,12 +345,24 @@ function CitizenView({
 
   return (
     <>
-      <SectionHeader title={isMineTab ? t.home.myStats : t.home.communityStats} />
-      <View style={styles.statRow}>
-        <StatCard label={t.home.reported} value={reported}   color="#2196f3" icon="flag" />
-        <StatCard label={t.home.inProgress} value={inProgress} color="#f0a500" icon="autorenew" />
-        <StatCard label={t.home.resolved}  value={resolved}   color="#4caf50" icon="check-circle" />
-      </View>
+      {/* Un seul bloc de chiffres par onglet.
+          Les trois compteurs et le bilan disaient exactement la même chose sur
+          « les miens » — déclarés, en cours, résolus, deux fois de suite et à
+          deux endroits. Le bilan les contient et va plus loin : il reste seul.
+          La communauté, elle, n'a pas de bilan à raconter, elle garde ses
+          compteurs. */}
+      {isMineTab ? (
+        <PersonalStatsCard incidents={incidents} />
+      ) : (
+        <>
+          <SectionHeader title={t.home.communityStats} />
+          <View style={styles.statRow}>
+            <StatCard label={t.home.reported} value={reported}   color="#2196f3" icon="flag" />
+            <StatCard label={t.home.inProgress} value={inProgress} color="#f0a500" icon="autorenew" />
+            <StatCard label={t.home.resolved}  value={resolved}   color="#4caf50" icon="check-circle" />
+          </View>
+        </>
+      )}
 
       {/* ── Onglets ── */}
       <GlassPillSelector
@@ -384,29 +404,32 @@ function CitizenView({
         style={{ marginBottom: 16 }}
       />
 
-      {!isMineTab && (
-        <IncidentSearchBar
-          query={search.query}
-          onQueryChange={search.setQuery}
-          sort={search.sort}
-          onSortChange={(next) => void search.setSort(next)}
-        />
-      )}
+      <IncidentSearchBar
+        query={isMineTab ? mineSearch.query : search.query}
+        onQueryChange={isMineTab ? mineSearch.setQuery : search.setQuery}
+        sort={isMineTab ? mineSearch.sort : search.sort}
+        onSortChange={(next) => void (isMineTab ? mineSearch.setSort(next) : search.setSort(next))}
+      />
 
       {/* ── Contenu de l'onglet actif ── */}
-      {/* Le bilan n'accompagne que « les miens » : il parle de ce qu'on a fait,
-          pas de ce que la ville signale. */}
-      {isMineTab && <PersonalStatsCard incidents={incidents} cityTotal={paging.totalCount} />}
-
       {isMineTab ? (
-        filteredMine.length === 0 ? (
-          <EmptyState text={incidents.length === 0 ? t.emptyState.noMyIncidents : t.emptyState.noFilterResults} />
+        mineSearch.results.length === 0 ? (
+          mineSearch.query.trim()
+            ? <NoSearchResults query={mineSearch.query} />
+            : <EmptyState text={incidents.length === 0 ? t.emptyState.noMyIncidents : t.emptyState.noFilterResults} />
         ) : (
           <IncidentList
             isMine
-            incidents={filteredMine.map((i) => {
+            incidents={mineSearch.results.map((i) => {
               const full = allIncidents.find((a) => a.id === i.id);
-              return { id: i.id, type: i.type, status: i.status, description: full?.description ?? i.description, address: i.address_label, createdAt: i.created_at };
+              return {
+                id: i.id,
+                type: i.type,
+                status: i.status,
+                description: full?.description ?? i.description,
+                address: i.addressLabel,
+                createdAt: i.createdAt,
+              };
             })}
             onPress={onPress}
           />

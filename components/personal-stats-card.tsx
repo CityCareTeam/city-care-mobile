@@ -9,8 +9,6 @@ import { StyleSheet, Text, View } from "react-native";
 
 type Props = {
   incidents: { type: string; status: string; created_at: string }[];
-  /** Total de la ville, pour situer sa contribution. Ignoré s'il vaut zéro. */
-  cityTotal?: number;
 };
 
 /**
@@ -29,18 +27,15 @@ type Props = {
  *
  * Les chiffres portent sur la liste complète des signalements de l'utilisateur,
  * jamais sur les pages chargées du fil : un taux calculé sur un échantillon
- * n'est pas un taux. La part de la ville fait exception et reste exacte —
- * `totalCount` vient du serveur, pas du fil chargé.
+ * n'est pas un taux.
  */
-export function PersonalStatsCard({ incidents, cityTotal = 0 }: Props) {
+export function PersonalStatsCard({ incidents }: Props) {
   const { colors, isDark } = useAppColors();
   const t = useStrings();
   const styles = useMemo(() => makeStyles(colors, isDark), [colors, isDark]);
   const stats = useMemo(() => personalStats(incidents), [incidents]);
 
   if (stats.total === 0) return null;
-
-  const share = cityTotal > 0 ? Math.max(1, Math.round((stats.total / cityTotal) * 100)) : null;
 
   const segments = [
     { key: "resolved", count: stats.resolved, color: STATUS_COLOR.resolved, label: t.stats.resolved },
@@ -53,9 +48,6 @@ export function PersonalStatsCard({ incidents, cityTotal = 0 }: Props) {
       <View style={styles.header}>
         <MaterialIcons name="workspace-premium" size={17} color={colors.primary} />
         <Text style={styles.title}>{t.stats.title}</Text>
-        {/* Situer sa contribution : « 3 % de la ville » donne au chiffre brut
-            une échelle qu'il n'a pas tout seul. */}
-        {share !== null && <Text style={styles.share}>{t.stats.cityShare(share)}</Text>}
       </View>
 
       <View style={styles.totalRow}>
@@ -127,16 +119,6 @@ function makeStyles(colors: ReturnType<typeof useAppColors>["colors"], isDark: b
       textTransform: "uppercase",
       color: colors.text,
       opacity: 0.55,
-    },
-    share: {
-      fontSize: 11,
-      fontWeight: "700",
-      color: colors.primary,
-      backgroundColor: colors.primary + "1A",
-      paddingHorizontal: 8,
-      paddingVertical: 3,
-      borderRadius: 9,
-      overflow: "hidden",
     },
     totalRow: { flexDirection: "row", alignItems: "baseline", gap: 8, marginBottom: 12 },
     total: {

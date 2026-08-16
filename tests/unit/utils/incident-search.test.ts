@@ -1,5 +1,7 @@
 import { distanceKm, matchesQuery, normalize, sortIncidents } from '@/utils/incident-search';
 
+const at = (day: number) => `2026-08-${String(day).padStart(2, '0')}T10:00:00Z`;
+
 const incident = (over: Partial<Parameters<typeof matchesQuery>[0]> = {}) => ({
   description: 'Poubelle renversée',
   addressLabel: '12 rue Victor-Hugo, Lyon',
@@ -90,5 +92,24 @@ describe('sortIncidents', () => {
     const list = [older, newer];
     sortIncidents(list, 'recent', null);
     expect(list[0]).toBe(older);
+  });
+});
+
+/**
+ * « Mes signalements » ne porte pas de coordonnées : la charge utile de cette
+ * liste n'a que l'adresse écrite. Ces éléments doivent rester dans la liste.
+ */
+describe('tri sans coordonnées', () => {
+  const origin = { latitude: 45.75, longitude: 4.85 };
+  const located = { description: 'Proche', addressLabel: '', latitude: 45.75, longitude: 4.85, createdAt: at(10) };
+  const unlocated = { description: 'Sans position', addressLabel: '', createdAt: at(10) };
+
+  it('renvoie en fin de liste ce qu’on ne sait pas situer', () => {
+    const sorted = sortIncidents([unlocated, located], 'nearest', origin);
+    expect(sorted.map((i) => i.description)).toEqual(['Proche', 'Sans position']);
+  });
+
+  it('ne perd jamais un élément', () => {
+    expect(sortIncidents([unlocated, located], 'nearest', origin)).toHaveLength(2);
   });
 });

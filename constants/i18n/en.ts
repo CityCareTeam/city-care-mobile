@@ -336,6 +336,7 @@ export const en: typeof fr = {
     changeStatus: "Change status",
     mine: "Mine",
     delete: "Delete",
+    voteFailed: "Your vote couldn’t be saved.",
     error: "Error",
     reports: "Reports",
     allFilter: "All",

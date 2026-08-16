@@ -347,6 +347,7 @@ export const fr = {
     changeStatus: "Changer le statut",
     mine: "Le mien",
     delete: "Supprimer",
+    voteFailed: "Votre vote n’a pas pu être enregistré.",
     error: "Erreur",
     reports: "Signalements",
     allFilter: "Tous",

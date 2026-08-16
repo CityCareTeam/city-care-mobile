@@ -1,8 +1,14 @@
-type Searchable = {
+export type Searchable = {
   description?: string | null;
   addressLabel?: string | null;
-  latitude: number;
-  longitude: number;
+  /**
+   * Absentes sur « mes signalements » : la charge utile de cette liste ne porte
+   * que l'adresse écrite. Ces éléments passent alors en fin de tri par
+   * proximité plutôt que d'en être exclus — on ne fait pas disparaître de la
+   * liste ce qu'on ne sait pas classer.
+   */
+  latitude?: number | null;
+  longitude?: number | null;
   createdAt: string;
 };
 
@@ -79,8 +85,13 @@ export function sortIncidents<T extends Searchable>(
 ): T[] {
   if (mode === "nearest" && !origin) return incidents;
 
+  const toOrigin = (incident: Searchable) =>
+    origin && typeof incident.latitude === "number" && typeof incident.longitude === "number"
+      ? distanceKm(origin, { latitude: incident.latitude, longitude: incident.longitude })
+      : Number.POSITIVE_INFINITY;
+
   return [...incidents].sort((a, b) => {
-    if (mode === "nearest" && origin) return distanceKm(origin, a) - distanceKm(origin, b);
+    if (mode === "nearest" && origin) return toOrigin(a) - toOrigin(b);
     const left = Date.parse(a.createdAt);
     const right = Date.parse(b.createdAt);
     return mode === "oldest" ? left - right : right - left;

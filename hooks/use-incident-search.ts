@@ -1,15 +1,7 @@
 import { DEFAULT_LOCATION } from "@/constants/config";
-import { matchesQuery, sortIncidents, type SortMode } from "@/utils/incident-search";
+import { matchesQuery, sortIncidents, type Searchable, type SortMode } from "@/utils/incident-search";
 import * as Location from "expo-location";
 import { useCallback, useMemo, useState } from "react";
-
-type Searchable = {
-  description?: string | null;
-  addressLabel?: string | null;
-  latitude: number;
-  longitude: number;
-  createdAt: string;
-};
 
 /**
  * Recherche et tri du fil.

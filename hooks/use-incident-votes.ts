@@ -1,5 +1,7 @@
 import { POLL_INTERVAL_MS } from "@/constants/config";
 import { addVote, getVotes, removeVote } from "@/services/incidents";
+import { Toast } from "@/components/ui/ToastMessage";
+import { getStrings } from "@/constants/i18n";
 import { getValidToken } from "@/storage/tokens";
 import { tapped } from "@/utils/haptics";
 import type { VoteResponse } from "@/types/incidents";
@@ -44,7 +46,15 @@ export function useIncidentVotes(incidentId: string | null) {
         setVotes(updated);
       }
     } catch {
-      // conflit ou erreur réseau — silent
+      // Le vote se posait en silence : l'appui ne changeait rien, et rien ne
+      // disait pourquoi. Un geste sans effet et sans explication se lit comme
+      // une application cassée — c'est le seul endroit de l'écran où l'on
+      // touchait au serveur sans jamais rendre compte.
+      Toast.show({
+        type: "error",
+        text1: getStrings().alert.errorTitle,
+        text2: getStrings().incident.voteFailed,
+      });
     } finally {
       setToggling(false);
     }
