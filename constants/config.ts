@@ -20,6 +20,10 @@ export const MAP_ANIMATION_MS = {
   animateRegion: 800,
 } as const;
 
+// Deux pas différents, et c'est voulu. `load` est ce qu'on demande au serveur ;
+// `list` ce qu'on déplie d'un coup à l'écran. Dérouler dix lignes déjà en
+// mémoire est instantané, aller en chercher cinquante autres ne l'est pas — les
+// confondre, c'est soit un écran qui saccade, soit une requête par clic.
 export const INCIDENTS_PAGE_SIZE = {
   list: 10,
   load: 50,

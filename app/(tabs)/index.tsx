@@ -17,6 +17,8 @@ import { applyFilters, useIncidentFilters } from "@/hooks/use-incident-filters";
 import { getIncidents } from "@/services/incidents";
 import { getMyIncidents } from "@/services/users";
 import { getValidToken } from "@/storage/tokens";
+import type { Paging } from "@/hooks/use-incidents-paging";
+import { useIncidentsPaging } from "@/hooks/use-incidents-paging";
 import type { IncidentResponse } from "@/types/incidents";
 import type { MyIncidentItem } from "@/types/users";
 import { EasterEggDog } from "@/components/easter-egg-dog";
@@ -94,6 +96,36 @@ function StatCard({
   );
 }
 
+/**
+ * Le pendant du bouton de `IncidentList` pour les cas où il n'y a pas de liste
+ * à prolonger : un filtre qui ne trouve rien dans les pages déjà ouvertes n'est
+ * pas une réponse, tant qu'il en reste à ouvrir.
+ */
+function LoadMore({ paging }: { paging: Paging }) {
+  const { colors, isDark } = useAppColors();
+  const styles = isDark ? darkStyles : lightStyles;
+  if (!paging.hasMore) return null;
+
+  return (
+    <View style={styles.incCard}>
+      <TouchableOpacity
+        style={styles.showMore}
+        onPress={paging.onLoadMore}
+        disabled={paging.loadingMore}
+        activeOpacity={0.75}
+        accessibilityRole="button"
+        accessibilityLabel="Charger davantage de signalements"
+      >
+        {paging.loadingMore ? (
+          <ActivityIndicator size="small" color={colors.primary} />
+        ) : (
+          <Text style={styles.showMoreText}>Charger la suite</Text>
+        )}
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 function EmptyState({ text }: { text: string }) {
   const { isDark, colors } = useAppColors();
   const styles = isDark ? darkStyles : lightStyles;
@@ -125,12 +157,21 @@ function SectionHeader({ title, count }: { title: string; count?: number }) {
   );
 }
 
+/**
+ * `onLoadMore` prolonge la liste au-delà de ce que le serveur a déjà donné. Le
+ * bouton conduit donc deux gestes derrière une seule apparence : dérouler ce
+ * qu'on tient en mémoire, puis, une fois au bout, aller chercher la page
+ * suivante. L'utilisateur n'a pas à connaître cette frontière — il veut voir
+ * plus loin, c'est tout.
+ */
 function IncidentList({
   incidents,
   onPress,
   pageSize = INCIDENTS_PAGE_SIZE.list,
   isMine = false,
   myIds,
+  onLoadMore,
+  loadingMore = false,
 }: {
   incidents: {
     id: string;
@@ -144,12 +185,15 @@ function IncidentList({
   pageSize?: number;
   isMine?: boolean;
   myIds?: Set<string>;
+  onLoadMore?: () => void;
+  loadingMore?: boolean;
 }) {
   const { isDark, colors } = useAppColors();
   const styles = isDark ? darkStyles : lightStyles;
   const [visibleCount, setVisibleCount] = useState(pageSize);
   const visible = incidents.slice(0, visibleCount);
   const remaining = incidents.length - visibleCount;
+  const canFetchMore = remaining <= 0 && onLoadMore !== undefined;
 
   return (
     <View style={styles.incCard}>
@@ -168,17 +212,29 @@ function IncidentList({
           />
         </View>
       ))}
-      {remaining > 0 && (
+      {(remaining > 0 || canFetchMore) && (
         <>
           <View style={styles.incDivider} />
           <TouchableOpacity
             style={styles.showMore}
-            onPress={() => setVisibleCount((c) => c + pageSize)}
+            onPress={() => {
+              if (remaining > 0) setVisibleCount((c) => c + pageSize);
+              else onLoadMore?.();
+            }}
+            disabled={loadingMore}
             activeOpacity={0.75}
+            accessibilityRole="button"
+            accessibilityLabel="Afficher davantage de signalements"
           >
-            <Text style={styles.showMoreText}>
-              Afficher {Math.min(remaining, pageSize)} de plus
-            </Text>
+            {loadingMore ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <Text style={styles.showMoreText}>
+                {remaining > 0
+                  ? `Afficher ${Math.min(remaining, pageSize)} de plus`
+                  : "Charger la suite"}
+              </Text>
+            )}
           </TouchableOpacity>
         </>
       )}
@@ -193,12 +249,14 @@ function CitizenView({
   incidents,
   allIncidents,
   onPress,
+  paging,
 }: {
   incidents: MyIncidentItem[];
   allIncidents: IncidentResponse[];
   onPress: (id: string) => void;
+  paging: Paging;
 }) {
-  const { colors, isDark } = useAppColors();
+  const { isDark } = useAppColors();
   const styles = isDark ? darkStyles : lightStyles;
 
   const [activeTab, setActiveTab] = useState<"mine" | "all">("mine");
@@ -256,8 +314,10 @@ function CitizenView({
       {/* ── Onglets ── */}
       <GlassPillSelector
         options={[
-          { label: "Les miens",   value: "mine" as const, badge: incidents.length    || undefined },
-          { label: "Communauté",  value: "all"  as const, badge: allIncidents.length || undefined },
+          { label: "Les miens",   value: "mine" as const, badge: incidents.length   || undefined },
+          // Le total du serveur, pas la taille de ce qu'on a chargé : l'onglet
+          // annonce la communauté, pas la pagination.
+          { label: "Communauté",  value: "all"  as const, badge: paging.totalCount || undefined },
         ]}
         activeValue={activeTab}
         onSelect={(v) => setActiveTab(v)}
@@ -307,12 +367,17 @@ function CitizenView({
         )
       ) : (
         filteredAll.length === 0 ? (
-          <EmptyState text={allIncidents.length === 0 ? STRINGS.emptyState.noAllIncidents : STRINGS.emptyState.noFilterResults} />
+          <>
+            <EmptyState text={allIncidents.length === 0 ? STRINGS.emptyState.noAllIncidents : STRINGS.emptyState.noFilterResults} />
+            <LoadMore paging={paging} />
+          </>
         ) : (
           <IncidentList
             incidents={filteredAll.map((i) => ({ id: i.id, type: i.type, status: i.status, description: i.description, address: i.addressLabel, createdAt: i.createdAt }))}
             onPress={onPress}
             myIds={myIdsSet}
+            onLoadMore={paging.hasMore ? paging.onLoadMore : undefined}
+            loadingMore={paging.loadingMore}
           />
         )
       )}
@@ -325,9 +390,11 @@ function CitizenView({
 function AgentView({
   incidents,
   onPress,
+  paging,
 }: {
   incidents: IncidentResponse[];
   onPress: (id: string) => void;
+  paging: Paging;
 }) {
   const { isDark } = useAppColors();
   const styles = isDark ? darkStyles : lightStyles;
@@ -393,13 +460,16 @@ function AgentView({
         count={filteredToHandle.length}
       />
       {filteredToHandle.length === 0 ? (
-        <EmptyState
-          text={
-            toHandle.length === 0
-              ? STRINGS.emptyState.agentAllDone
-              : STRINGS.emptyState.noFilterResults
-          }
-        />
+        <>
+          <EmptyState
+            text={
+              toHandle.length === 0
+                ? STRINGS.emptyState.agentAllDone
+                : STRINGS.emptyState.noFilterResults
+            }
+          />
+          <LoadMore paging={paging} />
+        </>
       ) : (
         <IncidentList
           incidents={filteredToHandle.map((i) => ({
@@ -411,6 +481,8 @@ function AgentView({
             createdAt: i.createdAt,
           }))}
           onPress={onPress}
+          onLoadMore={paging.hasMore ? paging.onLoadMore : undefined}
+          loadingMore={paging.loadingMore}
         />
       )}
     </>
@@ -422,9 +494,11 @@ function AgentView({
 function AdminView({
   incidents,
   onPress,
+  paging,
 }: {
   incidents: IncidentResponse[];
   onPress: (id: string) => void;
+  paging: Paging;
 }) {
   const { isDark } = useAppColors();
   const styles = isDark ? darkStyles : lightStyles;
@@ -446,8 +520,10 @@ function AdminView({
         <StatCard label="En cours" value={inProgress}  color="#f0a500" icon="autorenew" />
         <StatCard label="Résolus"  value={resolved}    color="#4caf50" icon="check-circle" />
       </View>
+      {/* « au total » veut dire au total : c'est le compte du serveur, pas
+          celui des pages ouvertes — qui annonçait 50 quoi qu'il arrive. */}
       <Text style={styles.totalLabel}>
-        {incidents.length} signalement{incidents.length !== 1 ? "s" : ""} au
+        {paging.totalCount} signalement{paging.totalCount !== 1 ? "s" : ""} au
         total
       </Text>
 
@@ -492,13 +568,16 @@ function AdminView({
 
       <SectionHeader title="Signalements" count={filteredIncidents.length} />
       {filteredIncidents.length === 0 ? (
-        <EmptyState
-          text={
-            incidents.length === 0
-              ? STRINGS.emptyState.noIncidents
-              : STRINGS.emptyState.noFilterResults
-          }
-        />
+        <>
+          <EmptyState
+            text={
+              incidents.length === 0
+                ? STRINGS.emptyState.noIncidents
+                : STRINGS.emptyState.noFilterResults
+            }
+          />
+          <LoadMore paging={paging} />
+        </>
       ) : (
         <IncidentList
           incidents={filteredIncidents.map((i) => ({
@@ -510,6 +589,8 @@ function AdminView({
             createdAt: i.createdAt,
           }))}
           onPress={onPress}
+          onLoadMore={paging.hasMore ? paging.onLoadMore : undefined}
+          loadingMore={paging.loadingMore}
         />
       )}
     </>
@@ -526,7 +607,14 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [failed, setFailed] = useState(false);
   const [myIncidents, setMyIncidents] = useState<MyIncidentItem[]>([]);
-  const [allIncidents, setAllIncidents] = useState<IncidentResponse[]>([]);
+  const {
+    incidents: allIncidents,
+    receiveFirstPage,
+    loadMore,
+    totalCount,
+    loadingMore,
+    hasMore,
+  } = useIncidentsPaging();
 
   const { active: dogActive, onTap: onLogoTap, dismiss: dismissDog } = useEasterEgg();
 
@@ -541,17 +629,21 @@ export default function HomeScreen() {
       const token = await getValidToken();
       if (!token) return;
 
-      if (role === "Citizen") {
-        const [myRes, allRes] = await Promise.all([
-          getMyIncidents(token),
-          getIncidents({ pageSize: INCIDENTS_PAGE_SIZE.load }),
-        ]);
-        setMyIncidents(myRes.data);
-        setAllIncidents(allRes.data);
-      } else {
-        const res = await getIncidents({ pageSize: INCIDENTS_PAGE_SIZE.load });
-        setAllIncidents(res.data);
-      }
+      // Une seule page relue, jamais toutes celles déjà ouvertes : un
+      // rafraîchissement silencieux part toutes les quinze secondes, et le
+      // multiplier par le nombre de pages déroulées se paierait en batterie
+      // autant qu'en charge serveur. Un tiré-pour-rafraîchir, lui, repart de
+      // zéro — c'est le geste par lequel on demande explicitement du propre.
+      const firstPage = getIncidents({ page: 1, pageSize: INCIDENTS_PAGE_SIZE.load });
+      const [myRes, allRes] = await Promise.all([
+        role === "Citizen" ? getMyIncidents(token) : Promise.resolve(null),
+        firstPage,
+      ]);
+
+      if (myRes) setMyIncidents(myRes.data);
+      // Seul le tiré-pour-rafraîchir referme les pages ouvertes : c'est le
+      // geste par lequel on demande explicitement du propre.
+      receiveFirstPage(allRes, { reset: isRefresh });
       setFailed(false);
     } catch {
       setFailed(true);
@@ -561,7 +653,17 @@ export default function HomeScreen() {
         setRefreshing(false);
       }
     }
-  }, [role]);
+  }, [role, receiveFirstPage]);
+
+  const paging = useMemo<Paging>(
+    () => ({
+      totalCount,
+      hasMore,
+      loadingMore,
+      onLoadMore: () => void loadMore().then((ok) => setFailed(!ok)),
+    }),
+    [totalCount, hasMore, loadingMore, loadMore],
+  );
 
   // Recharge à l'arrivée sur l'écran puis en silence, et resserre la cadence
   // tant qu'un chargement échoue — c'est ce qui rattrape le retour du réseau.
@@ -643,13 +745,14 @@ export default function HomeScreen() {
           incidents={myIncidents}
           allIncidents={allIncidents}
           onPress={navigateToIncident}
+          paging={paging}
         />
       )}
       {role === "Agent" && (
-        <AgentView incidents={allIncidents} onPress={navigateToIncident} />
+        <AgentView incidents={allIncidents} onPress={navigateToIncident} paging={paging} />
       )}
       {role === "Admin" && (
-        <AdminView incidents={allIncidents} onPress={navigateToIncident} />
+        <AdminView incidents={allIncidents} onPress={navigateToIncident} paging={paging} />
       )}
     </ScrollView>
 

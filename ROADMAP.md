@@ -11,65 +11,52 @@ endpoints près : ce qui reste à gagner est du côté de la **livraison** et de
 
 ---
 
-## 1. 📦 Mises à jour OTA (`expo-updates`)
+## 1. 📦 Mises à jour OTA (`expo-updates`) — ✅ livré
 
-> La chaîne de release est soignée jusqu'à l'APK, puis s'arrête : chaque
-> correctif oblige à réinstaller à la main. Avec l'OTA, une beta se pousse en
-> 30 s sur les appareils déjà installés.
+> La chaîne de release s'arrêtait à l'APK : chaque correctif obligeait à
+> réinstaller à la main. Une beta se pousse désormais en 30 s sur les appareils
+> déjà installés.
 
 **Durée estimée : 1 jour — Difficulté : 🟠 Moyenne**
-
-**Aucun bloqueur.** ✅
 
 > Limite à connaître : l'OTA ne remplace que le bundle JS. Toute nouvelle
 > dépendance native continue d'exiger un build EAS complet.
 
-### Installation
-- [ ] `npx expo install expo-updates`
-- [ ] `eas update:configure`
-
-### Configuration — `app.config.ts`
-- [ ] Ajouter le bloc `updates` (`url: https://u.expo.dev/<projectId>`)
-- [ ] `runtimeVersion: { policy: "fingerprint" }`
-  - **Pas `appVersion`** : semantic-release bumpe la version à chaque release,
-    ce qui casserait la compatibilité OTA à chaque patch. Le fingerprint ne
-    change que si le natif change — exactement la règle qu'on veut.
-
-### Configuration — `eas.json`
-- [ ] Ajouter un `channel` par profil : `dev-local` → `beta`,
+### Fait
+- [x] `expo-updates` installé, bloc `updates` dans `app.config.ts`
+- [x] `runtimeVersion: { policy: "fingerprint" }` — **pas `appVersion`** :
+      semantic-release incrémente la version à chaque release, ce qui aurait
+      rendu chaque APK incompatible avec ses propres mises à jour dès le patch
+      suivant. L'empreinte ne bouge que si le natif bouge
+- [x] Un `channel` par profil dans `eas.json` : `dev-local` → `beta`,
       `preview` → `rc`, `production` → `production`
-- [ ] Vérifier que les `EXPO_PUBLIC_*` du profil sont bien repris à la
-      publication : ils sont inlinés dans le bundle, un `eas update` publié avec
-      la mauvaise `EXPO_PUBLIC_API_URL` enverrait les appareils sur le mauvais
-      back
+- [x] `npm run update:beta` / `update:prod` (`scripts/publish-update.mjs`) —
+      message repris du dernier commit, `EXPO_PUBLIC_*` du profil réinjectés à
+      la publication : ils sont inlinés dans le bundle, publier depuis le mauvais
+      environnement enverrait les appareils sur le mauvais back
+- [x] Bannière « Mise à jour prête » (`components/ui/UpdateBanner.tsx`),
+      proposée et refusable — le bundle s'applique de toute façon au lancement
+      suivant
+- [x] Identifiant du bundle en troisième segment de la pastille de version,
+      seulement quand du JS a remplacé celui livré avec l'APK
+- [x] Tests : `use-app-update`, `update-banner`, `app-version`
 
-### Scripts & CI
-- [ ] `npm run update:beta` → `eas update --branch beta --message "<sujet du commit>"`
-- [ ] Décider dans `.github/workflows/ci-cd.yml` : un push sur `main` qui ne
-      touche que du JS publie un update au lieu de lancer un build APK
-      (~15 min économisées par correctif)
-
-### UI
-- [ ] Indiquer qu'un update est en cours d'application au démarrage
-      (`useUpdates()` → bandeau discret, pas de blocage)
-- [ ] Afficher l'`updateId` court dans `components/ui/AppVersion.tsx`, à côté du
-      rang de build — c'est ce qui permet de savoir quel JS tourne vraiment sur
-      un appareil de test
-
-### Tests
-- [ ] `tests/unit/components/app-version.test.tsx` — l'`updateId` s'affiche
-      quand il diffère du build embarqué, reste absent sinon
+### Reste à trancher
+- [ ] `.github/workflows/ci-cd.yml` : un push sur `main` qui ne touche que du JS
+      publie un update au lieu de lancer un build APK (~15 min économisées par
+      correctif). C'est un changement de comportement du CI, pas une option —
+      **décision à prendre avant de l'implémenter**
+- [ ] Le premier `eas update` doit suivre un build portant déjà le `channel` :
+      c'est lui qui crée le canal côté EAS
 
 ---
 
-## 2. 📃 Pagination serveur du fil
+## 2. 📃 Pagination serveur du fil — ✅ livré
 
-> Le fil plafonne à 50 incidents : au 51ᵉ, les plus anciens deviennent
+> Le fil plafonnait à 50 incidents : au 51ᵉ, les plus anciens devenaient
 > inatteignables.
 
 **Durée estimée : 1 jour — Difficulté : 🟢 Facile**
-
-**Aucun bloqueur.** ✅
 
 > `services/incidents.ts:78` accepte déjà `page` / `pageSize`, et
 > `IncidentListResponse` expose `pagination.total_pages`. Le back plafonne
@@ -82,28 +69,44 @@ endpoints près : ce qui reste à gagner est du côté de la **livraison** et de
   paquet côté client — il ne rappelle jamais l'API
 
 ### UI — `app/(tabs)/index.tsx`
-- [ ] Passer la liste de `ScrollView` à `FlatList` + `ListHeaderComponent`
-      (l'en-tête et la section « Mes signalements » deviennent le header)
-- [ ] État `page` + accumulation des résultats, `onEndReached` (seuil 0.5)
-- [ ] Arrêter quand `page >= pagination.total_pages` — ne pas se fier à une
-      page vide
-- [ ] Garder `RefreshControl` : un pull-to-refresh repart à la page 1 et
-      remplace la liste (ne pas concaténer)
-- [ ] Conserver le rafraîchissement silencieux de `useAutoRefresh` sur la
-      **première page uniquement** — repolluer les pages suivantes toutes les
-      15 s ferait sauter la position de lecture
-- [ ] Réconcilier avec les filtres (`hooks/use-incident-filters.ts`) : tout
-      changement de filtre remet `page` à 1
+- [x] Pagination extraite dans `hooks/use-incidents-paging.ts` : accumulation
+      des pages, `hasMore` depuis `pagination.total_pages`, garde par référence
+      contre le double appel
+- [x] Le bouton « Afficher N de plus » conduit deux gestes derrière une seule
+      apparence — dérouler ce qui est en mémoire, puis aller chercher la page
+      suivante (« Charger la suite »)
+- [x] `RefreshControl` : le tiré-pour-rafraîchir repart à la page 1 et referme
+      les pages ouvertes
+- [x] Rafraîchissement silencieux sur la **première page uniquement**, fondu
+      dans la liste par `mergeFreshHead` — les pages ouvertes ne se replient pas
+      sous les doigts
+- [x] `totalCount` remplace `incidents.length` là où l'écran annonçait un total
+      (vue Admin, badge « Communauté ») — il annonçait 50 quoi qu'il arrive
+- [x] Un filtre sans résultat propose de charger la suite plutôt que de conclure
+      sur les seules pages ouvertes
 
-### Nettoyage
-- [ ] `INCIDENTS_PAGE_SIZE.load` (50) disparaît, `list` (10) devient la taille
-      de page réelle — `constants/config.ts:23`
+> **Écart assumé au plan initial : pas de `FlatList`.** L'écran n'est pas une
+> liste mais un tableau de bord — compteurs, pastilles de filtre, deux onglets,
+> trois vues par rôle. Tout pousser dans un `ListHeaderComponent` aurait été un
+> gros refactor sur un écran sans tests d'écran, pour un gain nul : le bouton
+> « afficher plus » existait déjà et exprime la même intention que le défilement
+> infini. `onEndReached` reste possible le jour où l'écran sera testé.
+
+### Reste à faire
+- [ ] Les compteurs de statut portent toujours sur les pages chargées, pas sur
+      le jeu complet. `GET /incidents/map-summary` renvoie déjà les totaux par
+      statut (`reported`, `in_progress`, `resolved`) sans bornes : une requête
+      de plus rendrait le tableau de bord exact
+- [ ] Les filtres restent appliqués côté client, alors que le back accepte
+      `status` et `type` : filtrer côté serveur éviterait de dérouler des pages
+      pour trouver trois incidents d'un type rare
 
 ### Tests
-- [ ] `tests/unit/services/incidents.test.ts` — `page` est bien transmis en
-      query string
-- [ ] Test d'écran (nouveau) — `onEndReached` déclenche la page 2, et plus rien
-      une fois `total_pages` atteint
+- [x] `tests/unit/hooks/use-incidents-paging.test.ts` — pages successives, arrêt
+      à la dernière, double appel, échec réseau, fusion de tête, remise à zéro
+- [x] `tests/unit/utils/incident-list.test.ts` — déduplication et fusion
+- [x] `tests/unit/services/incidents.test.ts` — `page` transmis en query string
+      (déjà couvert)
 
 ---
 
@@ -211,11 +214,11 @@ Partage ────────────────────────
 
 ## Récap
 
-| Feature | Durée | Difficulté | Bloqueur |
+| Feature | Durée | Difficulté | État |
 |---|---|---|---|
-| Mises à jour OTA | 1 j | 🟠 Moyenne | Aucun ✅ |
-| Pagination serveur | 1 j | 🟢 Facile | Aucun ✅ |
-| Tenue hors-ligne | 2–3 j | 🔴 Élevée | Aucun ✅ |
+| Mises à jour OTA | 1 j | 🟠 Moyenne | ✅ livré (reste la décision CI) |
+| Pagination serveur | 1 j | 🟢 Facile | ✅ livré |
+| Tenue hors-ligne | 2–3 j | 🔴 Élevée | à faire |
 | *Partage & deep-link* | *1 j* | *🟢 Facile* | *page web de repli* |
 | *Accessibilité* | *1–2 j* | *🟢 Facile* | *Aucun* ✅ |
 | *Tests d'écrans* | *2 j* | *🟠 Moyenne* | *Aucun* ✅ |
