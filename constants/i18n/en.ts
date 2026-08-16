@@ -185,6 +185,7 @@ export const en: typeof fr = {
     resolved: "resolved",
     pending: "in progress",
     open: "reported",
+    cityTitle: "The city",
     resolutionRate: "Resolution rate",
     resolvedOf: (resolved: number, total: number) => `${resolved} resolved out of ${total}`,
     topCategory: "Most reported category",

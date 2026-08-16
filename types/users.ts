@@ -17,7 +17,15 @@ export type MyIncidentItem = {
   id: string;
   type: string;
   status: string;
-  description: string;
+  /**
+   * **Absente de la réponse.** `/users/me/incidents` ne projette que
+   * l'identifiant, le type, le statut, l'adresse et la date — pas la
+   * description. Le type l'annonçait obligatoire, ce qui a fait croire aux
+   * écrans qu'ils l'avaient : la recherche sur « mes signalements » ne trouvait
+   * donc jamais rien, et l'affichage la récupérait déjà en douce depuis le fil
+   * de la ville.
+   */
+  description?: string;
   address_label: string;
   created_at: string;
 };

@@ -189,6 +189,7 @@ export const fr = {
     resolved: "résolus",
     pending: "en cours",
     open: "déclarés",
+    cityTitle: "La ville",
     resolutionRate: "Taux de résolution",
     resolvedOf: (resolved: number, total: number) => `${resolved} résolu${resolved > 1 ? "s" : ""} sur ${total}`,
     topCategory: "Catégorie la plus signalée",

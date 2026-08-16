@@ -2,6 +2,8 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { IncidentRow } from "@/components/incident-row";
 import { IncidentSearchBar, NoSearchResults } from "@/components/incident-search-bar";
 import { PersonalStatsCard } from "@/components/personal-stats-card";
+import { StatusBreakdown } from "@/components/status-breakdown";
+import { useCityStats } from "@/hooks/use-city-stats";
 import { FeedSkeleton } from "@/components/ui/Skeleton";
 import { useIncidentSearch } from "@/hooks/use-incident-search";
 import { HeaderClock } from "@/components/ui/HeaderClock";
@@ -313,13 +315,23 @@ function CitizenView({
   );
   // La recherche s'applique après les filtres : elle cherche dans ce qui est
   // affiché, pas dans ce qui a été écarté.
+  const cityStats = useCityStats();
   const search = useIncidentSearch(filteredAll);
   // Le même outil sur ses propres signalements : s'en passer sous prétexte
   // qu'ils sont moins nombreux, c'est décider à la place de qui en a trente.
   const mineSearch = useIncidentSearch(
     useMemo(
-      () => filteredMine.map((i) => ({ ...i, addressLabel: i.address_label, createdAt: i.created_at })),
-      [filteredMine],
+      () =>
+        filteredMine.map((incident) => ({
+          ...incident,
+          // La description ne vient pas de cette liste — le serveur ne la
+          // projette pas — mais du fil de la ville, où elle figure. Sans ça,
+          // chercher un mot de sa propre description ne donnait rien.
+          description: allIncidents.find((i) => i.id === incident.id)?.description ?? incident.description,
+          addressLabel: incident.address_label,
+          createdAt: incident.created_at,
+        })),
+      [filteredMine, allIncidents],
     ),
   );
 
@@ -354,14 +366,19 @@ function CitizenView({
       {isMineTab ? (
         <PersonalStatsCard incidents={incidents} />
       ) : (
-        <>
-          <SectionHeader title={t.home.communityStats} />
-          <View style={styles.statRow}>
-            <StatCard label={t.home.reported} value={reported}   color="#2196f3" icon="flag" />
-            <StatCard label={t.home.inProgress} value={inProgress} color="#f0a500" icon="autorenew" />
-            <StatCard label={t.home.resolved}  value={resolved}   color="#4caf50" icon="check-circle" />
-          </View>
-        </>
+        /* Les compteurs de la ville portaient sur les pages chargées : ils
+           annonçaient « 50 déclarés » parce que cinquante incidents étaient en
+           mémoire. `map-summary` couvre la ville entière et ventile déjà par
+           statut — une requête, et le chiffre devient vrai. En son absence, on
+           retombe sur ce qu'on a, plutôt que sur rien. */
+        <StatusBreakdown
+          title={t.stats.cityTitle}
+          icon="location-city"
+          total={cityStats?.total ?? allIncidents.length}
+          resolved={cityStats?.resolved ?? resolved}
+          inProgress={cityStats?.inProgress ?? inProgress}
+          reported={cityStats?.reported ?? reported}
+        />
       )}
 
       {/* ── Onglets ── */}
