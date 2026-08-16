@@ -92,3 +92,29 @@ describe('STRINGS', () => {
     expect(STRINGS.emptyState.noIncidents.length).toBeGreaterThan(0);
   });
 });
+
+/**
+ * La traduction avait un trou : les durées relatives et les dates restaient en
+ * français quelle que soit la langue, sur chaque ligne de notification et
+ * d'incident. Ces tests le referment.
+ */
+describe('dates et durées', () => {
+  it('traduisent les durées relatives', () => {
+    expect(fr.relative.now).not.toBe(en.relative.now);
+    expect(fr.relative.minutes(5)).toContain('Il y a');
+    expect(en.relative.minutes(5)).toContain('ago');
+    expect(en.relative.yesterday).toBe('Yesterday');
+  });
+
+  it('portent chacun leur locale de formatage', () => {
+    expect(fr.locale).toBe('fr-FR');
+    expect(en.locale).toBe('en-GB');
+  });
+
+  // Ce que voit l'utilisateur : la même date, dans sa langue.
+  it('formatent la même date dans les deux langues', () => {
+    const date = new Date('2026-08-16T10:00:00Z');
+    expect(date.toLocaleDateString(fr.locale, { month: 'long' })).toBe('août');
+    expect(date.toLocaleDateString(en.locale, { month: 'long' })).toBe('August');
+  });
+});

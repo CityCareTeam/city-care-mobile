@@ -64,15 +64,24 @@ function statusOptions(all: string, withResolved: boolean): PillOption<string | 
   return options;
 }
 
-const TODAY = (() => {
-  const s = new Date().toLocaleDateString("fr-FR", {
+/**
+ * Date du jour, dans la langue active.
+ *
+ * C'était une constante de module : calculée une fois au chargement, donc figée
+ * en français — et accessoirement jamais mise à jour si l'application restait
+ * ouverte au passage de minuit.
+ */
+function today(locale: string): string {
+  const label = new Date().toLocaleDateString(locale, {
     weekday: "long",
     day: "numeric",
     month: "long",
     year: "numeric",
   });
-  return s.charAt(0).toUpperCase() + s.slice(1);
-})();
+  // Les jours de la semaine sont déjà capitalisés en anglais ; en français,
+  // `toLocaleDateString` rend « dimanche ».
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
 
 /** Compte les trois statuts en une seule passe. */
 function countByStatus(incidents: { status: string }[]) {
@@ -828,7 +837,7 @@ export default function HomeScreen() {
                 </View>
               )}
             </View>
-            <Text style={styles.headerDate}>{TODAY}</Text>
+            <Text style={styles.headerDate}>{today(t.locale)}</Text>
           </View>
           <TouchableOpacity onPress={onLogoTap} activeOpacity={1}>
             <Logo size={72} />

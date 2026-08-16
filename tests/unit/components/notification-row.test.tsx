@@ -1,6 +1,7 @@
 jest.mock('@expo/vector-icons/MaterialIcons', () => 'MaterialIcons');
 
 import { makeRowStyles, NotificationRow } from '@/components/notifications/NotificationRow';
+import { fr } from '@/constants/i18n/fr';
 import { CityCareColors } from '@/constants/theme';
 import { STATUS_LABEL } from '@/constants/incidents';
 import type { NotificationResponse } from '@/types/notifications';
@@ -24,7 +25,7 @@ function renderRow(item: NotificationResponse, onPress = jest.fn(), onDelete = j
     onPress,
     onDelete,
     ...render(
-      <NotificationRow item={item} styles={styles} onPress={onPress} onDelete={onDelete} />,
+      <NotificationRow item={item} styles={styles} strings={fr} onPress={onPress} onDelete={onDelete} />,
     ),
   };
 }

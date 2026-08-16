@@ -40,10 +40,10 @@ function parseISO(iso: string): Date | null {
   return new Date(Date.UTC(year, month - 1, day));
 }
 
-function formatDate(iso: string): string {
+function formatDate(iso: string, locale: string): string {
   const date = parseISO(iso);
   if (!date) return "";
-  return date.toLocaleDateString("fr-FR", {
+  return date.toLocaleDateString(locale, {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -52,13 +52,13 @@ function formatDate(iso: string): string {
 }
 
 /** Étendue d'un palier : « juin » si tout tient dans le mois, « juin → août » sinon. */
-function formatSpan(group: ReleaseGroup): string {
+function formatSpan(group: ReleaseGroup, locale: string): string {
   const newest = parseISO(group.releases[0]?.date ?? "");
   const oldest = parseISO(group.releases[group.releases.length - 1]?.date ?? "");
   if (!newest || !oldest) return "";
 
   const month = (d: Date) =>
-    d.toLocaleDateString("fr-FR", { month: "long", timeZone: "UTC" });
+    d.toLocaleDateString(locale, { month: "long", timeZone: "UTC" });
   const year = newest.getUTCFullYear();
 
   return month(oldest) === month(newest)
@@ -111,7 +111,7 @@ function Release({ note, current, tag, styles, colors }: {
           )}
 
           <View style={styles.spacer} />
-          <Text style={styles.releaseDate}>{formatDate(note.date)}</Text>
+          <Text style={styles.releaseDate}>{formatDate(note.date, t.locale)}</Text>
         </View>
 
         {note.headline && <Text style={styles.headline}>{note.headline}</Text>}
@@ -156,6 +156,7 @@ function Milestone({ group, current, tag, expanded, onToggle, styles, colors }: 
   styles: Styles;
   colors: AppColors;
 }) {
+  const t = useStrings();
   const holdsCurrent = minorOf(current) === group.minor;
   const count = group.releases.length;
 
@@ -184,11 +185,11 @@ function Milestone({ group, current, tag, expanded, onToggle, styles, colors }: 
         activeOpacity={0.7}
         accessibilityRole="button"
         accessibilityState={{ expanded }}
-        accessibilityLabel={`Version ${group.minor}, ${count} publication${count > 1 ? "s" : ""}, ${formatSpan(group)}`}
+        accessibilityLabel={`${t.releaseNotes.version(group.minor)}, ${t.releaseNotes.releases(count)}, ${formatSpan(group, t.locale)}`}
       >
         <View style={styles.milestoneBody}>
           <View style={styles.milestoneTitleRow}>
-            <Text style={styles.milestoneTitle}>Version {group.minor}</Text>
+            <Text style={styles.milestoneTitle}>{t.releaseNotes.version(group.minor)}</Text>
             <View style={styles.spacer} />
             <MaterialIcons
               name={expanded ? "expand-less" : "expand-more"}
@@ -197,7 +198,7 @@ function Milestone({ group, current, tag, expanded, onToggle, styles, colors }: 
             />
           </View>
           <Text style={styles.milestoneMeta}>
-            {formatSpan(group)} · {count} publication{count > 1 ? "s" : ""}
+            {formatSpan(group, t.locale)} · {t.releaseNotes.releases(count)}
           </Text>
 
           {/* La silhouette du palier se lit sans le déplier. */}

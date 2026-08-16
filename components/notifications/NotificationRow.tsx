@@ -1,6 +1,7 @@
 import { STATUS_COLOR, STATUS_LABEL } from "@/constants/incidents";
 import type { AppColors } from "@/hooks/use-app-colors";
 import type { NotificationResponse } from "@/types/notifications";
+import type { Dictionary } from "@/constants/i18n";
 import { mixHex } from "@/utils/color";
 import { timeAgo } from "@/utils/format-date";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
@@ -45,11 +46,17 @@ function extractStatusKey(type: string, body: string): string | null {
 type Props = {
   item: NotificationResponse;
   styles: ReturnType<typeof makeRowStyles>;
+  /**
+   * Passé en propriété plutôt que lu par un crochet : la ligne est mémoïsée et
+   * ne consomme aucun contexte. Sans une valeur qui change dans ses props, elle
+   * garderait ses durées en français après un changement de langue.
+   */
+  strings: Dictionary;
   onPress: (item: NotificationResponse) => void;
   onDelete: (id: string) => void;
 };
 
-function NotificationRowBase({ item, styles, onPress, onDelete }: Props) {
+function NotificationRowBase({ item, styles, strings, onPress, onDelete }: Props) {
   const icon = getIconConfig(item.type);
   const statusKey = extractStatusKey(item.type, item.body ?? "");
   const statusColor = statusKey ? STATUS_COLOR[statusKey] : null;
@@ -68,7 +75,7 @@ function NotificationRowBase({ item, styles, onPress, onDelete }: Props) {
           onPress={() => onDelete(item.id)}
           activeOpacity={0.85}
           accessibilityRole="button"
-          accessibilityLabel={`Supprimer la notification : ${item.title}`}
+          accessibilityLabel={strings.notifications.deleteOne(item.title)}
         >
           <MaterialIcons name="delete-outline" size={24} color="#fff" />
         </TouchableOpacity>
@@ -98,7 +105,7 @@ function NotificationRowBase({ item, styles, onPress, onDelete }: Props) {
               <Text style={styles.itemBody} numberOfLines={1}>{item.body}</Text>
             ) : null}
             <Text style={[styles.itemTime, item.is_read && styles.itemTimeRead]}>
-              {timeAgo(item.created_at)}
+              {timeAgo(item.created_at, strings)}
             </Text>
           </View>
           <View style={styles.right}>

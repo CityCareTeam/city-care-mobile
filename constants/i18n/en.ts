@@ -9,6 +9,15 @@ import type { fr } from "@/constants/i18n/fr";
  * ce registre.
  */
 export const en: typeof fr = {
+  locale: "en-GB",
+  relative: {
+    now: "Just now",
+    minutes: (count: number) => `${count} min ago`,
+    hours: (count: number) => `${count}h ago`,
+    yesterday: "Yesterday",
+    days: (count: number) => `${count} days ago`,
+  },
+
   api: {
     networkError: "Can’t connect. Check your network and try again.",
     invalidCredentials: "Incorrect username or password.",
@@ -181,6 +190,7 @@ export const en: typeof fr = {
     clearTitle: "Clear notifications",
     clearMessage: "Delete all your notifications?",
     delete: "Delete",
+    deleteOne: (title: string) => `Delete notification: ${title}`,
   },
 
   profile: {
@@ -335,6 +345,8 @@ export const en: typeof fr = {
 
   releaseNotes: {
     title: "Release notes",
+    version: (minor: string) => `Version ${minor}`,
+    releases: (count: number) => `${count} release${count > 1 ? "s" : ""}`,
     yourVersion: "Your version",
     upcoming: "upcoming",
   },

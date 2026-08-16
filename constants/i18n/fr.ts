@@ -6,6 +6,15 @@
  * manquante est une erreur au build, jamais une chaîne vide à l'écran.
  */
 export const fr = {
+  locale: "fr-FR",
+  relative: {
+    now: "À l'instant",
+    minutes: (count: number) => `Il y a ${count} min`,
+    hours: (count: number) => `Il y a ${count}h`,
+    yesterday: "Hier",
+    days: (count: number) => `Il y a ${count} jours`,
+  },
+
   api: {
     networkError: "Connexion impossible. Vérifiez votre réseau et réessayez.",
     invalidCredentials: "Identifiant ou mot de passe incorrect.",
@@ -186,6 +195,7 @@ export const fr = {
     clearTitle: "Vider les notifications",
     clearMessage: "Supprimer toutes vos notifications ?",
     delete: "Supprimer",
+    deleteOne: (title: string) => `Supprimer la notification : ${title}`,
   },
 
   // ── Profil ──
@@ -349,6 +359,8 @@ export const fr = {
   // ── Notes de version ──
   releaseNotes: {
     title: "Notes de version",
+    version: (minor: string) => `Version ${minor}`,
+    releases: (count: number) => `${count} publication${count > 1 ? "s" : ""}`,
     yourVersion: "Votre version",
     upcoming: "à venir",
   },

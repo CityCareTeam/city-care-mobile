@@ -301,6 +301,7 @@ export default function NotificationsScreen() {
           <NotificationRow
             item={entry.item}
             styles={rowStyles}
+            strings={t}
             onPress={handleTap}
             onDelete={handleDeleteOne}
           />

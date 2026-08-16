@@ -1,3 +1,5 @@
+import { getStrings, type Dictionary } from "@/constants/i18n";
+
 /**
  * Lecture d'un horodatage venu du serveur.
  *
@@ -17,8 +19,22 @@ export function parseServerDate(dateStr: string): Date {
   return new Date(hasTimezone ? dateStr : `${dateStr}Z`);
 }
 
+/**
+ * Toutes les dates se formatent dans la langue active.
+ *
+ * Elles étaient figées en `"fr-FR"` à sept endroits : une interface passée en
+ * anglais continuait d'annoncer « Dimanche 16 août 2026 ». La locale vit
+ * désormais dans le dictionnaire, à côté des textes qu'elle accompagne.
+ *
+ * Lue à l'appel et non capturée : ces fonctions ne sont pas des crochets, elles
+ * doivent suivre la langue sans qu'on les rappelle.
+ */
+function locale(): string {
+  return getStrings().locale;
+}
+
 export function formatIncidentDateTime(dateStr: string): string {
-  return parseServerDate(dateStr).toLocaleDateString("fr-FR", {
+  return parseServerDate(dateStr).toLocaleDateString(locale(), {
     day: "2-digit",
     month: "long",
     year: "numeric",
@@ -28,7 +44,7 @@ export function formatIncidentDateTime(dateStr: string): string {
 }
 
 export function formatDate(dateStr: string): string {
-  return parseServerDate(dateStr).toLocaleDateString("fr-FR", {
+  return parseServerDate(dateStr).toLocaleDateString(locale(), {
     day: "numeric",
     month: "long",
     year: "numeric",
@@ -36,24 +52,38 @@ export function formatDate(dateStr: string): string {
 }
 
 export function formatDateShort(dateStr: string): string {
-  return parseServerDate(dateStr).toLocaleDateString("fr-FR", {
+  return parseServerDate(dateStr).toLocaleDateString(locale(), {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
   });
 }
 
-export function timeAgo(dateStr: string): string {
+/**
+ * Durée écoulée, en toutes lettres.
+ *
+ * Le dictionnaire est **exigé en paramètre**, alors que les autres fonctions de
+ * ce fichier lisent la langue active : celle-ci est affichée sur chaque ligne de
+ * notification et d'incident, et `NotificationRow` est mémoïsée sans consommer
+ * aucun contexte. Sans une valeur qui change dans ses props, elle ne se
+ * redessinerait pas au changement de langue et garderait ses « Il y a 3 h »
+ * français. Le paramètre force l'appelant à tenir le dictionnaire, donc à se
+ * redessiner avec lui.
+ */
+export function timeAgo(dateStr: string, strings: Dictionary = getStrings()): string {
   const diff = Date.now() - parseServerDate(dateStr).getTime();
   const mins = Math.floor(diff / 60_000);
-  if (mins < 1) return "À l'instant";
-  if (mins < 60) return `Il y a ${mins} min`;
+  if (mins < 1) return strings.relative.now;
+  if (mins < 60) return strings.relative.minutes(mins);
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `Il y a ${hours}h`;
+  if (hours < 24) return strings.relative.hours(hours);
   const days = Math.floor(hours / 24);
-  if (days === 1) return "Hier";
-  if (days < 7) return `Il y a ${days} jours`;
-  return parseServerDate(dateStr).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+  if (days === 1) return strings.relative.yesterday;
+  if (days < 7) return strings.relative.days(days);
+  return parseServerDate(dateStr).toLocaleDateString(strings.locale, {
+    day: "numeric",
+    month: "short",
+  });
 }
 
 /**
