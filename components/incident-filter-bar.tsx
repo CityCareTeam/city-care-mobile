@@ -52,10 +52,29 @@ function makeStyles(c: AppColors, isDark: boolean) {
     },
     // Flou, voile et liseré viennent de GlassSurface — commun à tout ce qui
     // flotte sur la carte.
+    filterRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12 },
     typeContainer: {
-      marginHorizontal: 12,
+      flex: 1,
       borderRadius: 24,
     },
+    // Fixe, jamais dans le défilement : ces deux-là doivent rester sous le
+    // pouce, et surtout rester visibles.
+    scopeContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      borderRadius: 24,
+      paddingHorizontal: 6,
+      paddingVertical: 6,
+    },
+    scopeBtn: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    scopeBtnActive: { backgroundColor: c.primary },
     typeScroll: {
       flexDirection: "row",
     },
@@ -66,9 +85,6 @@ function makeStyles(c: AppColors, isDark: boolean) {
       paddingVertical: 5,
       gap: 4,
     },
-    // La pastille de l'auteur porte une icône : deux éléments côte à côte, là
-    // où les catégories n'ont qu'un mot.
-    mineChip: { flexDirection: "row", alignItems: "center", gap: 5 },
     typeChip: {
       paddingHorizontal: 14,
       paddingVertical: 6,
@@ -115,7 +131,12 @@ export function IncidentFilterBar({
         />
       </View>
 
-      {/* Types — container verre unique avec chips */}
+      {/* Deux familles de filtres sur une même ligne, mais dans deux surfaces
+          distinctes : à gauche « de quoi il s'agit » — les catégories, qui
+          défilent — à droite « à qui ça appartient ». Rangées ensemble, les
+          secondes se lisaient comme des catégories de plus, et disparaissaient
+          au défilement. */}
+      <View style={styles.filterRow}>
       <GlassSurface style={styles.typeContainer}>
         <ScrollView
           horizontal
@@ -123,51 +144,6 @@ export function IncidentFilterBar({
           contentContainerStyle={styles.typeScrollContent}
           style={styles.typeScroll}
         >
-          {/* « Les miens » ouvre la rangée : c'est un filtre sur l'auteur, pas
-              sur le type, et le mettre en tête évite qu'on le cherche au milieu
-              des catégories. Un chevron le sépare visuellement du reste. */}
-          {onToggleMine && (
-            <TouchableOpacity
-              style={[styles.typeChip, styles.mineChip, mineOnly && styles.typeChipActive]}
-              onPress={onToggleMine}
-              activeOpacity={0.75}
-              accessibilityRole="button"
-              accessibilityState={{ selected: mineOnly }}
-              accessibilityLabel={strings.incident.mineOnlyA11y}
-            >
-              <MaterialIcons
-                name="person-pin-circle"
-                size={13}
-                color={mineOnly ? "#fff" : colors.text}
-                style={!mineOnly && { opacity: 0.55 }}
-              />
-              <Text style={[styles.typeChipText, mineOnly && styles.typeChipTextActive]}>
-                {strings.incident.mineOnly}
-              </Text>
-            </TouchableOpacity>
-          )}
-
-          {onToggleFollowed && (
-            <TouchableOpacity
-              style={[styles.typeChip, styles.mineChip, followedOnly && styles.typeChipActive]}
-              onPress={onToggleFollowed}
-              activeOpacity={0.75}
-              accessibilityRole="button"
-              accessibilityState={{ selected: followedOnly }}
-              accessibilityLabel={strings.incident.followedFilterA11y}
-            >
-              <MaterialIcons
-                name="bookmark"
-                size={13}
-                color={followedOnly ? "#fff" : colors.text}
-                style={!followedOnly && { opacity: 0.55 }}
-              />
-              <Text style={[styles.typeChipText, followedOnly && styles.typeChipTextActive]}>
-                {strings.incident.followedFilter}
-              </Text>
-            </TouchableOpacity>
-          )}
-
           {TYPE_OPTIONS.map((t) => {
             const active = filterType === t;
             return (
@@ -185,6 +161,46 @@ export function IncidentFilterBar({
           })}
         </ScrollView>
       </GlassSurface>
+
+      {(onToggleMine || onToggleFollowed) && (
+        <GlassSurface style={styles.scopeContainer}>
+          {onToggleMine && (
+            <TouchableOpacity
+              style={[styles.scopeBtn, mineOnly && styles.scopeBtnActive]}
+              onPress={onToggleMine}
+              activeOpacity={0.75}
+              accessibilityRole="button"
+              accessibilityState={{ selected: mineOnly }}
+              accessibilityLabel={strings.incident.mineOnlyA11y}
+            >
+              <MaterialIcons
+                name="person-pin-circle"
+                size={17}
+                color={mineOnly ? "#fff" : colors.text}
+                style={!mineOnly && { opacity: 0.55 }}
+              />
+            </TouchableOpacity>
+          )}
+          {onToggleFollowed && (
+            <TouchableOpacity
+              style={[styles.scopeBtn, followedOnly && styles.scopeBtnActive]}
+              onPress={onToggleFollowed}
+              activeOpacity={0.75}
+              accessibilityRole="button"
+              accessibilityState={{ selected: followedOnly }}
+              accessibilityLabel={strings.incident.followedFilterA11y}
+            >
+              <MaterialIcons
+                name="bookmark"
+                size={16}
+                color={followedOnly ? "#fff" : colors.text}
+                style={!followedOnly && { opacity: 0.55 }}
+              />
+            </TouchableOpacity>
+          )}
+        </GlassSurface>
+      )}
+      </View>
     </View>
   );
 }
