@@ -36,6 +36,11 @@ CityCare+ connecte les citoyens à leur mairie. Les signalements remontent en te
 - **Capture photo** : appareil photo ou galerie (jusqu'à 3 photos par signalement)
 - Demande de permissions caméra / galerie avec messages d'erreur explicites
 - Upload des photos après création du signalement
+- **Brouillon persistant** : le formulaire survit à une fermeture de
+  l'application et se restaure au retour (3 jours), avec un bouton pour l'effacer
+- **Envoi différé** : un signalement rédigé sans réseau est accepté localement et
+  part au retour de la connexion. Un refus du serveur, lui, ne boucle pas — il
+  est remonté à l'utilisateur sur l'accueil
 
 ### Carte interactive (`explore.tsx`)
 - **Clustering serveur** via `GET /incidents/map-summary` — marqueurs regroupés par viewport avec debounce 300 ms
@@ -93,7 +98,8 @@ CityCare+ connecte les citoyens à leur mairie. Les signalements remontent en te
 | expo-notifications          | ~0.32.17    | Push notifications                         |
 | expo-secure-store           | ~15.0.8     | Stockage sécurisé des tokens JWT           |
 | expo-updates                | ~29.0.19    | Mises à jour du bundle JS à la volée (OTA) |
-| Jest / jest-expo            | ~29.7 / ~54 | Tests unitaires (418 tests)                |
+| async-storage               | 2.2.0       | Brouillon, cache du fil, file d'envoi      |
+| Jest / jest-expo            | ~29.7 / ~54 | Tests unitaires (478 tests)                |
 
 ---
 

@@ -17,6 +17,9 @@ import { applyFilters, useIncidentFilters } from "@/hooks/use-incident-filters";
 import { getIncidents } from "@/services/incidents";
 import { getMyIncidents } from "@/services/users";
 import { getValidToken } from "@/storage/tokens";
+import { loadIncidentsCache, saveIncidentsCache } from "@/storage/incidents-cache";
+import { usePendingReports } from "@/hooks/use-pending-reports";
+import { timeAgo } from "@/utils/format-date";
 import type { Paging } from "@/hooks/use-incidents-paging";
 import { useIncidentsPaging } from "@/hooks/use-incidents-paging";
 import type { IncidentResponse } from "@/types/incidents";
@@ -24,7 +27,7 @@ import type { MyIncidentItem } from "@/types/users";
 import { EasterEggDog } from "@/components/easter-egg-dog";
 import { useEasterEgg } from "@/hooks/use-easter-egg";
 import { router } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
     ActivityIndicator,
     RefreshControl,
@@ -610,13 +613,28 @@ export default function HomeScreen() {
   const {
     incidents: allIncidents,
     receiveFirstPage,
+    seed,
     loadMore,
     totalCount,
     loadingMore,
     hasMore,
   } = useIncidentsPaging();
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const { pending, rejected, flush, dismissRejected } = usePendingReports();
 
   const { active: dogActive, onTap: onLogoTap, dismiss: dismissDog } = useEasterEgg();
+
+  // Le dernier état connu, le temps que le réseau réponde — et à la place de
+  // l'écran vide s'il ne répond pas.
+  useEffect(() => {
+    void (async () => {
+      const cache = await loadIncidentsCache();
+      if (cache) {
+        seed(cache.incidents, cache.totalCount);
+        setCachedAt(cache.savedAt);
+      }
+    })();
+  }, [seed]);
 
   const load = useCallback(async (isRefresh = false, silent = false) => {
     if (role === null) return;
@@ -645,6 +663,11 @@ export default function HomeScreen() {
       // geste par lequel on demande explicitement du propre.
       receiveFirstPage(allRes, { reset: isRefresh });
       setFailed(false);
+      setCachedAt(null);
+      void saveIncidentsCache(allRes.data, allRes.pagination.total_count);
+      // Le réseau vient de répondre : c'est le meilleur moment pour rejouer ce
+      // qui attendait, et un signal plus fiable qu'un indicateur de connexion.
+      void flush();
     } catch {
       setFailed(true);
     } finally {
@@ -653,7 +676,7 @@ export default function HomeScreen() {
         setRefreshing(false);
       }
     }
-  }, [role, receiveFirstPage]);
+  }, [role, receiveFirstPage, flush]);
 
   const paging = useMemo<Paging>(
     () => ({
@@ -707,8 +730,31 @@ export default function HomeScreen() {
     >
       {failed && (
         <ErrorNotice
-          detail="Les signalements affichés peuvent être obsolètes."
+          detail={
+            cachedAt
+              ? `Dernières données connues, ${timeAgo(cachedAt)}.`
+              : "Les signalements affichés peuvent être obsolètes."
+          }
           onRetry={() => void load(true)}
+        />
+      )}
+
+      {pending.length > 0 && (
+        <View style={styles.pendingNotice} testID="pending-notice">
+          <MaterialIcons name="cloud-upload" size={18} color={colors.primary} />
+          <Text style={styles.pendingText}>
+            {pending.length} signalement{pending.length !== 1 ? "s" : ""} en attente d’envoi —
+            {" "}il{pending.length !== 1 ? "s partiront" : " partira"} au retour du réseau.
+          </Text>
+        </View>
+      )}
+
+      {rejected.length > 0 && (
+        <ErrorNotice
+          title={`${rejected.length} signalement${rejected.length !== 1 ? "s" : ""} refusé${rejected.length !== 1 ? "s" : ""}`}
+          detail={rejected[0].reason}
+          onRetry={() => void dismissRejected()}
+          actionLabel="J’ai compris"
         />
       )}
 
@@ -771,6 +817,20 @@ function makeStyles(c: AppColors) {
     },
     scroll: { flex: 1, backgroundColor: c.background },
     content: { padding: 20, paddingBottom: 40 },
+    // Information, pas alerte : ces signalements ne sont pas perdus, ils
+    // attendent. Le ton reste celui de la marque, pas celui d'une erreur.
+    pendingNotice: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      padding: 12,
+      borderRadius: 14,
+      marginBottom: 16,
+      backgroundColor: c.primary + "14",
+      borderWidth: 1,
+      borderColor: c.primary + "33",
+    },
+    pendingText: { flex: 1, fontSize: 12, color: c.text, opacity: 0.75 },
     headerCard: {
       backgroundColor: c.primary,
       borderRadius: 20,

@@ -52,6 +52,16 @@ export function useIncidentsPaging() {
     [],
   );
 
+  /**
+   * Amorce la liste avec le dernier état connu, gardé sur l'appareil. Sans
+   * effet dès qu'une réponse du serveur est arrivée : un cache qui écraserait
+   * du frais serait pire que pas de cache du tout.
+   */
+  const seed = useCallback((cached: IncidentResponse[], cachedTotal: number) => {
+    setIncidents((prev) => (prev.length === 0 ? cached : prev));
+    setTotalCount((prev) => (prev === 0 ? cachedTotal : prev));
+  }, []);
+
   /** Renvoie `false` si la page n'a pas pu être chargée — à l'appelant d'en tirer les conséquences. */
   const loadMore = useCallback(async (): Promise<boolean> => {
     // Un drapeau de rendu ne protège de rien ici : deux appels dans le même
@@ -81,6 +91,7 @@ export function useIncidentsPaging() {
   return {
     incidents,
     receiveFirstPage,
+    seed,
     loadMore,
     totalCount,
     loadingMore,

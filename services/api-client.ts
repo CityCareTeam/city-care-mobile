@@ -27,6 +27,24 @@ export async function parseApiError(response: Response, fallback: string): Promi
   }
 }
 
+/**
+ * La requête a-t-elle seulement atteint le serveur ?
+ *
+ * C'est la question qui décide du sort d'un signalement raté : jamais partie,
+ * on la rejouera au retour du réseau ; refusée par le serveur, insister ne
+ * changera rien. Un `fetch` qui n'aboutit pas rejette avec un `TypeError`, et
+ * `fetchWithTimeout` avorte avec un `AbortError` — dans les deux cas, personne
+ * n'a jamais lu la requête. Une réponse HTTP, même 500, est une réponse.
+ */
+export function isNetworkError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  if (error.name === "AbortError") return true;
+  return (
+    error instanceof TypeError ||
+    /network request failed|failed to fetch|network error/i.test(error.message)
+  );
+}
+
 export function fetchWithTimeout(
   url: string,
   options: RequestInit = {},

@@ -9,6 +9,8 @@ type Props = {
   title?: string;
   detail: string;
   onRetry?: () => void;
+  /** Le geste n'est pas toujours « réessayer » : parfois il n'y a qu'à acquitter. */
+  actionLabel?: string;
 };
 
 /**
@@ -20,7 +22,12 @@ type Props = {
  * ressemblent trait pour trait, et que sans bouton l'utilisateur n'a d'autre
  * recours que de quitter l'écran.
  */
-export function ErrorNotice({ title = "Chargement impossible", detail, onRetry }: Props) {
+export function ErrorNotice({
+  title = "Chargement impossible",
+  detail,
+  onRetry,
+  actionLabel = "Réessayer",
+}: Props) {
   const { colors } = useAppColors();
   const styles = useMemo(() => makeStyles(colors.text), [colors.text]);
 
@@ -37,9 +44,9 @@ export function ErrorNotice({ title = "Chargement impossible", detail, onRetry }
           onPress={onRetry}
           activeOpacity={0.8}
           accessibilityRole="button"
-          accessibilityLabel="Réessayer le chargement"
+          accessibilityLabel={actionLabel}
         >
-          <Text style={styles.retryLabel}>Réessayer</Text>
+          <Text style={styles.retryLabel}>{actionLabel}</Text>
         </TouchableOpacity>
       )}
     </View>

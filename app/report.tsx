@@ -4,7 +4,10 @@ import { Toast } from "@/components/ui/ToastMessage";
 import { MAP_DELTAS } from "@/constants/config";
 import { MAX_INCIDENT_PHOTOS } from "@/constants/incidents";
 import { STRINGS } from "@/constants/strings";
+import { isNetworkError } from "@/services/api-client";
 import { createIncident, reverseGeocode, uploadPhoto } from "@/services/incidents";
+import { enqueueReport } from "@/storage/pending-reports";
+import { clearDraft, isWorthSaving, loadDraft, saveDraft } from "@/storage/report-draft";
 import { getValidToken } from "@/storage/tokens";
 import type { IncidentType } from "@/types/incidents";
 import type { AppColors } from "@/hooks/use-app-colors";
@@ -68,14 +71,62 @@ export default function ReportScreen() {
   const [selectedType, setSelectedType] = useState<IncidentType | null>(null);
   const [submitting, setSubmitting]     = useState(false);
   const [photos, setPhotos]             = useState<PickedPhoto[]>([]);
+  const [draftChecked, setDraftChecked] = useState(false);
+  const [draftRestored, setDraftRestored] = useState(false);
 
+  // Un formulaire à moitié rempli devant un nid-de-poule, un appel entrant, et
+  // tout est à refaire : c'est le moment où l'on renonce à signaler.
   useEffect(() => {
-    if (!locLoading) {
-      reverseGeocode(coords.latitude, coords.longitude).then((result) => {
-        if (result) setAddressQuery(result.address_label);
-      });
-    }
-  }, [locLoading]);
+    void (async () => {
+      const draft = await loadDraft();
+      if (draft) {
+        setCoords({ latitude: draft.latitude, longitude: draft.longitude });
+        setAddressQuery(draft.addressQuery);
+        setDescription(draft.description);
+        setSelectedType(draft.type);
+        setPhotos(draft.photos);
+        setDraftRestored(true);
+      }
+      setDraftChecked(true);
+    })();
+  }, [setCoords]);
+
+  // La géolocalisation ne reprend la main que si aucun brouillon n'a été
+  // restauré : sinon elle écraserait l'adresse retenue par celle d'ici, qui
+  // n'est pas forcément celle de l'incident.
+  useEffect(() => {
+    if (locLoading || !draftChecked || draftRestored) return;
+    reverseGeocode(coords.latitude, coords.longitude).then((result) => {
+      if (result) setAddressQuery(result.address_label);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [locLoading, draftChecked, draftRestored]);
+
+  // Écriture différée : à chaque frappe, ce serait un accès disque par
+  // caractère.
+  useEffect(() => {
+    if (!draftChecked) return;
+    const draft = {
+      latitude: coords.latitude,
+      longitude: coords.longitude,
+      addressQuery,
+      description,
+      type: selectedType,
+      photos,
+    };
+    if (!isWorthSaving(draft)) return;
+    const timer = setTimeout(() => void saveDraft(draft), 500);
+    return () => clearTimeout(timer);
+  }, [draftChecked, coords, addressQuery, description, selectedType, photos]);
+
+  function discardDraft() {
+    void clearDraft();
+    setDraftRestored(false);
+    setAddressQuery("");
+    setDescription("");
+    setSelectedType(null);
+    setPhotos([]);
+  }
 
   async function handleMapPress(coordinate: { latitude: number; longitude: number }) {
     setCoords(coordinate);
@@ -174,8 +225,29 @@ export default function ReportScreen() {
       }
       if (uploadFailed) Toast.show({ type: "error", text1: STRINGS.alert.errorTitle, text2: STRINGS.photos.uploadError });
       Toast.show({ type: "success", text1: STRINGS.toast.reportSuccessTitle, text2: STRINGS.toast.reportSuccess });
+      await clearDraft();
       router.back();
     } catch (e: unknown) {
+      // La requête n'a jamais atteint le serveur : le signalement est accepté
+      // localement et repartira au retour du réseau. Renvoyer l'utilisateur à
+      // son formulaire au milieu d'une rue sans réseau, c'est le perdre.
+      if (isNetworkError(e)) {
+        await enqueueReport({
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+          type: selectedType,
+          description: description.trim(),
+          photos,
+        });
+        await clearDraft();
+        Toast.show({
+          type: "success",
+          text1: "Signalement enregistré",
+          text2: "Il sera envoyé dès le retour du réseau.",
+        });
+        router.back();
+        return;
+      }
       Alert.alert(STRINGS.alert.errorTitle, e instanceof Error ? e.message : STRINGS.api.unknownError);
     } finally {
       setSubmitting(false);
@@ -188,6 +260,17 @@ export default function ReportScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+
+      {/* ── Brouillon restauré ── */}
+      {draftRestored && (
+        <View style={styles.draftBar} testID="draft-restored">
+          <MaterialIcons name="history" size={16} color={colors.primary} />
+          <Text style={styles.draftText}>Brouillon repris là où vous l’aviez laissé.</Text>
+          <TouchableOpacity onPress={discardDraft} accessibilityRole="button" hitSlop={8}>
+            <Text style={styles.draftDiscard}>Effacer</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* ── Localisation ── */}
       <SectionHeader title="Localisation" colors={colors} required />
@@ -325,6 +408,22 @@ export default function ReportScreen() {
 function makeStyles(c: AppColors, isDark: boolean) {
   return StyleSheet.create({
     container: { backgroundColor: c.background, padding: 20, paddingBottom: 48 },
+
+    // ── Brouillon ──
+    draftBar: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      borderRadius: 12,
+      marginBottom: 16,
+      backgroundColor: c.primary + "14",
+      borderWidth: 1,
+      borderColor: c.primary + "33",
+    },
+    draftText: { flex: 1, fontSize: 12, color: c.text, opacity: 0.75 },
+    draftDiscard: { fontSize: 12, fontWeight: "700", color: c.primary },
 
     // ── Map ──
     mapContainer: {

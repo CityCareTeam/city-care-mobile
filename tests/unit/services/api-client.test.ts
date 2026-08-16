@@ -1,4 +1,4 @@
-import { fetchWithTimeout, throwFromResponse, TIMEOUT_MS } from '@/services/api-client';
+import { fetchWithTimeout, isNetworkError, throwFromResponse, TIMEOUT_MS } from '@/services/api-client';
 
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
@@ -116,5 +116,36 @@ describe('throwFromResponse', () => {
     const body = JSON.stringify({ errors: { Username: [] }, message: 'Fallthrough message' });
     await expect(throwFromResponse(makeResponse(body), 'fb'))
       .rejects.toThrow('Fallthrough message');
+  });
+});
+
+// C'est ce discriminant qui décide du sort d'un signalement raté : jamais
+// partie, la requête sera rejouée ; refusée par le serveur, insister ne
+// changerait rien.
+describe('isNetworkError', () => {
+  it('reconnaît un fetch qui n’aboutit pas', () => {
+    expect(isNetworkError(new TypeError('Network request failed'))).toBe(true);
+  });
+
+  it('reconnaît un délai dépassé', () => {
+    const aborted = new Error('Aborted');
+    aborted.name = 'AbortError';
+    expect(isNetworkError(aborted)).toBe(true);
+  });
+
+  it('reconnaît le libellé des navigateurs', () => {
+    expect(isNetworkError(new Error('Failed to fetch'))).toBe(true);
+  });
+
+  // Une réponse HTTP, même 500, est une réponse : le serveur a lu la requête.
+  it('ne prend pas une erreur du serveur pour une panne de réseau', () => {
+    expect(isNetworkError(new Error('Erreur 500'))).toBe(false);
+    expect(isNetworkError(new Error('Description trop longue'))).toBe(false);
+  });
+
+  it('ne se laisse pas surprendre par ce qui n’est pas une erreur', () => {
+    expect(isNetworkError('boom')).toBe(false);
+    expect(isNetworkError(null)).toBe(false);
+    expect(isNetworkError(undefined)).toBe(false);
   });
 });

@@ -110,56 +110,60 @@ endpoints près : ce qui reste à gagner est du côté de la **livraison** et de
 
 ---
 
-## 3. 📴 Tenue hors-ligne
+## 3. 📴 Tenue hors-ligne — ✅ livré
 
-> Réseau coupé = écran vide, et un signalement à moitié rempli est perdu si
-> l'app est tuée. C'est le point qui coûte le plus cher à un utilisateur de
+> Réseau coupé = écran vide, et un signalement à moitié rempli était perdu si
+> l'app était tuée. C'est le point qui coûte le plus cher à un utilisateur de
 > terrain — celui qui est dehors, avec une photo déjà prise et deux barres de
 > réseau.
 
 **Durée estimée : 2 à 3 jours — Difficulté : 🔴 Élevée**
 
-**Aucun bloqueur.** ✅
+> `@react-native-async-storage/async-storage` pour les données ; SecureStore
+> reste réservé aux jetons (`storage/tokens.ts`), il n'est pas fait pour du
+> volume. Toutes les lectures/écritures passent par `storage/local-store.ts`,
+> qui avale ses erreurs : un disque plein ne doit jamais faire tomber un écran.
 
-> Aujourd'hui `storage/` ne contient que `tokens.ts` (SecureStore, réservé aux
-> jetons). Il n'y a aucun stockage local pour les données.
+### 3.1 — Brouillon de signalement — ✅
+- [x] `storage/report-draft.ts` — `saveDraft`, `loadDraft`, `clearDraft`,
+      `isWorthSaving` (un formulaire vierge n'est pas un brouillon)
+- [x] `app/report.tsx` persiste à chaque changement, écriture différée de 500 ms
+- [x] Restauration au montage avec une barre « Brouillon repris » et un
+      « Effacer ». La géolocalisation ne reprend pas la main sur un brouillon
+      restauré — elle écraserait l'adresse de l'incident par celle d'ici
+- [x] Brouillon effacé dès l'envoi réussi, et péremption à 3 jours
+- ⚠️ Les photos ne sont pas recopiées : seules leurs URI sont retenues, et le
+      système peut vider le cache d'`expo-image-picker`. Les copier demanderait
+      `expo-file-system` — une dépendance de plus pour un cas de bord
 
-### Installation
-- [ ] `npx expo install @react-native-async-storage/async-storage`
-      (SecureStore reste pour les jetons, il n'est pas fait pour du volume)
+### 3.2 — Cache de lecture — ✅
+- [x] `storage/incidents-cache.ts` — première page + total + horodatage,
+      péremption à 24 h
+- [x] `app/(tabs)/index.tsx` amorce la liste avec le cache ; `seed()` est sans
+      effet dès qu'une réponse du serveur est arrivée
+- [x] `ErrorNotice` dit l'âge des données (« Dernières données connues, il y a
+      2 h »)
+- [x] Seul le fil public est mis en cache — « Mes signalements » est rattaché à
+      un compte, le stockage local ne l'est pas
+- [ ] `explore.tsx` n'est pas encore couvert : la carte reste vide hors ligne
 
-### 3.1 — Brouillon de signalement (le plus rentable)
-- [ ] Créer `storage/report-draft.ts` — `save()`, `load()`, `clear()`
-- [ ] `app/report.tsx` : persister le formulaire à chaque changement (debounce
-      500 ms), y compris les URI de photos locales
-- [ ] Restaurer au montage si un brouillon existe, avec un moyen explicite de
-      le jeter
-- [ ] Effacer le brouillon dès que l'envoi a réussi
+### 3.3 — File d'envoi — ✅
+- [x] `storage/pending-reports.ts` — file, tentatives, refusés
+- [x] `hooks/use-pending-reports.ts` — rejeu séquentiel, déclenché après un
+      chargement réussi du fil : une requête qui aboutit est un signal plus
+      fiable qu'un indicateur de connexion, qui dit « connecté » sur un portail
+      captif comme sur une vraie liaison
+- [x] Bandeau « N signalements en attente d'envoi » sur l'accueil
+- [x] Échec définitif tranché : requête jamais partie → on garde et on compte
+      (abandon à 5) ; serveur qui répond et refuse → sortie de file et remontée
+      à l'utilisateur, qui l'acquitte
 
-### 3.2 — Cache de lecture
-- [ ] Créer `storage/incidents-cache.ts` — dernière page 1 connue + horodatage
-- [ ] `app/(tabs)/index.tsx` et `explore.tsx` : afficher le cache pendant le
-      chargement au lieu de l'écran vide
-- [ ] Réutiliser `ErrorNotice` pour dire que les données sont datées — le fil
-      lui passe déjà « Les signalements affichés peuvent être obsolètes »
-      (`index.tsx:609`), il suffit d'y ajouter la date du cache
-
-### 3.3 — File d'envoi
-- [ ] Créer `storage/pending-reports.ts` — file des signalements créés hors ligne
-- [ ] Rejouer à la reconnexion, en s'appuyant sur le mécanisme de reprise déjà
-      présent dans `hooks/use-auto-refresh.ts`
-- [ ] Marquer visuellement un signalement « en attente d'envoi » dans « Mes
-      signalements »
-- [ ] Décider du comportement en cas d'échec définitif (409, incident refusé) :
-      ne pas boucler indéfiniment, remonter l'erreur à l'utilisateur
-
-### Tests
-- [ ] `tests/unit/storage/report-draft.test.ts` — sauvegarde, restauration,
-      effacement après succès
-- [ ] `tests/unit/storage/pending-reports.test.ts` — mise en file, rejeu,
-      abandon après échec définitif
-- [ ] `tests/unit/storage/incidents-cache.test.ts` — lecture/écriture, données
-      périmées
+### Tests — ✅
+- [x] `storage/report-draft`, `incidents-cache`, `pending-reports`
+- [x] `hooks/use-pending-reports` — rejeu, photo perdue, échec réseau, refus
+      serveur, session absente, double rejeu
+- [x] `services/api-client` — `isNetworkError`, le discriminant dont tout le
+      reste dépend
 
 ---
 
@@ -218,7 +222,7 @@ Partage ────────────────────────
 |---|---|---|---|
 | Mises à jour OTA | 1 j | 🟠 Moyenne | ✅ livré (reste la décision CI) |
 | Pagination serveur | 1 j | 🟢 Facile | ✅ livré |
-| Tenue hors-ligne | 2–3 j | 🔴 Élevée | à faire |
+| Tenue hors-ligne | 2–3 j | 🔴 Élevée | ✅ livré (hors carte) |
 | *Partage & deep-link* | *1 j* | *🟢 Facile* | *page web de repli* |
 | *Accessibilité* | *1–2 j* | *🟢 Facile* | *Aucun* ✅ |
 | *Tests d'écrans* | *2 j* | *🟠 Moyenne* | *Aucun* ✅ |
