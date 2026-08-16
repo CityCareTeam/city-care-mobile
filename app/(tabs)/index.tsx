@@ -4,6 +4,7 @@ import { IncidentSearchBar, NoSearchResults } from "@/components/incident-search
 import { PersonalStatsCard } from "@/components/personal-stats-card";
 import { StatusBreakdown } from "@/components/status-breakdown";
 import { useCityStats } from "@/hooks/use-city-stats";
+import { useFollowedAlerts } from "@/hooks/use-followed-alerts";
 import { useFollowedIncidents } from "@/hooks/use-followed-incidents";
 import { FeedSkeleton } from "@/components/ui/Skeleton";
 import { useIncidentSearch } from "@/hooks/use-incident-search";
@@ -309,7 +310,7 @@ function CitizenView({
     filterType: mineType, setFilterType: setMineType,
     filterStatus: mineStatus, setFilterStatus: setMineStatus,
     filteredIncidents: filteredMine,
-  } = useIncidentFilters(incidents);
+  } = useIncidentFilters(incidents, "mine");
 
   const [allType, setAllType] = useState<string | null>(null);
   const [allStatus, setAllStatus] = useState<string | null>(null);
@@ -341,6 +342,9 @@ function CitizenView({
 
   const myIdsSet = useMemo(() => new Set(incidents.map((i) => i.id)), [incidents]);
   const { followed } = useFollowedIncidents();
+  // Le fil est relu toutes les quinze secondes : c'est là qu'un changement se
+  // remarque, sans rien demander au serveur.
+  useFollowedAlerts(allIncidents, followed);
 
   const mineTypeCount = useMemo(() => {
     const acc: Record<string, number> = {};
@@ -507,7 +511,7 @@ function AgentView({
   );
 
   const { filterType, setFilterType, filterStatus, setFilterStatus, filteredIncidents: filteredToHandle } =
-    useIncidentFilters(toHandle);
+    useIncidentFilters(toHandle, "agent");
   const search = useIncidentSearch(filteredToHandle);
 
   const typeCount = useMemo(() => {
@@ -609,7 +613,7 @@ function AdminView({
   const { reported, inProgress, resolved } = useMemo(() => countByStatus(incidents), [incidents]);
 
   const { filterType, setFilterType, filterStatus, setFilterStatus, filteredIncidents } =
-    useIncidentFilters(incidents);
+    useIncidentFilters(incidents, "admin");
   const search = useIncidentSearch(filteredIncidents);
 
   const typeCount = useMemo(() => {

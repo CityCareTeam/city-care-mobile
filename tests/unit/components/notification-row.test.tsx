@@ -20,12 +20,25 @@ const notification = (parts: Partial<NotificationResponse> = {}): NotificationRe
   ...parts,
 } as NotificationResponse);
 
-function renderRow(item: NotificationResponse, onPress = jest.fn(), onDelete = jest.fn()) {
+function renderRow(
+  item: NotificationResponse,
+  onPress = jest.fn(),
+  onDelete = jest.fn(),
+  onMarkRead = jest.fn(),
+) {
   return {
     onPress,
     onDelete,
+    onMarkRead,
     ...render(
-      <NotificationRow item={item} styles={styles} strings={fr} onPress={onPress} onDelete={onDelete} />,
+      <NotificationRow
+        item={item}
+        styles={styles}
+        strings={fr}
+        onPress={onPress}
+        onDelete={onDelete}
+        onMarkRead={onMarkRead}
+      />,
     ),
   };
 }

@@ -318,6 +318,8 @@ export const en: typeof fr = {
   },
 
   incident: {
+    followedChanged: (count: number) => `${count} followed report${count > 1 ? "s" : ""} changed`,
+    followedChangedOne: (status: string) => `A followed report moved to “${status}”`,
     follow: "Follow",
     unfollow: "Following",
     followA11y: "Follow this report",

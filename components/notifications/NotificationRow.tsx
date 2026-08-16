@@ -54,9 +54,10 @@ type Props = {
   strings: Dictionary;
   onPress: (item: NotificationResponse) => void;
   onDelete: (id: string) => void;
+  onMarkRead: (item: NotificationResponse) => void;
 };
 
-function NotificationRowBase({ item, styles, strings, onPress, onDelete }: Props) {
+function NotificationRowBase({ item, styles, strings, onPress, onDelete, onMarkRead }: Props) {
   const icon = getIconConfig(item.type);
   const statusKey = extractStatusKey(item.type, item.body ?? "");
   const statusColor = statusKey ? STATUS_COLOR[statusKey] : null;
@@ -69,6 +70,24 @@ function NotificationRowBase({ item, styles, strings, onPress, onDelete }: Props
       // c'est l'appui dessus qui supprime. Sinon un glissement involontaire
       // effaçait une notification sans confirmation ni retour possible — et le
       // bouton révélé n'était jamais atteignable.
+      // Le geste n'allait que dans un sens : révéler la corbeille. Tirer dans
+      // l'autre ne faisait rien, alors que marquer comme lu est l'action la plus
+      // fréquente — et la seule qu'on refait cinquante fois d'affilée.
+      renderLeftActions={
+        item.is_read
+          ? undefined
+          : () => (
+              <TouchableOpacity
+                style={styles.readAction}
+                onPress={() => onMarkRead(item)}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel={`${strings.notifications.readAll} : ${item.title}`}
+              >
+                <MaterialIcons name="done-all" size={24} color="#fff" />
+              </TouchableOpacity>
+            )
+      }
       renderRightActions={() => (
         <TouchableOpacity
           style={styles.deleteAction}
@@ -156,6 +175,17 @@ export function makeRowStyles(c: AppColors) {
       borderColor: mixHex(c.chipBorder, c.primary, 0.35),
       shadowOpacity: 0.1,
       elevation: 3,
+    },
+    // Vert plutôt que rouge : le geste est bénin, et la couleur le dit avant
+    // que le doigt n'aille plus loin.
+    readAction: {
+      justifyContent: "center",
+      alignItems: "center",
+      width: 72,
+      borderTopLeftRadius: 16,
+      borderBottomLeftRadius: 16,
+      backgroundColor: c.statusGreen,
+      marginRight: 6,
     },
     deleteAction: {
       justifyContent: "center",

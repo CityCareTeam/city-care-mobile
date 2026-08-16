@@ -138,7 +138,7 @@ export default function SignalementsScreen() {
   const draftCount = useDraftCount();
   const hasDraft = draftCount > 0;
   const t = useStrings();
-  const { filterType, setFilterType, filterStatus, setFilterStatus, filteredIncidents } = useIncidentFilters(incidents);
+  const { filterType, setFilterType, filterStatus, setFilterStatus, filteredIncidents } = useIncidentFilters(incidents, "map");
 
   // « Les miens » : un filtre sur l'auteur, que le serveur ne connaît pas — les
   // grappes qu'il renvoie comptent tous les signalements. On force donc les

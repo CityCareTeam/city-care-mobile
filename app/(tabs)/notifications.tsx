@@ -181,23 +181,27 @@ export default function NotificationsScreen() {
 
   // Mémoïsés pour que le `memo` des lignes serve à quelque chose : recréés à
   // chaque rendu, ils feraient re-rendre les cinquante lignes à chaque sondage.
-  const handleTap = useCallback(async (item: NotificationResponse) => {
-    if (!item.is_read) {
-      setItems(prev => prev.map(n => n.id === item.id ? { ...n, is_read: true } : n));
-      try {
-        const token = await getValidToken();
-        if (!token) return;
-        await markAsRead(token, item.id);
-        refreshCount();
-      } catch {
-        setItems(prev => prev.map(n => n.id === item.id ? { ...n, is_read: false } : n));
-      }
+  /** Extrait pour servir aussi au balayage : ouvrir n'est plus le seul moyen de lire. */
+  const handleMarkRead = useCallback(async (item: NotificationResponse) => {
+    if (item.is_read) return;
+    setItems(prev => prev.map(n => n.id === item.id ? { ...n, is_read: true } : n));
+    try {
+      const token = await getValidToken();
+      if (!token) return;
+      await markAsRead(token, item.id);
+      refreshCount();
+    } catch {
+      setItems(prev => prev.map(n => n.id === item.id ? { ...n, is_read: false } : n));
     }
+  }, [refreshCount]);
+
+  const handleTap = useCallback(async (item: NotificationResponse) => {
+    await handleMarkRead(item);
     if (item.incident_id) {
       const tab = item.type === "new_message" ? "&tab=chat" : "";
       router.push(`/(tabs)/explore?selectId=${item.incident_id}${tab}`);
     }
-  }, [refreshCount]);
+  }, [handleMarkRead]);
 
   const handleClearAll = () => {
     if (clearingAll || items.length === 0) return;
@@ -305,6 +309,7 @@ export default function NotificationsScreen() {
             strings={t}
             onPress={handleTap}
             onDelete={handleDeleteOne}
+            onMarkRead={handleMarkRead}
           />
         </>
       )}

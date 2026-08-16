@@ -329,6 +329,8 @@ export const fr = {
 
   // ── Carte : détail d'un incident ──
   incident: {
+    followedChanged: (count: number) => `${count} signalement${count > 1 ? "s" : ""} suivi${count > 1 ? "s" : ""} a changé`,
+    followedChangedOne: (status: string) => `Un signalement suivi est passé à « ${status} »`,
     follow: "Suivre",
     unfollow: "Suivi",
     followA11y: "Suivre ce signalement",
