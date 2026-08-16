@@ -24,10 +24,20 @@ endpoints près : ce qui reste à gagner est du côté de la **livraison** et de
 
 ### Fait
 - [x] `expo-updates` installé, bloc `updates` dans `app.config.ts`
-- [x] `runtimeVersion: { policy: "fingerprint" }` — **pas `appVersion`** :
-      semantic-release incrémente la version à chaque release, ce qui aurait
-      rendu chaque APK incompatible avec ses propres mises à jour dès le patch
-      suivant. L'empreinte ne bouge que si le natif bouge
+- [x] `runtimeVersion` posée à la main (`constants/native-runtime.json`), ni
+      `appVersion` ni `fingerprint` :
+  - `appVersion` — semantic-release incrémente la version à chaque release, ce
+    qui aurait rendu chaque APK incompatible avec ses propres mises à jour dès
+    le patch suivant ;
+  - `fingerprint` — essayé, **build EAS en échec** : l'empreinte inclut la
+    config Expo résolue, clé Google Maps comprise. Vide en local, injectée par
+    le secret pendant le build → deux empreintes pour le même code, et un
+    « Runtime version mismatch ». Aucun réglage de `@expo/fingerprint` ne
+    permet d'exclure une seule clé de la config.
+- [x] Contrepartie assumée : la valeur est à incrémenter **à la main** dès qu'on
+      touche au natif. `tests/unit/native-runtime.test.ts` compare la liste des
+      dépendances natives recensées à celles réellement installées et échoue si
+      elles divergent — l'oubli se voit au test, pas sur les téléphones
 - [x] Un `channel` par profil dans `eas.json` : `dev-local` → `beta`,
       `preview` → `rc`, `production` → `production`
 - [x] `npm run update:beta` / `update:prod` (`scripts/publish-update.mjs`) —

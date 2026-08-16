@@ -1,0 +1,31 @@
+{
+  "version": "1",
+  "nativeModules": [
+    "@react-native-async-storage/async-storage",
+    "expo",
+    "expo-blur",
+    "expo-constants",
+    "expo-font",
+    "expo-haptics",
+    "expo-image",
+    "expo-image-picker",
+    "expo-linking",
+    "expo-location",
+    "expo-notifications",
+    "expo-router",
+    "expo-secure-store",
+    "expo-splash-screen",
+    "expo-symbols",
+    "expo-system-ui",
+    "expo-updates",
+    "expo-web-browser",
+    "jest-expo",
+    "react-native-gesture-handler",
+    "react-native-maps",
+    "react-native-reanimated",
+    "react-native-safe-area-context",
+    "react-native-screens",
+    "react-native-svg",
+    "react-native-worklets"
+  ]
+}

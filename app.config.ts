@@ -1,4 +1,5 @@
 import { ConfigContext } from "expo/config";
+import nativeRuntime from "./constants/native-runtime.json";
 import versionPlan from "./version-plan.json";
 
 // ─── Version et canal de diffusion ────────────────────────────────────────────
@@ -127,14 +128,31 @@ export default ({ config }: ConfigContext) => ({
     url: "https://u.expo.dev/3a2efec0-7cf2-4e4b-8709-a785e0de8ca8",
     fallbackToCacheTimeout: 0,
   },
-  // `fingerprint`, surtout pas `appVersion` : semantic-release incrémente la
-  // version à chaque release, et une politique adossée à la version rendrait
-  // chaque APK incompatible avec ses propres mises à jour dès le patch suivant.
-  // L'empreinte ne bouge que si le natif bouge — exactement la frontière que
-  // l'OTA sait franchir ou non.
-  runtimeVersion: {
-    policy: "fingerprint",
-  },
+  // Génération native de l'application. Deux appareils ne peuvent échanger un
+  // bundle que s'ils portent la même : c'est la frontière que l'OTA ne sait pas
+  // franchir.
+  //
+  // Ni `appVersion` ni `fingerprint`, et les deux refus se justifient :
+  //
+  //   - `appVersion` : semantic-release incrémente la version à chaque release,
+  //     ce qui rendrait chaque APK incompatible avec ses propres mises à jour
+  //     dès le patch suivant.
+  //   - `fingerprint` : l'empreinte inclut la config Expo *résolue*, clé Google
+  //     Maps comprise. Elle est vide en local et injectée par un secret EAS
+  //     pendant le build — deux empreintes pour le même code, et un
+  //     « Runtime version mismatch » qui casse le build. Aucun réglage de
+  //     `@expo/fingerprint` ne permet d'exclure une seule clé de la config.
+  //
+  // Reste une valeur explicite, identique partout, tenue dans
+  // `constants/native-runtime.json`. **À incrémenter dès qu'on touche au
+  // natif** : dépendance native ajoutée ou retirée, plugin, permission, montée
+  // de SDK. L'oublier, c'est publier un bundle qui appelle un module absent du
+  // binaire — l'application se ferme au lancement, chez tous ceux qui ont reçu
+  // la mise à jour, et sans OTA pour les rattraper. Le même fichier recense les
+  // dépendances natives connues, et `tests/unit/native-runtime.test.ts` échoue
+  // si la liste ne correspond plus à ce qui est installé : c'est le garde-fou
+  // de l'oubli.
+  runtimeVersion: nativeRuntime.version,
   ios: {
     supportsTablet: true,
     bundleIdentifier: "com.citycare.mobile",

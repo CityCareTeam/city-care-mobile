@@ -346,7 +346,12 @@ bundle, un update publié depuis le mauvais environnement enverrait les appareil
 sur le mauvais back.
 
 Toute modification native (nouvelle dépendance, permission, plugin) sort du
-périmètre de l'OTA et exige un build complet.
+périmètre de l'OTA et exige un build complet — **et l'incrémentation de
+`version` dans `constants/native-runtime.json`**, qui sert de `runtimeVersion` :
+un bundle n'est servi qu'aux binaires portant la même valeur. Sans elle, le
+nouveau JS partirait vers des APK dépourvus du module qu'il appelle.
+`tests/unit/native-runtime.test.ts` échoue si une dépendance native a bougé sans
+que la liste du même fichier soit mise à jour.
 
 ---
 
