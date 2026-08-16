@@ -31,6 +31,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 const TABS = [
   { name: "index",         key: "home" as const,          icon: "chart.bar.fill" as const },
   { name: "explore",       key: "map" as const,           icon: "map.fill" as const },
+  { name: "news",          key: "news" as const,          icon: "newspaper.fill" as const },
   { name: "notifications", key: "notifications" as const, icon: "bell.fill" as const },
   { name: "profile",       key: "profile" as const,       icon: "person.fill" as const },
 ];

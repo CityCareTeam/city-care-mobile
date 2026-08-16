@@ -46,6 +46,21 @@ function makeStyles(c: AppColors) {
       paddingHorizontal: 14,
       gap: 12,
     },
+    // Une pastille qui mord sur le coin de la bulle : elle appartient à la
+    // ligne sans lui prendre de largeur.
+    bookmark: {
+      position: "absolute",
+      top: -5,
+      left: -5,
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      backgroundColor: c.primary,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 2,
+      borderColor: c.white,
+    },
     iconBubble: {
       width: 42,
       height: 42,
@@ -124,8 +139,31 @@ function IncidentRowBase({ id, type, status, description, address, createdAt, on
     <TouchableOpacity style={styles.row} onPress={() => onPress(id)} activeOpacity={0.75}>
       <View style={[styles.stripe, { backgroundColor: statusColor }]} />
       <View style={styles.inner}>
-      <View style={[styles.iconBubble, { backgroundColor: typeColor + "22" }]}>
-        <MaterialIcons name={typeIcon} size={20} color={typeColor} />
+      <View>
+        <View style={[styles.iconBubble, { backgroundColor: typeColor + "22" }]}>
+          <MaterialIcons name={typeIcon} size={20} color={typeColor} />
+        </View>
+        {/* Posé sur la bulle plutôt que dans la colonne de droite, où le statut,
+            « le mien » et la date se disputaient déjà la place. En haut à
+            gauche, il est le premier élément que l'œil rencontre en parcourant
+            la liste — et c'est bien ce qu'on cherche à repérer. */}
+        {isFollowed && (
+          onToggleFollow ? (
+            <TouchableOpacity
+              style={styles.bookmark}
+              onPress={() => onToggleFollow(id)}
+              hitSlop={12}
+              accessibilityRole="button"
+              accessibilityLabel={t.incident.unfollowA11y}
+            >
+              <MaterialIcons name="bookmark" size={12} color="#fff" />
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.bookmark}>
+              <MaterialIcons name="bookmark" size={12} color="#fff" />
+            </View>
+          )
+        )}
       </View>
       <View style={styles.content}>
         <Text style={styles.type} numberOfLines={1}>{TYPE_LABEL[type] ?? type}</Text>
@@ -147,23 +185,6 @@ function IncidentRowBase({ id, type, status, description, address, createdAt, on
             <MaterialIcons name="person" size={10} color="#fff" />
             <Text style={styles.mineBadgeText}>{t.incident.mine}</Text>
           </View>
-        )}
-        {/* Le signet n'était visible que dans la fiche : il fallait ouvrir un
-            signalement pour savoir qu'on le suivait. Une icône suffit ici — la
-            liste n'a pas la place d'un libellé de plus. */}
-        {isFollowed && (
-          onToggleFollow ? (
-            <TouchableOpacity
-              onPress={() => onToggleFollow(id)}
-              hitSlop={12}
-              accessibilityRole="button"
-              accessibilityLabel={t.incident.unfollowA11y}
-            >
-              <MaterialIcons name="bookmark" size={16} color={colors.primary} />
-            </TouchableOpacity>
-          ) : (
-            <MaterialIcons name="bookmark" size={13} color={colors.primary} />
-          )
         )}
         <Text style={styles.date}>{formatDateShort(createdAt)}</Text>
       </View>

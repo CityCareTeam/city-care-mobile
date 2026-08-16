@@ -87,6 +87,7 @@ export const en: typeof fr = {
     home: "Home",
     map: "Map",
     notifications: "Alerts",
+    news: "News",
     profile: "Profile",
   },
 
@@ -216,6 +217,14 @@ export const en: typeof fr = {
     clearMessage: "Delete all your notifications?",
     delete: "Delete",
     deleteOne: (title: string) => `Delete notification: ${title}`,
+  },
+
+  news: {
+    title: "What’s on",
+    subtitle: "Events across the metropolitan area",
+    empty: "No upcoming event right now.",
+    failed: "Couldn’t load the news.",
+    source: "Source: Lyon Metropolitan agenda",
   },
 
   profile: {

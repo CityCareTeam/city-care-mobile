@@ -25,6 +25,7 @@ const MAPPING = {
   "map.fill": "map",
   "person.fill": "person",
   "bell.fill": "notifications",
+  "newspaper.fill": "newspaper",
 } as IconMapping;
 
 /**

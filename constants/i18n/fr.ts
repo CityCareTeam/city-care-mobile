@@ -85,6 +85,7 @@ export const fr = {
     home: "Accueil",
     map: "Carte",
     notifications: "Notifs",
+    news: "Actus",
     profile: "Profil",
   },
 
@@ -222,6 +223,15 @@ export const fr = {
     clearMessage: "Supprimer toutes vos notifications ?",
     delete: "Supprimer",
     deleteOne: (title: string) => `Supprimer la notification : ${title}`,
+  },
+
+  // ── Actualités ──
+  news: {
+    title: "Actualités",
+    subtitle: "Sorties et événements de la métropole",
+    empty: "Aucun événement à venir pour le moment.",
+    failed: "Impossible de charger les actualités.",
+    source: "Source : Agenda de la Métropole de Lyon",
   },
 
   // ── Profil ──
