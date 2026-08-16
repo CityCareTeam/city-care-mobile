@@ -3,7 +3,6 @@ import { makeRowStyles, NotificationRow } from "@/components/notifications/Notif
 import { useNotificationContext } from "@/context/NotificationContext";
 import { ErrorNotice } from "@/components/ui/ErrorNotice";
 import { useAutoRefresh } from "@/hooks/use-auto-refresh";
-import { mixHex } from "@/utils/color";
 import { dayBucket, type DayBucket } from "@/utils/format-date";
 import { getTabBarScrollPadding } from "@/utils/layout";
 import type { AppColors } from "@/hooks/use-app-colors";
@@ -48,55 +47,26 @@ function makeStyles(c: AppColors, bottomInset: number) {
     },
 
     // ── Header ──
-    //
-    // Le style reste celui de l'application, la **forme** s'en écarte : posé
-    // comme les lignes — surface claire, bordure fine, coins à seize, ombre
-    // portée — l'en-tête se lisait comme une notification de plus, la première
-    // de la liste.
-    //
-    // Il devient donc une bande teintée, sans ombre et sans bordure, largement
-    // arrondie et rentrée dans les marges. Rien de tout cela n'appartient à une
-    // ligne : on ne peut plus les confondre, même du coin de l'œil.
-    //
-    // La teinte est calculée et non superposée — un fond translucide laisse
-    // voir les ombres à travers sur Android, on en a déjà fait les frais.
-    headerCard: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 14,
-      paddingVertical: 18,
-      paddingHorizontal: 18,
-      marginHorizontal: -4,
-      borderRadius: 26,
-      backgroundColor: mixHex(c.background, c.primary, 0.16),
-      marginBottom: 20,
-    },
-    // Bulle pleine, icône claire : les lignes font l'inverse — bulle pâle,
-    // icône colorée. L'accent est ici, pas dans la liste.
-    headerIcon: {
-      width: 48,
-      height: 48,
-      borderRadius: 24,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    headerText: { flex: 1, gap: 2 },
-    title: { fontSize: 21, fontWeight: "800", color: c.text, letterSpacing: -0.2 },
-    summary: { fontSize: 12.5, color: c.text, opacity: 0.5 },
+    header: { marginBottom: 14, paddingHorizontal: 4, gap: 16 },
+    titleRow: { flexDirection: "row", alignItems: "flex-end", gap: 12 },
+    titleText: { flex: 1, gap: 3 },
+    // Grand, serré, sans conteneur : c'est la taille qui dit « titre de page ».
+    title: { fontSize: 30, fontWeight: "800", color: c.text, letterSpacing: -0.6 },
+    summary: { fontSize: 13, color: c.text, opacity: 0.5 },
     actions: { flexDirection: "row", alignItems: "center", gap: 8 },
-    // Deux boutons de même taille : ils font partie de la même famille de
-    // gestes, l'un ne pèse pas plus lourd que l'autre.
+    // Le filet appartient au vocabulaire des en-têtes, jamais à celui des
+    // lignes : il sépare le titre de ce qu'il annonce.
+    rule: { height: 1, backgroundColor: c.chipBorder },
     readAllBtn: {
       width: 36, height: 36, borderRadius: 18,
-      backgroundColor: c.white,
+      backgroundColor: c.primary + "18",
       alignItems: "center", justifyContent: "center",
     },
     clearBtn: {
       width: 36, height: 36, borderRadius: 18,
-      backgroundColor: c.white,
+      backgroundColor: "#e53e3e18",
       alignItems: "center", justifyContent: "center",
     },
-    // Palier de jour : discret, il sépare sans se faire lire comme un titre.
     groupLabel: {
       fontSize: 11,
       fontWeight: "800",
@@ -315,66 +285,63 @@ export default function NotificationsScreen() {
       refreshControl={refreshControl}
       ListHeaderComponent={
         <>
-          {/* Une carte plutôt qu'un titre posé sur le fond.
-              L'écran reprend le vocabulaire du reste de l'application — la
-              bulle d'icône du menu latéral, la surface et la bordure des lignes
-              d'incident — au lieu d'inventer une grammaire à lui. Les actions y
-              vivent dedans, alignées à droite : elles concernent la boîte, pas
-              une notification en particulier. */}
-          <View style={styles.headerCard}>
-            <View style={[styles.headerIcon, { backgroundColor: colors.primary }]}>
-              <MaterialIcons
-                name={unreadCount > 0 ? "notifications-active" : "notifications-none"}
-                size={24}
-                color="#fff"
-              />
-            </View>
+          {/* Un titre de page, pas un bloc.
+              Deux tentatives ont échoué pour la même raison : une carte, puis
+              une bande teintée — dans les deux cas un conteneur, c'est-à-dire
+              exactement ce qu'est une notification. L'en-tête se lisait comme
+              la première ligne de la liste.
 
-            <View style={styles.headerText}>
-              <Text style={styles.title}>{t.notifications.title}</Text>
-              {/* L'état en toutes lettres : le compteur dit combien, cette
-                  ligne dit s'il reste quelque chose à faire. */}
-              <Text style={styles.summary}>
-                {items.length === 0
-                  ? t.notifications.empty
-                  : unreadCount > 0
-                    ? t.notifications.unreadSummary(unreadCount)
-                    : t.notifications.allRead}
-              </Text>
-            </View>
+              Ce qui distingue un titre de page n'est pas sa décoration mais sa
+              **typographie** : il est grand, il n'a pas de fond, et un filet le
+              sépare de ce qu'il annonce. */}
+          <View style={styles.header}>
+            <View style={styles.titleRow}>
+              <View style={styles.titleText}>
+                <Text style={styles.title}>{t.notifications.title}</Text>
+                <Text style={styles.summary}>
+                  {items.length === 0
+                    ? t.notifications.empty
+                    : unreadCount > 0
+                      ? t.notifications.unreadSummary(unreadCount)
+                      : t.notifications.allRead}
+                </Text>
+              </View>
 
-            {items.length > 0 && (
-              <View style={styles.actions}>
-                {unreadCount > 0 && (
+              {items.length > 0 && (
+                <View style={styles.actions}>
+                  {unreadCount > 0 && (
+                    <TouchableOpacity
+                      style={styles.readAllBtn}
+                      onPress={handleMarkAllAsRead}
+                      disabled={markingAll}
+                      activeOpacity={0.7}
+                      accessibilityRole="button"
+                      accessibilityLabel={t.notifications.readAll}
+                    >
+                      {markingAll
+                        ? <ActivityIndicator size="small" color={colors.primary} />
+                        : <MaterialIcons name="done-all" size={19} color={colors.primary} />
+                      }
+                    </TouchableOpacity>
+                  )}
                   <TouchableOpacity
-                    style={styles.readAllBtn}
-                    onPress={handleMarkAllAsRead}
-                    disabled={markingAll}
+                    style={styles.clearBtn}
+                    onPress={handleClearAll}
+                    disabled={clearingAll}
                     activeOpacity={0.7}
                     accessibilityRole="button"
-                    accessibilityLabel={t.notifications.readAll}
+                    accessibilityLabel={t.notifications.clearAllA11y}
                   >
-                    {markingAll
-                      ? <ActivityIndicator size="small" color={colors.primary} />
-                      : <MaterialIcons name="done-all" size={19} color={colors.primary} />
+                    {clearingAll
+                      ? <ActivityIndicator size="small" color="#e53e3e" />
+                      : <MaterialIcons name="delete-outline" size={19} color="#e53e3e" />
                     }
                   </TouchableOpacity>
-                )}
-                <TouchableOpacity
-                  style={styles.clearBtn}
-                  onPress={handleClearAll}
-                  disabled={clearingAll}
-                  activeOpacity={0.7}
-                  accessibilityRole="button"
-                  accessibilityLabel={t.notifications.clearAllA11y}
-                >
-                  {clearingAll
-                    ? <ActivityIndicator size="small" color="#e53e3e" />
-                    : <MaterialIcons name="delete-outline" size={19} color="#e53e3e" />
-                  }
-                </TouchableOpacity>
-              </View>
-            )}
+                </View>
+              )}
+            </View>
+
+            <View style={styles.rule} />
           </View>
 
           {error && <ErrorNotice detail={error} onRetry={() => void load()} />}
