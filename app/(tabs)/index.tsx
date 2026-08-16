@@ -1,6 +1,7 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { IncidentRow } from "@/components/incident-row";
 import { IncidentSearchBar, NoSearchResults } from "@/components/incident-search-bar";
+import { PersonalStatsCard } from "@/components/personal-stats-card";
 import { FeedSkeleton } from "@/components/ui/Skeleton";
 import { useIncidentSearch } from "@/hooks/use-incident-search";
 import { HeaderClock } from "@/components/ui/HeaderClock";
@@ -393,6 +394,10 @@ function CitizenView({
       )}
 
       {/* ── Contenu de l'onglet actif ── */}
+      {/* Le bilan n'accompagne que « les miens » : il parle de ce qu'on a fait,
+          pas de ce que la ville signale. */}
+      {isMineTab && <PersonalStatsCard incidents={incidents} />}
+
       {isMineTab ? (
         filteredMine.length === 0 ? (
           <EmptyState text={incidents.length === 0 ? t.emptyState.noMyIncidents : t.emptyState.noFilterResults} />

@@ -181,6 +181,17 @@ export const fr = {
     thunderstorm: "Orage",
   },
 
+  // ── Bilan personnel ──
+  stats: {
+    title: "Mon bilan",
+    resolutionRate: "Taux de résolution",
+    resolvedOf: (resolved: number, total: number) => `${resolved} résolu${resolved > 1 ? "s" : ""} sur ${total}`,
+    topCategory: "Catégorie la plus signalée",
+    since: (date: string) => `Premier signalement le ${date}`,
+    empty: "Votre premier signalement ouvrira ce bilan.",
+    inProgress: (count: number) => `${count} en cours de traitement`,
+  },
+
   // ── Carte ──
   map: {
     report: "Signaler",

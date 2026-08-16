@@ -178,6 +178,16 @@ export const en: typeof fr = {
     thunderstorm: "Thunderstorm",
   },
 
+  stats: {
+    title: "My record",
+    resolutionRate: "Resolution rate",
+    resolvedOf: (resolved: number, total: number) => `${resolved} resolved out of ${total}`,
+    topCategory: "Most reported category",
+    since: (date: string) => `First report on ${date}`,
+    empty: "Your first report will open this record.",
+    inProgress: (count: number) => `${count} being handled`,
+  },
+
   map: {
     report: "Report",
     resume: "Resume",
