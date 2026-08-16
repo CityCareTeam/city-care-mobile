@@ -741,6 +741,16 @@ export const LAST_RELEASED_VERSION = "1.5.5";
 /** Changements accumulés depuis, donc embarqués par les pré-versions. */
 export const UNRELEASED_CHANGES: Change[] = [
   {
+    "kind": "fix",
+    "scope": "tests",
+    "text": "Import the native runtime manifest by relative path"
+  },
+  {
+    "kind": "fix",
+    "scope": "release",
+    "text": "Pin the OTA runtime version instead of fingerprinting it"
+  },
+  {
     "kind": "feature",
     "scope": "offline",
     "text": "Keep drafts, cache the feed and queue reports without network"
