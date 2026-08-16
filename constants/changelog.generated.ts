@@ -742,6 +742,11 @@ export const LAST_RELEASED_VERSION = "1.5.5";
 export const UNRELEASED_CHANGES: Change[] = [
   {
     "kind": "feature",
+    "scope": "ui",
+    "text": "Group notifications by day and simplify the language choice"
+  },
+  {
+    "kind": "feature",
     "scope": "i18n",
     "text": "Finish translating the components and business vocabulary"
   },
