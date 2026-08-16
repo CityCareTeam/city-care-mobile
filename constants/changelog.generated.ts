@@ -741,6 +741,21 @@ export const LAST_RELEASED_VERSION = "1.5.5";
 /** Changements accumulés depuis, donc embarqués par les pré-versions. */
 export const UNRELEASED_CHANGES: Change[] = [
   {
+    "kind": "fix",
+    "scope": "ui",
+    "text": "Give modal headers a tinted band and the house accent bar"
+  },
+  {
+    "kind": "feature",
+    "scope": "app",
+    "text": "Swipe from the right to open the menu, and flag a pending draft"
+  },
+  {
+    "kind": "fix",
+    "scope": "ui",
+    "text": "Take the light theme down to beige and drop the yellow dividers"
+  },
+  {
     "kind": "feature",
     "scope": "app",
     "text": "Open the menu from the right edge and soften the light theme"
