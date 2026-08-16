@@ -1,5 +1,6 @@
-import { NEWS_AGENDA_UID, NEWS_API_KEY } from "@/constants/config";
+import { NEWS_API_KEY } from "@/constants/config";
 import { resolveLanguage } from "@/constants/i18n";
+import type { NewsCity } from "@/constants/news-cities";
 import { usePreferences } from "@/context/PreferencesContext";
 import { getNews, type NewsItem } from "@/services/news";
 import { readJson, writeJson } from "@/storage/local-store";
@@ -10,7 +11,7 @@ const KEY = "news_cache";
 /** Au-delà, un agenda gardé annonce des dates passées. */
 const MAX_AGE_MS = 12 * 60 * 60 * 1000;
 
-type Cached = { items: NewsItem[]; language: string; fetchedAt: string };
+type Cached = { items: NewsItem[]; language: string; cityId: string; fetchedAt: string };
 
 /**
  * Les deux échecs ne se réparent pas au même endroit, et se ressemblent
@@ -21,14 +22,18 @@ type Cached = { items: NewsItem[]; language: string; fetchedAt: string };
 export type NewsFailure = "network" | "unconfigured";
 
 /**
- * Actualités de la métropole.
+ * Actualités d'une ville.
  *
  * Comme le fil et la météo, le dernier état connu est gardé sur l'appareil : la
  * liste s'affiche pendant que le réseau répond, et à sa place s'il ne répond
- * pas. Le cache porte sa langue — repasser en anglais ne doit pas resservir des
- * titres français jusqu'au prochain relevé.
+ * pas. Le cache porte sa langue et sa ville — repasser en anglais ne doit pas
+ * resservir des titres français, et changer de ville encore moins resservir
+ * l'agenda de la précédente.
+ *
+ * Sans ville, le hook ne fait rien et ne se plaint de rien : c'est à l'écran de
+ * dire pourquoi il n'y en a pas.
  */
-export function useNews() {
+export function useNews(city: NewsCity | null) {
   const { language } = usePreferences();
   const active = resolveLanguage(language);
   const [items, setItems] = useState<NewsItem[] | null>(null);
@@ -37,7 +42,9 @@ export function useNews() {
 
   const load = useCallback(
     async (force = false) => {
-      if (!NEWS_AGENDA_UID || !NEWS_API_KEY) {
+      if (!city) return;
+
+      if (!NEWS_API_KEY) {
         setFailed("unconfigured");
         return;
       }
@@ -45,18 +52,21 @@ export function useNews() {
       if (!force) {
         const cached = await readJson<Cached>(KEY);
         const age = cached ? Date.now() - new Date(cached.fetchedAt).getTime() : Infinity;
-        if (cached && cached.language === active && age < MAX_AGE_MS) {
-          setItems(cached.items);
-        }
+        const usable =
+          cached && cached.language === active && cached.cityId === city.id && age < MAX_AGE_MS;
+        // Une liste laissée d'une autre ville tromperait plus qu'elle
+        // n'aiderait : on part de rien plutôt que de rien de juste.
+        setItems(usable ? cached.items : null);
       }
 
       try {
-        const fresh = await getNews(NEWS_AGENDA_UID, NEWS_API_KEY, active);
+        const fresh = await getNews(city.agendaUid, NEWS_API_KEY, active);
         setItems(fresh);
         setFailed(null);
         void writeJson(KEY, {
           items: fresh,
           language: active,
+          cityId: city.id,
           fetchedAt: new Date().toISOString(),
         } satisfies Cached);
       } catch {
@@ -65,7 +75,7 @@ export function useNews() {
         setFailed("network");
       }
     },
-    [active],
+    [active, city],
   );
 
   useEffect(() => {

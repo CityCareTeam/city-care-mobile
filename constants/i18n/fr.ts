@@ -228,11 +228,22 @@ export const fr = {
   // ── Actualités ──
   news: {
     title: "Actualités",
-    subtitle: "Sorties et événements de la métropole",
+    loading: "Chargement des événements…",
+    count: (n: number) =>
+      n > 1 ? `${n} événements à venir` : n === 1 ? "1 événement à venir" : "Rien à venir",
+    // Trois façons de n'avoir aucune ville, trois phrases : elles ne se règlent
+    // pas au même endroit.
+    locating: "Recherche de votre ville…",
+    uncovered: "Aucune ville couverte près de vous.",
+    unavailable: "Position indisponible.",
+    pickPrompt: "Choisissez une ville pour voir ses événements.",
+    choose: "Choisir",
+    changeCity: "Changer de ville",
+    pickTitle: "Ville",
     empty: "Aucun événement à venir pour le moment.",
     failed: "Impossible de charger les actualités.",
     unconfigured: "Cette version de l’application ne sait pas où chercher les actualités.",
-    source: "Source : Agenda de la Métropole de Lyon",
+    source: (city: string) => `Source : agenda public de ${city}, via OpenAgenda`,
   },
 
   // ── Profil ──

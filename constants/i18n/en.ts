@@ -221,11 +221,20 @@ export const en: typeof fr = {
 
   news: {
     title: "What’s on",
-    subtitle: "Events across the metropolitan area",
+    loading: "Loading events…",
+    count: (n: number) =>
+      n > 1 ? `${n} upcoming events` : n === 1 ? "1 upcoming event" : "Nothing coming up",
+    locating: "Finding your city…",
+    uncovered: "No covered city near you.",
+    unavailable: "Location unavailable.",
+    pickPrompt: "Pick a city to see what’s on.",
+    choose: "Pick",
+    changeCity: "Change city",
+    pickTitle: "City",
     empty: "No upcoming event right now.",
     failed: "Couldn’t load the news.",
     unconfigured: "This build doesn’t know where to look for the news.",
-    source: "Source: Lyon Metropolitan agenda",
+    source: (city: string) => `Source: ${city}’s public agenda, via OpenAgenda`,
   },
 
   profile: {
