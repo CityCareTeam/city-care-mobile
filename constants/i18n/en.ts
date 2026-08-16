@@ -224,6 +224,7 @@ export const en: typeof fr = {
     subtitle: "Events across the metropolitan area",
     empty: "No upcoming event right now.",
     failed: "Couldn’t load the news.",
+    unconfigured: "This build doesn’t know where to look for the news.",
     source: "Source: Lyon Metropolitan agenda",
   },
 

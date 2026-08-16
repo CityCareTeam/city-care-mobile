@@ -5,7 +5,7 @@ import { NotificationProvider, useNotificationContext } from "@/context/Notifica
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { Tabs } from "expo-router";
 import * as Haptics from "expo-haptics";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Platform,
   Pressable,
@@ -40,8 +40,16 @@ const TABS = [
 const TAB_COUNT = TABS.length;
 
 const TAB_BAR_HEIGHT = 60;
-const MARGIN_H = 20;
+// Cinq onglets tiennent moins à l'aise que quatre : la barre reprend six points
+// de marge de chaque côté, qui repartent dans les onglets.
+const MARGIN_H = 14;
 const PAD = 6;
+
+const ICON_SIZE = 20;
+/** Écart entre l'icône et son libellé, sur l'onglet actif. */
+const CONTENT_GAP = 6;
+/** Air entre le contenu et le bord de la pastille. */
+const PILL_PAD_H = 9;
 
 const SPRING = { mass: 0.5, stiffness: 200, damping: 18 };
 
@@ -78,6 +86,51 @@ function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
   // dès qu'on lâche.
   const [hovered, setHovered] = useState<number | null>(null);
   const activeIndex = hovered ?? state.index;
+
+  /**
+   * Largeur de chaque libellé, mesurée hors écran.
+   *
+   * Découper la barre en parts égales marchait à quatre onglets ; à cinq, la
+   * part est plus étroite que « Accueil » et la pastille laisse dépasser ce
+   * qu'elle est censée couvrir. Elle épouse donc son contenu au lieu de son
+   * emplacement — ce qui vaut aussi pour l'anglais, dont les libellés n'ont pas
+   * la même longueur, et pour un futur onglet.
+   */
+  const [labelWidths, setLabelWidths] = useState<Record<number, number>>({});
+  const measure = useCallback((index: number, width: number) => {
+    setLabelWidths((current) =>
+      Math.abs((current[index] ?? 0) - width) < 0.5 ? current : { ...current, [index]: width },
+    );
+  }, []);
+
+  const pillWidthFor = useCallback(
+    (index: number) => {
+      const label = labelWidths[index];
+      // Avant la mesure — une image, tout au plus —, l'ancien calcul fait un
+      // point de départ honnête.
+      if (!label) return tabWidth - PAD;
+      return ICON_SIZE + CONTENT_GAP + label + PILL_PAD_H * 2;
+    },
+    [labelWidths, tabWidth],
+  );
+
+  const pillWidth = useSharedValue(0);
+  const posed = useRef(false);
+
+  useEffect(() => {
+    const target = pillWidthFor(activeIndex);
+    // La pastille se pose au lancement, elle ne s'y étire pas : la largeur
+    // provisoire et la mesurée se suivent d'une image, et animer entre les deux
+    // se lirait comme un défaut d'affichage. Les changements d'onglet, eux,
+    // méritent le ressort.
+    if (posed.current) {
+      pillWidth.value = withSpring(target, SPRING);
+    } else {
+      pillWidth.value = target;
+      posed.current = labelWidths[activeIndex] !== undefined;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeIndex, pillWidthFor]);
 
   const tap = useCallback((index: number) => {
     if (Platform.OS === "ios") Haptics.selectionAsync();
@@ -140,9 +193,22 @@ function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
     [tabWidth, maxX, tap, settle],
   );
 
-  const indicatorStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: x.value }, { scaleX: stretch.value }],
-  }));
+  /**
+   * `x` reste la position de l'emplacement — c'est ce que le glissement
+   * manipule et ce sur quoi l'atterrissage s'aligne. La pastille, elle, est
+   * centrée dessus, et une pastille plus large que son emplacement déborde
+   * symétriquement sur ses voisines : de quelques points, loin de leurs icônes.
+   * Reste à ne pas dépasser des bords arrondis de la barre.
+   */
+  const indicatorStyle = useAnimatedStyle(() => {
+    const width = pillWidth.value;
+    const centered = x.value + (tabWidth - width) / 2;
+    const bounded = Math.min(Math.max(centered, 2), barWidth - width - 2);
+    return {
+      width,
+      transform: [{ translateX: bounded }, { scaleX: stretch.value }],
+    };
+  });
 
   const handlePress = (index: number) => {
     if (Platform.OS === "ios") {
@@ -163,13 +229,25 @@ function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
       <GestureDetector gesture={pan}>
       <GlassSurface style={styles.bar}>
         <Animated.View
-          style={[
-            styles.indicator,
-            { width: tabWidth - PAD, backgroundColor: colors.primary },
-            indicatorStyle,
-          ]}
+          style={[styles.indicator, { backgroundColor: colors.primary }, indicatorStyle]}
           pointerEvents="none"
         />
+
+        {/* Mesure hors écran. La pastille doit connaître la largeur d'un
+            libellé avant de s'ouvrir dessus, or le libellé n'existe que sur
+            l'onglet actif : impossible de le mesurer là où il est affiché. Un
+            changement de langue rend la main ici tout seul. */}
+        <View style={styles.measures} pointerEvents="none" aria-hidden>
+          {TABS.map((tab, index) => (
+            <Text
+              key={tab.name}
+              style={[styles.label, styles.measureLabel]}
+              onLayout={(event) => measure(index, event.nativeEvent.layout.width)}
+            >
+              {t.tabs[tab.key]}
+            </Text>
+          ))}
+        </View>
         {TABS.map((tab, index) => {
           const isFocused = activeIndex === index;
           const showBadge = tab.name === "notifications" && unreadCount > 0;
@@ -184,7 +262,7 @@ function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
                 <View>
                   <IconSymbol
                     name={tab.icon}
-                    size={20}
+                    size={ICON_SIZE}
                     color={isFocused ? "#ffffff" : isDark ? "#ffffff55" : "#00000040"}
                   />
                   {showBadge && (
@@ -196,7 +274,9 @@ function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
                   )}
                 </View>
                 {isFocused && (
-                  <Text style={styles.label}>{t.tabs[tab.key]}</Text>
+                  <Text style={styles.label} numberOfLines={1}>
+                    {t.tabs[tab.key]}
+                  </Text>
                 )}
               </View>
             </Pressable>
@@ -271,13 +351,23 @@ const styles = StyleSheet.create({
   tabContent: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: CONTENT_GAP,
   },
   label: {
     fontSize: 13,
     fontWeight: "500",
     color: "#ffffff",
   },
+  measures: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    flexDirection: "row",
+    opacity: 0,
+  },
+  // Sans quoi la rangée de mesure, plus large que la barre, comprimerait ses
+  // libellés — et on mesurerait la contrainte au lieu du texte.
+  measureLabel: { flexShrink: 0, marginRight: 8 },
   badge: {
     position: "absolute",
     top: -5,

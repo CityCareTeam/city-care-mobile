@@ -231,6 +231,7 @@ export const fr = {
     subtitle: "Sorties et événements de la métropole",
     empty: "Aucun événement à venir pour le moment.",
     failed: "Impossible de charger les actualités.",
+    unconfigured: "Cette version de l’application ne sait pas où chercher les actualités.",
     source: "Source : Agenda de la Métropole de Lyon",
   },
 

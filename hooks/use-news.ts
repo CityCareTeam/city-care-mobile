@@ -13,6 +13,14 @@ const MAX_AGE_MS = 12 * 60 * 60 * 1000;
 type Cached = { items: NewsItem[]; language: string; fetchedAt: string };
 
 /**
+ * Les deux échecs ne se réparent pas au même endroit, et se ressemblent
+ * pourtant trait pour trait à l'écran : une liste vide. `unconfigured` veut dire
+ * que le binaire n'embarque pas la clé — réessayer n'y changera rien, il faut
+ * republier. `network` veut dire que la requête est partie et n'est pas revenue.
+ */
+export type NewsFailure = "network" | "unconfigured";
+
+/**
  * Actualités de la métropole.
  *
  * Comme le fil et la météo, le dernier état connu est gardé sur l'appareil : la
@@ -24,13 +32,13 @@ export function useNews() {
   const { language } = usePreferences();
   const active = resolveLanguage(language);
   const [items, setItems] = useState<NewsItem[] | null>(null);
-  const [failed, setFailed] = useState(false);
+  const [failed, setFailed] = useState<NewsFailure | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(
     async (force = false) => {
       if (!NEWS_AGENDA_UID || !NEWS_API_KEY) {
-        setFailed(true);
+        setFailed("unconfigured");
         return;
       }
 
@@ -45,7 +53,7 @@ export function useNews() {
       try {
         const fresh = await getNews(NEWS_AGENDA_UID, NEWS_API_KEY, active);
         setItems(fresh);
-        setFailed(false);
+        setFailed(null);
         void writeJson(KEY, {
           items: fresh,
           language: active,
@@ -54,7 +62,7 @@ export function useNews() {
       } catch {
         // On garde ce qui est affiché : une liste datée vaut mieux qu'un écran
         // vide, et le bandeau dira qu'elle l'est.
-        setFailed(true);
+        setFailed("network");
       }
     },
     [active],
