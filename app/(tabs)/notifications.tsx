@@ -65,7 +65,7 @@ function makeStyles(c: AppColors, bottomInset: number) {
       textTransform: "uppercase",
       color: c.text,
       opacity: 0.4,
-      marginTop: 14,
+      marginTop: 8,
       marginBottom: 8,
       marginLeft: 4,
     },

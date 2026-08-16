@@ -53,3 +53,35 @@ export function setActiveLanguage(preference: LanguagePreference): void {
 export function getStrings(): Dictionary {
   return active;
 }
+
+/**
+ * Table de libellés qui suit la langue active.
+ *
+ * Un relais qui n'intercepte que la lecture d'une clé **paraît** être un objet
+ * sans en être un : `Object.keys()` et `Object.entries()` le voient vide, parce
+ * qu'il n'a réellement aucune propriété. C'est ce qui avait vidé le filtre par
+ * type de la carte et la liste des types suivis — les libellés s'affichaient
+ * partout où on les demandait un par un, et nulle part où on les énumérait.
+ *
+ * Les trois pièges sont donc traités ensemble : lire une clé, les énumérer, et
+ * les décrire — `Object.keys` exige le descripteur pour retenir une clé.
+ */
+export function languageAwareLabels(
+  select: (dictionary: Dictionary) => Record<string, string>,
+): Record<string, string> {
+  const resolve = (key: string) => select(getStrings())[key];
+
+  return new Proxy(
+    {},
+    {
+      get: (_target, key: string) => resolve(key),
+      has: (_target, key: string) => key in select(getStrings()),
+      ownKeys: () => Reflect.ownKeys(select(getStrings())),
+      getOwnPropertyDescriptor: (_target, key: string) => ({
+        value: resolve(key),
+        enumerable: true,
+        configurable: true,
+      }),
+    },
+  );
+}

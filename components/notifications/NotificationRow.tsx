@@ -53,7 +53,6 @@ function NotificationRowBase({ item, styles, onPress, onDelete }: Props) {
   const statusKey = extractStatusKey(item.type, item.body ?? "");
   const statusColor = statusKey ? STATUS_COLOR[statusKey] : null;
   const statusLabel = statusKey ? STATUS_LABEL[statusKey] : null;
-  const stripeColor = item.is_read ? icon.color + "50" : icon.color;
 
   return (
     <Swipeable
@@ -79,7 +78,6 @@ function NotificationRowBase({ item, styles, onPress, onDelete }: Props) {
         onPress={() => onPress(item)}
         activeOpacity={0.8}
       >
-        {!item.is_read && <View style={[styles.unreadStripe, { backgroundColor: stripeColor }]} />}
         <View style={styles.inner}>
           <View style={[styles.iconBubble, { backgroundColor: item.is_read ? icon.bg + "88" : icon.bg }]}>
             <MaterialIcons
@@ -89,9 +87,12 @@ function NotificationRowBase({ item, styles, onPress, onDelete }: Props) {
             />
           </View>
           <View style={styles.itemContent}>
-            <Text style={[styles.itemTitle, item.is_read && styles.itemTitleRead]} numberOfLines={1}>
-              {item.title}
-            </Text>
+            <View style={styles.titleRow}>
+              {!item.is_read && <View style={[styles.unreadDot, { backgroundColor: icon.color }]} />}
+              <Text style={[styles.itemTitle, item.is_read && styles.itemTitleRead]} numberOfLines={1}>
+                {item.title}
+              </Text>
+            </View>
             {item.body ? (
               <Text style={styles.itemBody} numberOfLines={1}>{item.body}</Text>
             ) : null}
@@ -160,17 +161,14 @@ export function makeRowStyles(c: AppColors) {
       paddingHorizontal: 14,
       gap: 12,
     },
-    unreadStripe: {
-      position: "absolute",
-      left: 0, top: 0, bottom: 0,
-      width: 3, borderTopLeftRadius: 16, borderBottomLeftRadius: 16,
-    },
     iconBubble: {
       width: 42, height: 42, borderRadius: 13,
       alignItems: "center", justifyContent: "center", flexShrink: 0,
     },
     itemContent: { flex: 1, minWidth: 0 },
-    itemTitle: { fontSize: 14, fontWeight: "700", color: c.text, marginBottom: 2 },
+    titleRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 2 },
+    unreadDot: { width: 7, height: 7, borderRadius: 3.5, flexShrink: 0 },
+    itemTitle: { flex: 1, fontSize: 14, fontWeight: "700", color: c.text },
     itemTitleRead: { fontWeight: "500", opacity: 0.55 },
     itemBody: { fontSize: 12, color: c.text, opacity: 0.5, marginBottom: 3 },
     itemTime: { fontSize: 11, fontWeight: "500", color: c.primary, opacity: 0.8 },

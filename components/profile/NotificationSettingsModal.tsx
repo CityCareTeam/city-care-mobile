@@ -88,8 +88,8 @@ export function NotificationSettingsModal({ visible, onClose }: Props) {
                 <MaterialIcons name="add-location-alt" size={20} color="#f6aa54" />
               </View>
               <View style={s.rowText}>
-                <Text style={s.rowLabel}>Signalements</Text>
-                <Text style={s.rowSub}>Nouveaux et changements de statut</Text>
+                <Text style={s.rowLabel}>{t.notifSettings.reports}</Text>
+                <Text style={s.rowSub}>{t.notifSettings.reportsDetail}</Text>
               </View>
               <Switch
                 value={settings.in_app_incidents_enabled}
@@ -104,8 +104,8 @@ export function NotificationSettingsModal({ visible, onClose }: Props) {
                 <MaterialIcons name="chat-bubble" size={20} color="#4caf50" />
               </View>
               <View style={s.rowText}>
-                <Text style={s.rowLabel}>Messages</Text>
-                <Text style={s.rowSub}>Nouvelles discussions</Text>
+                <Text style={s.rowLabel}>{t.notifSettings.messages}</Text>
+                <Text style={s.rowSub}>{t.notifSettings.messagesDetail}</Text>
               </View>
               <Switch
                 value={settings.in_app_messages_enabled}
@@ -123,8 +123,8 @@ export function NotificationSettingsModal({ visible, onClose }: Props) {
                 <MaterialIcons name="notifications" size={20} color="#AF52DE" />
               </View>
               <View style={s.rowText}>
-                <Text style={s.rowLabel}>Signalements</Text>
-                <Text style={s.rowSub}>Nouveaux et changements de statut</Text>
+                <Text style={s.rowLabel}>{t.notifSettings.reports}</Text>
+                <Text style={s.rowSub}>{t.notifSettings.reportsDetail}</Text>
               </View>
               <Switch
                 value={settings.push_enabled}
@@ -139,8 +139,8 @@ export function NotificationSettingsModal({ visible, onClose }: Props) {
                 <MaterialIcons name="notifications-active" size={20} color="#AF52DE" />
               </View>
               <View style={s.rowText}>
-                <Text style={s.rowLabel}>Messages</Text>
-                <Text style={s.rowSub}>Nouvelles discussions</Text>
+                <Text style={s.rowLabel}>{t.notifSettings.messages}</Text>
+                <Text style={s.rowSub}>{t.notifSettings.messagesDetail}</Text>
               </View>
               <Switch
                 value={settings.push_messages_enabled}
