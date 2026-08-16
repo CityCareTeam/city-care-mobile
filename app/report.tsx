@@ -120,13 +120,29 @@ export default function ReportScreen() {
     return () => clearTimeout(timer);
   }, [draftChecked, coords, addressQuery, description, selectedType, photos]);
 
+  /**
+   * Le geste est devenu facile à atteindre — c'est ce qu'on voulait — donc aussi
+   * facile à déclencher par erreur. Or il jette précisément ce que le brouillon
+   * servait à sauver : un formulaire rempli, photos comprises, et sans retour
+   * possible. Toutes les autres actions destructives de l'application demandent
+   * confirmation ; celle-ci n'avait pas de raison d'y échapper.
+   */
   function discardDraft() {
-    void clearDraft();
-    setDraftRestored(false);
-    setAddressQuery("");
-    setDescription("");
-    setSelectedType(null);
-    setPhotos([]);
+    Alert.alert(t.report.discardTitle, t.report.discardMessage, [
+      { text: t.alert.cancel, style: "cancel" },
+      {
+        text: t.report.discardDraft,
+        style: "destructive",
+        onPress: () => {
+          void clearDraft();
+          setDraftRestored(false);
+          setAddressQuery("");
+          setDescription("");
+          setSelectedType(null);
+          setPhotos([]);
+        },
+      },
+    ]);
   }
 
   async function handleMapPress(coordinate: { latitude: number; longitude: number }) {
@@ -267,7 +283,14 @@ export default function ReportScreen() {
         <View style={styles.draftBar} testID="draft-restored">
           <MaterialIcons name="history" size={16} color={colors.primary} />
           <Text style={styles.draftText}>{t.report.draftRestored}</Text>
-          <TouchableOpacity onPress={discardDraft} accessibilityRole="button" hitSlop={8}>
+          <TouchableOpacity
+            style={styles.draftDiscardBtn}
+            onPress={discardDraft}
+            activeOpacity={0.75}
+            accessibilityRole="button"
+            accessibilityLabel={t.report.discardTitle}
+            hitSlop={8}
+          >
             <Text style={styles.draftDiscard}>{t.report.discardDraft}</Text>
           </TouchableOpacity>
         </View>
@@ -415,8 +438,11 @@ function makeStyles(c: AppColors, isDark: boolean) {
       flexDirection: "row",
       alignItems: "center",
       gap: 8,
-      paddingVertical: 10,
-      paddingHorizontal: 12,
+      // Le bouton porte désormais son propre rembourrage : la barre resserre le
+      // sien pour ne pas grandir d'autant.
+      paddingVertical: 7,
+      paddingLeft: 12,
+      paddingRight: 7,
       borderRadius: 12,
       marginBottom: 16,
       backgroundColor: c.primary + "14",
@@ -424,7 +450,16 @@ function makeStyles(c: AppColors, isDark: boolean) {
       borderColor: c.primary + "33",
     },
     draftText: { flex: 1, fontSize: 12, color: c.text, opacity: 0.75 },
-    draftDiscard: { fontSize: 12, fontWeight: "700", color: c.primary },
+    // Le libellé faisait douze pixels de haut : la zone touchable valait la
+    // hauteur du texte. Elle atteint maintenant les quarante-quatre points
+    // recommandés, rembourrage et `hitSlop` compris.
+    draftDiscardBtn: {
+      paddingHorizontal: 14,
+      paddingVertical: 9,
+      borderRadius: 10,
+      backgroundColor: c.primary + "22",
+    },
+    draftDiscard: { fontSize: 12.5, fontWeight: "700", color: c.primary },
 
     // ── Map ──
     mapContainer: {

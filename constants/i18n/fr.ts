@@ -223,6 +223,8 @@ export const fr = {
     needCategory: "Sélectionnez une catégorie",
     needDescription: "Entrez une description",
     draftRestored: "Brouillon repris là où vous l’aviez laissé.",
+    discardTitle: "Effacer le brouillon",
+    discardMessage: "Le signalement en cours sera perdu. Confirmer ?",
     discardDraft: "Effacer",
     queuedTitle: "Signalement enregistré",
     queuedDetail: "Il sera envoyé dès le retour du réseau.",

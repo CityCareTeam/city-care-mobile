@@ -216,6 +216,8 @@ export const en: typeof fr = {
     needCategory: "Pick a category",
     needDescription: "Enter a description",
     draftRestored: "Draft picked up where you left off.",
+    discardTitle: "Clear the draft",
+    discardMessage: "The report in progress will be lost. Confirm?",
     discardDraft: "Clear",
     queuedTitle: "Report saved",
     queuedDetail: "It will be sent as soon as you’re back online.",
