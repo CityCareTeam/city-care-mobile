@@ -57,26 +57,27 @@ function makeStyles(c: AppColors, bottomInset: number) {
       flexDirection: "row",
       alignItems: "center",
       gap: 14,
-      paddingVertical: 18,
-      paddingHorizontal: 18,
+      paddingVertical: 16,
+      paddingHorizontal: 17,
       marginHorizontal: -4,
       borderRadius: 26,
       backgroundColor: mixHex(c.background, c.primary, 0.16),
       marginBottom: 20,
     },
-    // Bulle pleine et large, icône claire : les lignes font l'inverse — bulle
-    // pâle de quarante-deux points, icône colorée.
+    // Bulle pleine et plus large que celle des lignes — quarante-deux points,
+    // pâle, icône colorée : ici c'est l'inverse.
     headerIcon: {
-      width: 54,
-      height: 54,
-      borderRadius: 27,
+      width: 50,
+      height: 50,
+      borderRadius: 25,
       alignItems: "center",
       justifyContent: "center",
     },
     headerText: { flex: 1, gap: 2 },
-    // Vingt-huit points là où le titre d'une ligne en fait quatorze. C'est cet
-    // écart, plus que la couleur, qui dit « titre de page ».
-    title: { fontSize: 28, fontWeight: "800", color: c.text, letterSpacing: -0.5 },
+    // Vingt-quatre points là où le titre d'une ligne en fait quatorze. C'est cet
+    // écart, plus que la couleur, qui dit « titre de page » — et le rapport du
+    // simple au double suffit à le dire, sans occuper tout le haut de l'écran.
+    title: { fontSize: 24, fontWeight: "800", color: c.text, letterSpacing: -0.4 },
     summary: { fontSize: 13, color: c.text, opacity: 0.55 },
     actions: { flexDirection: "row", alignItems: "center", gap: 8 },
     // Sur fond blanc : posés sur la bande teintée, ils s'en détachent au lieu
@@ -314,14 +315,14 @@ export default function NotificationsScreen() {
               bulle, titre, sous-titre, actions à droite, aux mêmes tailles.
 
               Ce qui la sort de la liste tient en trois écarts : un titre de
-              vingt-huit points quand une ligne en fait quatorze, une bulle
+              vingt-quatre points quand une ligne en fait quatorze, une bulle
               nettement plus grande, et une bande plus large que les cartes
               qu'elle surplombe. On garde le style, on casse la confusion. */}
           <View style={styles.headerCard}>
             <View style={[styles.headerIcon, { backgroundColor: colors.primary }]}>
               <MaterialIcons
                 name={unreadCount > 0 ? "notifications-active" : "notifications-none"}
-                size={26}
+                size={24}
                 color="#fff"
               />
             </View>
