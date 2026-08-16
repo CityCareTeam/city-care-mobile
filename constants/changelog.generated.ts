@@ -743,6 +743,11 @@ export const UNRELEASED_CHANGES: Change[] = [
   {
     "kind": "fix",
     "scope": "release",
+    "text": "Quote publish arguments so the update message survives Windows"
+  },
+  {
+    "kind": "fix",
+    "scope": "release",
     "text": "Refresh the changelog when publishing an update"
   },
   {
