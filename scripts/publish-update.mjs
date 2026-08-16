@@ -91,8 +91,15 @@ const message = lastMeaningfulSubject();
 // rang de pré-version ne bouge pas. Il compte les APK ; une mise à jour à la
 // volée n'en produit aucun, et se distingue par l'identifiant de bundle affiché
 // dans la pastille de version.
-console.log("Régénération du journal des versions…");
-run("node", ["scripts/generate-changelog.mjs", "--commit"], { stdio: "inherit" });
+// En intégration continue, le journal vient d'être régénéré et poussé par le
+// job de release : le refaire ici produirait un commit de plus, sur une copie
+// détachée, qui ne remonterait nulle part.
+if (process.argv.includes("--skip-changelog")) {
+  console.log("Journal laissé tel quel (--skip-changelog).");
+} else {
+  console.log("Régénération du journal des versions…");
+  run("node", ["scripts/generate-changelog.mjs", "--commit"], { stdio: "inherit" });
+}
 
 console.log(`Publication sur « ${channel} » (profil ${profile}) — ${message}`);
 console.log(`API : ${env.EXPO_PUBLIC_API_URL}`);

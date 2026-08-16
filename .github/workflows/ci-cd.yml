@@ -235,12 +235,106 @@ jobs:
         env:
          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
 
-  # ── Build APK (après release, main uniquement) ────────────────────────
-  build:
-    name: EAS Build (production)
+  # ── Livraison : build natif ou mise à jour à la volée ? ───────────────
+  #
+  # Un correctif qui ne touche que du JavaScript n'a pas besoin d'un APK : le
+  # bundle se pousse aux appareils déjà installés en quelques secondes. Un
+  # changement natif, lui, l'exige — un bundle qui appellerait un module absent
+  # du binaire fermerait l'application au lancement.
+  #
+  # La liste ci-dessous est donc volontairement large : dans le doute, on build.
+  # Se tromper vers le build coûte quinze minutes ; se tromper vers l'update
+  # casse l'application chez tout le monde.
+  delivery:
+    name: Décision de livraison
     runs-on: ubuntu-latest
     needs: [release]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    outputs:
+      native: ${{ steps.decide.outputs.native }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Le push touche-t-il au natif ?
+        id: decide
+        run: |
+          BEFORE="${{ github.event.before }}"
+          # Premier push d'une branche, ou historique inconnu : on ne peut pas
+          # comparer, donc on build.
+          if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$BEFORE" 2>/dev/null; then
+            echo "Point de comparaison absent — build par sécurité."
+            echo "native=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          CHANGED=$(git diff --name-only "$BEFORE" "${{ github.sha }}")
+          echo "Fichiers modifiés :"
+          echo "$CHANGED"
+
+          if echo "$CHANGED" | grep -qE '^(package(-lock)?\.json|app\.config\.ts|eas\.json|google-services\.json|constants/native-runtime\.json|plugins/|android/|ios/|assets/)'; then
+            echo "→ natif touché : build complet."
+            echo "native=true" >> $GITHUB_OUTPUT
+          else
+            echo "→ JavaScript seul : mise à jour à la volée."
+            echo "native=false" >> $GITHUB_OUTPUT
+          fi
+
+  # ── Mise à jour à la volée (JS seul) ──────────────────────────────────
+  update:
+    name: EAS Update (production)
+    runs-on: ubuntu-latest
+    needs: [release, delivery]
+    if: needs.delivery.outputs.native == 'false'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GH_PAT }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: expo/expo-github-action@v8
+        with:
+          expo-version: latest
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - run: npm ci
+
+      # Le journal a déjà été régénéré et poussé par le job de release : le
+      # refaire ici produirait un commit sur une copie détachée.
+      - name: Publier la mise à jour
+        id: eas_update
+        run: node scripts/publish-update.mjs production --skip-changelog
+
+      - name: Notify Discord (update)
+        if: steps.eas_update.outcome == 'success'
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          curl -s -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}"             -H "Content-Type: application/json"             -d "{
+              \"embeds\": [{
+                \"title\": \"⚡ Mise à jour publiée — v${VERSION}\",
+                \"description\": \"Correctif JavaScript envoyé aux appareils installés, sans nouveau build.\",
+                \"color\": 16755029,
+                \"fields\": [
+                  { \"name\": \"Canal\", \"value\": \"\`production\`\", \"inline\": true },
+                  { \"name\": \"Commit\", \"value\": \"\`${{ github.sha }}\`\", \"inline\": true }
+                ]
+              }]
+            }"
+
+  # ── Build APK (changement natif uniquement) ───────────────────────────
+  build:
+    name: EAS Build (production)
+    runs-on: ubuntu-latest
+    needs: [release, delivery]
+    if: needs.delivery.outputs.native == 'true'
     steps:
       - uses: actions/checkout@v4
         with:
