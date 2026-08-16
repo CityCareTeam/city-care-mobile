@@ -12,6 +12,7 @@ import { STRINGS } from "@/constants/strings";
 import { useAuth } from "@/context/AuthContext";
 import { useAppColors } from "@/hooks/use-app-colors";
 import { useStrings } from "@/hooks/use-strings";
+import { warned } from "@/utils/haptics";
 import { incidentShareMessage } from "@/utils/share-incident";
 import { useIncidentChat } from "@/hooks/use-incident-chat";
 import { useIncidentPermissions } from "@/hooks/use-incident-permissions";
@@ -112,6 +113,7 @@ export function IncidentDetailSheet({ incident, initialTab, onClose, onStatusUpd
             if (!token) throw new Error(STRINGS.api.unauthenticated);
             const { deleteIncident } = await import("@/services/incidents");
             await deleteIncident(incident.id, token);
+            warned();
             onDeleted();
           } catch (e) {
             Alert.alert(t.incident.error, e instanceof Error ? e.message : STRINGS.api.unknownError);

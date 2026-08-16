@@ -9,6 +9,7 @@ import { createIncident, reverseGeocode, uploadPhoto } from "@/services/incident
 import { enqueueReport } from "@/storage/pending-reports";
 import { clearDraft, isWorthSaving, loadDraft, saveDraft } from "@/storage/report-draft";
 import { getValidToken } from "@/storage/tokens";
+import { succeeded } from "@/utils/haptics";
 import type { IncidentType } from "@/types/incidents";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
@@ -240,8 +241,9 @@ export default function ReportScreen() {
           uploadFailed = true;
         }
       }
-      if (uploadFailed) Toast.show({ type: "error", text1: STRINGS.alert.errorTitle, text2: STRINGS.photos.uploadError });
-      Toast.show({ type: "success", text1: STRINGS.toast.reportSuccessTitle, text2: STRINGS.toast.reportSuccess });
+      if (uploadFailed) Toast.show({ type: "error", text1: t.alert.errorTitle, text2: t.photos.uploadError });
+      succeeded();
+      Toast.show({ type: "success", text1: t.toast.reportSuccessTitle, text2: t.toast.reportSuccess });
       await clearDraft();
       router.back();
     } catch (e: unknown) {
@@ -257,6 +259,9 @@ export default function ReportScreen() {
           photos,
         });
         await clearDraft();
+        // Mis en file plutôt qu'envoyé, mais du point de vue de l'utilisateur
+        // le geste a abouti : c'est ce que le retour doit dire.
+        succeeded();
         Toast.show({
           type: "success",
           text1: t.report.queuedTitle,

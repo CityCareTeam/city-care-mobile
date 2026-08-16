@@ -1,6 +1,7 @@
 import { POLL_INTERVAL_MS } from "@/constants/config";
 import { addVote, getVotes, removeVote } from "@/services/incidents";
 import { getValidToken } from "@/storage/tokens";
+import { tapped } from "@/utils/haptics";
 import type { VoteResponse } from "@/types/incidents";
 import { useEffect, useState } from "react";
 
@@ -31,6 +32,9 @@ export function useIncidentVotes(incidentId: string | null) {
     const token = await getValidToken();
     if (!token) return;
     setToggling(true);
+    // Au moment du geste, pas de la réponse : le retour confirme l'appui, et
+    // l'affichage est déjà optimiste de toute façon.
+    tapped();
     try {
       if (votes?.hasVoted) {
         await removeVote(incidentId, token);

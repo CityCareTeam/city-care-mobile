@@ -1,5 +1,7 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { IncidentRow } from "@/components/incident-row";
+import { IncidentSearchBar, NoSearchResults } from "@/components/incident-search-bar";
+import { useIncidentSearch } from "@/hooks/use-incident-search";
 import { HeaderClock } from "@/components/ui/HeaderClock";
 import { Logo } from "@/components/ui/Logo";
 import { STATUS_COLOR, STATUS_LABEL, TYPE_LABEL } from "@/constants/incidents";
@@ -7,7 +9,6 @@ import { ROLE_LABELS } from "@/constants/roles";
 import { CityCareColors, CityCareColorsDark } from "@/constants/theme";
 import { getTabBarScrollPadding } from "@/utils/layout";
 import { GlassPillSelector, PillOption } from "@/components/ui/GlassPillSelector";
-import { STRINGS } from "@/constants/strings";
 import { useAuth } from "@/context/AuthContext";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
@@ -308,6 +309,9 @@ function CitizenView({
     () => applyFilters(allIncidents, allType, allStatus),
     [allIncidents, allType, allStatus],
   );
+  // La recherche s'applique après les filtres : elle cherche dans ce qui est
+  // affiché, pas dans ce qui a été écarté.
+  const search = useIncidentSearch(filteredAll);
 
   const myIdsSet = useMemo(() => new Set(incidents.map((i) => i.id)), [incidents]);
 
@@ -378,10 +382,19 @@ function CitizenView({
         style={{ marginBottom: 16 }}
       />
 
+      {!isMineTab && (
+        <IncidentSearchBar
+          query={search.query}
+          onQueryChange={search.setQuery}
+          sort={search.sort}
+          onSortChange={(next) => void search.setSort(next)}
+        />
+      )}
+
       {/* ── Contenu de l'onglet actif ── */}
       {isMineTab ? (
         filteredMine.length === 0 ? (
-          <EmptyState text={incidents.length === 0 ? STRINGS.emptyState.noMyIncidents : STRINGS.emptyState.noFilterResults} />
+          <EmptyState text={incidents.length === 0 ? t.emptyState.noMyIncidents : t.emptyState.noFilterResults} />
         ) : (
           <IncidentList
             isMine
@@ -393,14 +406,16 @@ function CitizenView({
           />
         )
       ) : (
-        filteredAll.length === 0 ? (
+        search.results.length === 0 ? (
           <>
-            <EmptyState text={allIncidents.length === 0 ? STRINGS.emptyState.noAllIncidents : STRINGS.emptyState.noFilterResults} />
+            {search.query.trim()
+              ? <NoSearchResults query={search.query} />
+              : <EmptyState text={allIncidents.length === 0 ? t.emptyState.noAllIncidents : t.emptyState.noFilterResults} />}
             <LoadMore paging={paging} />
           </>
         ) : (
           <IncidentList
-            incidents={filteredAll.map((i) => ({ id: i.id, type: i.type, status: i.status, description: i.description, address: i.addressLabel, createdAt: i.createdAt }))}
+            incidents={search.results.map((i) => ({ id: i.id, type: i.type, status: i.status, description: i.description, address: i.addressLabel, createdAt: i.createdAt }))}
             onPress={onPress}
             myIds={myIdsSet}
             onLoadMore={paging.hasMore ? paging.onLoadMore : undefined}
@@ -440,6 +455,7 @@ function AgentView({
 
   const { filterType, setFilterType, filterStatus, setFilterStatus, filteredIncidents: filteredToHandle } =
     useIncidentFilters(toHandle);
+  const search = useIncidentSearch(filteredToHandle);
 
   const typeCount = useMemo(() => {
     const acc: Record<string, number> = {};
@@ -485,22 +501,28 @@ function AgentView({
 
       <SectionHeader
         title={t.home.incidentsToHandle}
-        count={filteredToHandle.length}
+        count={search.results.length}
       />
-      {filteredToHandle.length === 0 ? (
+      <IncidentSearchBar
+        query={search.query}
+        onQueryChange={search.setQuery}
+        sort={search.sort}
+        onSortChange={(next) => void search.setSort(next)}
+      />
+      {search.results.length === 0 ? (
         <>
-          <EmptyState
-            text={
-              toHandle.length === 0
-                ? STRINGS.emptyState.agentAllDone
-                : STRINGS.emptyState.noFilterResults
-            }
-          />
+          {search.query.trim() ? (
+            <NoSearchResults query={search.query} />
+          ) : (
+            <EmptyState
+              text={toHandle.length === 0 ? t.emptyState.agentAllDone : t.emptyState.noFilterResults}
+            />
+          )}
           <LoadMore paging={paging} />
         </>
       ) : (
         <IncidentList
-          incidents={filteredToHandle.map((i) => ({
+          incidents={search.results.map((i) => ({
             id: i.id,
             type: i.type,
             status: i.status,
@@ -535,6 +557,7 @@ function AdminView({
 
   const { filterType, setFilterType, filterStatus, setFilterStatus, filteredIncidents } =
     useIncidentFilters(incidents);
+  const search = useIncidentSearch(filteredIncidents);
 
   const typeCount = useMemo(() => {
     const acc: Record<string, number> = {};
@@ -592,21 +615,27 @@ function AdminView({
         style={{ marginBottom: 16 }}
       />
 
-      <SectionHeader title={t.home.reports} count={filteredIncidents.length} />
-      {filteredIncidents.length === 0 ? (
+      <SectionHeader title={t.home.reports} count={search.results.length} />
+      <IncidentSearchBar
+        query={search.query}
+        onQueryChange={search.setQuery}
+        sort={search.sort}
+        onSortChange={(next) => void search.setSort(next)}
+      />
+      {search.results.length === 0 ? (
         <>
-          <EmptyState
-            text={
-              incidents.length === 0
-                ? STRINGS.emptyState.noIncidents
-                : STRINGS.emptyState.noFilterResults
-            }
-          />
+          {search.query.trim() ? (
+            <NoSearchResults query={search.query} />
+          ) : (
+            <EmptyState
+              text={incidents.length === 0 ? t.emptyState.noIncidents : t.emptyState.noFilterResults}
+            />
+          )}
           <LoadMore paging={paging} />
         </>
       ) : (
         <IncidentList
-          incidents={filteredIncidents.map((i) => ({
+          incidents={search.results.map((i) => ({
             id: i.id,
             type: i.type,
             status: i.status,
