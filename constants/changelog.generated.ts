@@ -741,6 +741,26 @@ export const LAST_RELEASED_VERSION = "1.5.5";
 /** Changements accumulés depuis, donc embarqués par les pré-versions. */
 export const UNRELEASED_CHANGES: Change[] = [
   {
+    "kind": "feature",
+    "scope": "i18n",
+    "text": "Finish translating the components and business vocabulary"
+  },
+  {
+    "kind": "feature",
+    "scope": "i18n",
+    "text": "Translate the report, sign-in and sign-up screens"
+  },
+  {
+    "kind": "feature",
+    "scope": "i18n",
+    "text": "Translate the tab screens"
+  },
+  {
+    "kind": "feature",
+    "scope": "i18n",
+    "text": "Add French and English dictionaries with a language setting"
+  },
+  {
     "kind": "fix",
     "scope": "ui",
     "text": "Give modal headers a tinted band and the house accent bar"
