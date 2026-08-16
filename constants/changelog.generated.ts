@@ -742,6 +742,21 @@ export const LAST_RELEASED_VERSION = "1.5.5";
 export const UNRELEASED_CHANGES: Change[] = [
   {
     "kind": "feature",
+    "scope": "ui",
+    "text": "Show a clock opposite the logo on the home header"
+  },
+  {
+    "kind": "fix",
+    "scope": "tests",
+    "text": "Pin the locale so the suite stops depending on the machine"
+  },
+  {
+    "kind": "fix",
+    "scope": "i18n",
+    "text": "Make the label tables enumerable again"
+  },
+  {
+    "kind": "feature",
     "scope": "incidents",
     "text": "Share a report through the system share sheet"
   },
