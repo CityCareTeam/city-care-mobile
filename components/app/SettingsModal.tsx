@@ -3,14 +3,21 @@ import { CityCareColors, CityCareColorsDark } from "@/constants/theme";
 import { usePreferences } from "@/context/PreferencesContext";
 import { useAppColors } from "@/hooks/use-app-colors";
 import { useStrings } from "@/hooks/use-strings";
-import type { LanguagePreference } from "@/constants/i18n";
+import { resolveLanguage, type Language } from "@/constants/i18n";
 import type { ThemePreference } from "@/storage/preferences";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useMemo } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-const LANGUAGES: { value: LanguagePreference; label: string; flag: string }[] = [
-  { value: "system", label: "", flag: "🌐" },
+/**
+ * Deux langues, deux cartes — et pas de troisième pour « Système ».
+ *
+ * Elle existe toujours, mais comme *défaut* : tant que personne n'a choisi,
+ * l'application suit le téléphone, et c'est la langue ainsi obtenue qui apparaît
+ * sélectionnée. En faire une entrée visible obligeait à empiler trois lignes
+ * pour un réglage binaire, et à expliquer une option que personne ne cherche.
+ */
+const LANGUAGES: { value: Language; label: string; flag: string }[] = [
   { value: "fr", label: "Français", flag: "🇫🇷" },
   { value: "en", label: "English", flag: "🇬🇧" },
 ];
@@ -24,6 +31,7 @@ export function SettingsModal({ visible, onClose }: { visible: boolean; onClose:
   const { colors } = useAppColors();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { theme, setTheme, language, setLanguage } = usePreferences();
+  const effective = resolveLanguage(language);
   const s = useStrings();
 
   const themes: { value: ThemePreference; label: string }[] = [
@@ -57,31 +65,33 @@ export function SettingsModal({ visible, onClose }: { visible: boolean; onClose:
       <Text style={styles.label}>{s.settings.language}</Text>
       <View style={styles.langs}>
         {LANGUAGES.map((option) => {
-          const active = language === option.value;
+          // On compare à la langue *effective* : sur « système », c'est celle du
+          // téléphone qui doit apparaître cochée, pas aucune des deux.
+          const active = effective === option.value;
           return (
             <TouchableOpacity
               key={option.value}
-              style={[styles.langCard, active && { borderColor: colors.primary, borderWidth: 2 }]}
+              style={[
+                styles.langCard,
+                active && { borderColor: colors.primary, borderWidth: 2, backgroundColor: colors.primary + "0F" },
+              ]}
               onPress={() => setLanguage(option.value)}
               activeOpacity={0.85}
               accessibilityRole="radio"
               accessibilityState={{ selected: active }}
-              accessibilityLabel={option.label || s.settings.languageSystem}
+              accessibilityLabel={option.label}
             >
               <Text style={styles.langFlag}>{option.flag}</Text>
+              {/* Chaque langue porte son propre nom, dans sa propre langue : on
+                  ne cherche pas « Anglais » quand on veut passer à l'anglais. */}
               <Text style={[styles.langName, active && { color: colors.primary, fontWeight: "700" }]}>
-                {/* Le libellé « Système » est le seul à se traduire : les deux
-                    autres portent leur propre nom, dans leur propre langue. */}
-                {option.label || s.settings.languageSystem}
+                {option.label}
               </Text>
-              {active && <MaterialIcons name="check-circle" size={14} color={colors.primary} />}
+              {active && <MaterialIcons name="check-circle" size={15} color={colors.primary} />}
             </TouchableOpacity>
           );
         })}
       </View>
-      <Text style={styles.hint}>
-        {language === "system" ? s.settings.languageFollowsDevice : s.settings.languageFixed}
-      </Text>
     </ModalShell>
   );
 }
@@ -205,18 +215,21 @@ function makeStyles(colors: ReturnType<typeof useAppColors>["colors"]) {
     },
 
     // ── Langue ──
-    langs: { gap: 8, marginBottom: 12 },
+    langs: { flexDirection: "row", gap: 10 },
     langCard: {
+      flex: 1,
       flexDirection: "row",
       alignItems: "center",
-      gap: 10,
-      padding: 12,
+      justifyContent: "center",
+      gap: 8,
+      paddingVertical: 14,
+      paddingHorizontal: 10,
       borderRadius: 14,
       borderWidth: 1,
       borderColor: colors.chipBorder,
       backgroundColor: colors.white,
     },
-    langFlag: { fontSize: 18 },
-    langName: { flex: 1, fontSize: 14, fontWeight: "600", color: colors.text },
+    langFlag: { fontSize: 20 },
+    langName: { fontSize: 14, fontWeight: "600", color: colors.text },
   });
 }

@@ -74,7 +74,11 @@ function NotificationRowBase({ item, styles, onPress, onDelete }: Props) {
         </TouchableOpacity>
       )}
     >
-      <TouchableOpacity style={styles.item} onPress={() => onPress(item)} activeOpacity={0.8}>
+      <TouchableOpacity
+        style={[styles.item, !item.is_read && styles.itemUnread]}
+        onPress={() => onPress(item)}
+        activeOpacity={0.8}
+      >
         {!item.is_read && <View style={[styles.unreadStripe, { backgroundColor: stripeColor }]} />}
         <View style={styles.inner}>
           <View style={[styles.iconBubble, { backgroundColor: item.is_read ? icon.bg + "88" : icon.bg }]}>
@@ -123,11 +127,22 @@ export function makeRowStyles(c: AppColors) {
     item: {
       borderRadius: 16,
       backgroundColor: c.white,
+      borderWidth: 1,
+      borderColor: c.chipBorder,
       shadowColor: "#000",
       shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.06,
+      shadowOpacity: 0.05,
       shadowRadius: 4,
       elevation: 2,
+    },
+    // Une non-lue doit se voir sans qu'on la cherche : le filet de couleur seul
+    // demandait de balayer la marge gauche ligne à ligne. La teinte se lit d'un
+    // coup d'œil, et le relief la fait avancer sur les autres.
+    itemUnread: {
+      backgroundColor: c.primary + "0F",
+      borderColor: c.primary + "33",
+      shadowOpacity: 0.1,
+      elevation: 3,
     },
     deleteAction: {
       justifyContent: "center",

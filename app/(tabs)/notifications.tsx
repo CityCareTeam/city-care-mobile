@@ -3,6 +3,7 @@ import { makeRowStyles, NotificationRow } from "@/components/notifications/Notif
 import { useNotificationContext } from "@/context/NotificationContext";
 import { ErrorNotice } from "@/components/ui/ErrorNotice";
 import { useAutoRefresh } from "@/hooks/use-auto-refresh";
+import { dayBucket, type DayBucket } from "@/utils/format-date";
 import { getTabBarScrollPadding } from "@/utils/layout";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
@@ -53,7 +54,21 @@ function makeStyles(c: AppColors, bottomInset: number) {
       marginBottom: 20,
       paddingHorizontal: 4,
     },
+    titleRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+    titleAccent: { width: 4, height: 26, borderRadius: 2, backgroundColor: c.primary },
     title: { fontSize: 28, fontWeight: "800", color: c.text },
+    // Palier de jour : discret, il sépare sans se faire lire comme un titre.
+    groupLabel: {
+      fontSize: 11,
+      fontWeight: "800",
+      letterSpacing: 0.8,
+      textTransform: "uppercase",
+      color: c.text,
+      opacity: 0.4,
+      marginTop: 14,
+      marginBottom: 8,
+      marginLeft: 4,
+    },
     unreadBadge: {
       backgroundColor: c.primary,
       borderRadius: 12,
@@ -225,6 +240,19 @@ export default function NotificationsScreen() {
     }
   };
 
+  // Une liste de cinquante lignes sans repère se lit mal : on ne sait pas où
+  // s'arrête ce qui vient d'arriver. Seule la première ligne d'un jour porte son
+  // titre — la liste reste une liste, elle gagne juste des paliers.
+  const grouped = useMemo(() => {
+    let previous: DayBucket | null = null;
+    return items.map((item) => {
+      const bucket = dayBucket(item.created_at);
+      const label = bucket === previous ? null : t.notifications[bucket];
+      previous = bucket;
+      return { item, label };
+    });
+  }, [items, t]);
+
   // Avant le retour anticipé qui suit : c'est un crochet.
   const refreshControl = useAppRefreshControl({
     refreshing,
@@ -244,28 +272,33 @@ export default function NotificationsScreen() {
 
   const unreadCount = items.filter(n => !n.is_read).length;
 
+
   return (
     <FlatList
-      data={items}
-      keyExtractor={(n) => n.id}
+      data={grouped}
+      keyExtractor={(entry) => entry.item.id}
       contentContainerStyle={styles.container}
       // La liste ne monte que les lignes visibles. Avec cinquante notifications
       // portant chacune un détecteur de gestes, tout monter d'un coup coûtait
       // cher pour rien.
-      renderItem={({ item }) => (
-        <NotificationRow
-          item={item}
-          styles={rowStyles}
-          onPress={handleTap}
-          onDelete={handleDeleteOne}
-        />
+      renderItem={({ item: entry }) => (
+        <>
+          {entry.label && <Text style={styles.groupLabel}>{entry.label}</Text>}
+          <NotificationRow
+            item={entry.item}
+            styles={rowStyles}
+            onPress={handleTap}
+            onDelete={handleDeleteOne}
+          />
+        </>
       )}
       ItemSeparatorComponent={() => <View style={styles.separator} />}
       refreshControl={refreshControl}
       ListHeaderComponent={
         <>
           <View style={styles.header}>
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <View style={styles.titleRow}>
+              <View style={styles.titleAccent} />
               <Text style={styles.title}>{t.notifications.title}</Text>
               {unreadCount > 0 && (
                 <View style={styles.unreadBadge}>
