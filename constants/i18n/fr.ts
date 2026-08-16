@@ -373,6 +373,38 @@ export const fr = {
     upcoming: "à venir",
   },
 
+  // ── Guide ──
+  guide: {
+    title: "Guide",
+    menuDetail: "Revoir la présentation",
+    skip: "Passer",
+    next: "Suivant",
+    back: "Retour",
+    done: "C’est parti",
+    steps: [
+      {
+        title: "Signalez en deux gestes",
+        body: "Une catégorie, une description, une photo si vous en avez une. Sans réseau, le signalement est gardé et part tout seul dès que la connexion revient.",
+      },
+      {
+        title: "Suivez la ville sur la carte",
+        body: "Les épingles se regroupent quand vous dézoomez. Filtrez par statut, par catégorie, ou n’affichez que vos propres signalements.",
+      },
+      {
+        title: "Retrouvez tout dans le fil",
+        body: "Cherchez par description ou par rue, triez par date ou par proximité. Les filtres restent disponibles au-dessus de la liste.",
+      },
+      {
+        title: "Suivez ce qui bouge",
+        body: "Une notification à chaque changement de statut, et une discussion attachée à chaque signalement pour échanger avec les agents.",
+      },
+      {
+        title: "Réglez l’application",
+        body: "Glissez depuis le bord droit de l’écran : thème, langue, mises à jour et ce guide s’y trouvent.",
+      },
+    ],
+  },
+
   // ── Réglages ──
   settings: {
     title: "Réglages",

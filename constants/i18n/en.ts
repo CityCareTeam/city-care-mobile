@@ -359,6 +359,37 @@ export const en: typeof fr = {
     upcoming: "upcoming",
   },
 
+  guide: {
+    title: "Guide",
+    menuDetail: "Replay the walkthrough",
+    skip: "Skip",
+    next: "Next",
+    back: "Back",
+    done: "Let’s go",
+    steps: [
+      {
+        title: "Report in two gestures",
+        body: "A category, a description, a photo if you have one. Offline, your report is kept and sent on its own as soon as you’re back online.",
+      },
+      {
+        title: "Follow the city on the map",
+        body: "Pins group together as you zoom out. Filter by status, by category, or show only your own reports.",
+      },
+      {
+        title: "Find everything in the feed",
+        body: "Search by description or street, sort by date or by distance. Filters stay available above the list.",
+      },
+      {
+        title: "Keep track of changes",
+        body: "A notification on every status change, and a discussion attached to each report to talk with city officers.",
+      },
+      {
+        title: "Set up the app",
+        body: "Swipe from the right edge of the screen: theme, language, updates and this guide live there.",
+      },
+    ],
+  },
+
   settings: {
     title: "Settings",
     theme: "Theme",

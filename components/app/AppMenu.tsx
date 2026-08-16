@@ -23,13 +23,15 @@ import { runOnJS, useSharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type Panel = "notes" | "updates" | "settings";
+type Entry = Panel | "guide";
 
 const WIDTH = Math.min(330, Dimensions.get("window").width * 0.84);
 
 /** Au-delà, on considère que le geste voulait fermer et non hésiter. */
 const CLOSE_THRESHOLD = WIDTH * 0.35;
 
-const ICONS: Record<Panel, React.ComponentProps<typeof MaterialIcons>["name"]> = {
+const ICONS: Record<Entry, React.ComponentProps<typeof MaterialIcons>["name"]> = {
+  guide: "school",
   notes: "history",
   updates: "system-update",
   settings: "tune",
@@ -51,7 +53,15 @@ const ICONS: Record<Panel, React.ComponentProps<typeof MaterialIcons>["name"]> =
  * chaque `router.navigate` typé — beaucoup de risque sur les chemins existants
  * pour un résultat identique à l'écran.
  */
-export function AppMenu({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+export function AppMenu({
+  visible,
+  onClose,
+  onOpenGuide,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onOpenGuide: () => void;
+}) {
   const { colors, isDark } = useAppColors();
   const styles = useMemo(() => makeStyles(colors, isDark), [colors, isDark]);
   const insets = useSafeAreaInsets();
@@ -59,7 +69,10 @@ export function AppMenu({ visible, onClose }: { visible: boolean; onClose: () =>
   const { ready: updateReady } = useAppUpdate();
   const t = useStrings();
 
-  const entries: { key: Panel; label: string; detail: string }[] = [
+  const entries: { key: Entry; label: string; detail: string }[] = [
+    // Le guide d'abord : c'est l'entrée qu'on vient chercher quand on ne sait
+    // pas encore ce que les autres veulent dire.
+    { key: "guide", label: t.guide.title, detail: t.guide.menuDetail },
     { key: "notes", label: t.menu.releaseNotes, detail: t.menu.releaseNotesDetail },
     { key: "updates", label: t.menu.updates, detail: t.menu.updatesDetail },
     { key: "settings", label: t.menu.settings, detail: t.menu.settingsDetail },
@@ -98,10 +111,13 @@ export function AppMenu({ visible, onClose }: { visible: boolean; onClose: () =>
     [offset, onClose],
   );
 
-  function open(next: Panel) {
+  function open(next: Entry) {
     // On referme d'abord : deux fenêtres superposées se gênent sur Android.
     onClose();
-    setPanel(next);
+    // Le guide n'appartient pas au panneau : il est monté au-dessus des onglets,
+    // parce qu'il doit aussi pouvoir s'ouvrir tout seul au premier lancement.
+    if (next === "guide") onOpenGuide();
+    else setPanel(next);
   }
 
   const fade = offset.interpolate({
