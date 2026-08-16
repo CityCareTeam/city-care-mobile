@@ -104,7 +104,7 @@ function makeStyles(c: AppColors, bottomInset: number) {
 
     // ── Cards ──
     card: { width: "100%", marginBottom: 8, padding: 0 },
-    rowDivider: { borderBottomWidth: 1, borderBottomColor: c.secondary },
+    rowDivider: { borderBottomWidth: 1, borderBottomColor: c.chipBorder },
 
     // ── Icon bubble ──
     iconBubble: {

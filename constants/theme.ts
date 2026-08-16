@@ -9,23 +9,28 @@
 // l'essentiel de l'écran : c'est ce blanc qu'on prenait en pleine figure. Fond et
 // surface ont donc été descendus ensemble, en gardant l'écart qui fait qu'une
 // carte se détache — sans lui, tout s'aplatit.
+//
+// Deux passes ont été nécessaires : la première, prudente, restait un blanc à
+// peine tiédi. La règle qui s'en dégage est que la surface doit se lire comme un
+// beige clair, pas comme un blanc qui aurait chaud — d'où une douzaine de points
+// d'écart avec le fond, et pas davantage.
 export const CityCareColors = {
   primary: "#f6aa54",
   accent: "#f4e044",
   secondary: "#ebe192",
-  background: "#f5f2e2",
+  background: "#efe9d3",
   text: "#090908",
-  white: "#fdfbf3",
+  white: "#f9f4e4",
   statusRed: "#e53935",
   statusOrange: "#f6aa54",
   statusGreen: "#43a047",
-  inputBg: "#fdfbf3",
-  inputBorder: "#e0ddd0",
+  inputBg: "#f9f4e4",
+  inputBorder: "#ddd6bd",
   // Les pastilles vivent *sur* les cartes : plus sombres que la surface, elles
   // s'y creusent au lieu d'y flotter.
-  chipBg: "#efebd8",
-  chipBorder: "#e0ddd0",
-  loaderOverlay: "rgba(245,242,226,0.6)",
+  chipBg: "#e8e1c7",
+  chipBorder: "#ddd6bd",
+  loaderOverlay: "rgba(239,233,211,0.6)",
 };
 
 // CityCare+ charte graphique — mode sombre

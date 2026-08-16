@@ -79,7 +79,7 @@ export function IncidentChatTab({ messages, loading, connected, sending, dbUserI
       paddingBottom: 10 + bottomInset,
       gap: 8,
       borderTopWidth: 1,
-      borderTopColor: colors.secondary,
+      borderTopColor: colors.chipBorder,
     },
     input: {
       flex: 1,

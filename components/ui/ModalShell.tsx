@@ -37,21 +37,27 @@ export function ModalShell({ visible, title, onClose, children }: Props) {
       shadowRadius: 24,
       elevation: 8,
     },
+    // Un liseré, pas une bande : la barre était soulignée de `secondary`, qui
+    // vaut un jaune franc en clair. Il tranchait sur toute la largeur de chaque
+    // fenêtre de l'application, pour ne séparer que deux zones de même couleur.
+    // Une teinte de bordure neutre suffit à poser la limite.
     header: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
+      gap: 12,
       paddingHorizontal: 20,
-      paddingVertical: 16,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.secondary,
+      paddingTop: 18,
+      paddingBottom: 14,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.chipBorder,
     },
-    title: { fontSize: 17, fontWeight: "700", color: colors.text },
+    title: { fontSize: 17, fontWeight: "800", color: colors.text, letterSpacing: 0.2, flex: 1 },
     closeBtn: {
-      width: 30,
-      height: 30,
-      borderRadius: 15,
-      backgroundColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.06)",
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: isDark ? "rgba(255,255,255,0.09)" : colors.chipBg,
       alignItems: "center",
       justifyContent: "center",
     },

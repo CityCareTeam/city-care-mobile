@@ -470,7 +470,7 @@ function makeStyles(c: AppColors, isDark: boolean) {
       paddingHorizontal: 14,
       paddingVertical: 11,
     },
-    suggestionDivider: { borderBottomWidth: 1, borderBottomColor: c.secondary },
+    suggestionDivider: { borderBottomWidth: 1, borderBottomColor: c.chipBorder },
     suggestionText: { fontSize: 13, color: c.text, flex: 1, lineHeight: 18 },
 
     // ── Type grid ──

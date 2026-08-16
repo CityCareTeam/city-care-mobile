@@ -57,6 +57,17 @@ const FOREGROUND_CHECK_INTERVAL_MS = 5 * 60 * 1000;
 function useForegroundUpdateCheck() {
   const lastCheck = useRef(0);
 
+  // Une recherche au montage, sans attendre un passage en arrière-plan.
+  //
+  // `expo-updates` en fait une au lancement, mais elle vit du côté natif et son
+  // résultat n'atteignait pas toujours l'écran : en pratique, la bannière
+  // n'apparaissait qu'après une recherche manuelle. Une requête de plus au
+  // démarrage coûte moins cher qu'une mise à jour que personne ne voit.
+  useEffect(() => {
+    lastCheck.current = Date.now();
+    void checkAndFetchUpdate();
+  }, []);
+
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (state) => {
       if (state !== "active") return;
