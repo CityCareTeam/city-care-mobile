@@ -1,5 +1,8 @@
-import nativeRuntime from '@/constants/native-runtime.json';
 import { existsSync } from 'node:fs';
+// Chemins relatifs pour ces deux-là : ce test lit des fichiers du dépôt, pas des
+// modules de l'application. L'alias `@/` est résolu par Metro et par Jest, mais
+// pas par tous les outils qui ouvriront ce fichier.
+import nativeRuntime from '../../constants/native-runtime.json';
 import { dependencies } from '../../package.json';
 
 /**
