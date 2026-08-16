@@ -1,6 +1,7 @@
 import { ModalShell } from "@/components/ui/ModalShell";
 import { useAppColors } from "@/hooks/use-app-colors";
 import { checkAndFetchUpdate, useAppUpdate, useRunningUpdate } from "@/hooks/use-app-update";
+import { useStrings } from "@/hooks/use-strings";
 import { appVersion } from "@/utils/app-version";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import * as Updates from "expo-updates";
@@ -9,12 +10,7 @@ import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from "rea
 
 type Status = "idle" | "checking" | "up-to-date" | "downloaded" | "unavailable" | "failed";
 
-const MESSAGES: Record<Exclude<Status, "idle" | "checking">, string> = {
-  "up-to-date": "Vous avez déjà la dernière version.",
-  downloaded: "Mise à jour téléchargée. Relancez pour l’appliquer.",
-  unavailable: "Les mises à jour ne sont pas actives sur cette installation.",
-  failed: "Recherche impossible. Vérifiez votre connexion.",
-};
+
 
 /**
  * État des mises à jour, et bouton pour en chercher une.
@@ -30,6 +26,14 @@ export function UpdatesModal({ visible, onClose }: { visible: boolean; onClose: 
   const [status, setStatus] = useState<Status>("idle");
   const { ready, applying, apply } = useAppUpdate();
   const bundle = useRunningUpdate();
+  const t = useStrings();
+
+  const messages: Record<Exclude<Status, "idle" | "checking">, string> = {
+    "up-to-date": t.updates.upToDate,
+    downloaded: t.updates.downloaded,
+    unavailable: t.updates.unavailable,
+    failed: t.updates.failed,
+  };
 
   async function check() {
     setStatus("checking");
@@ -39,7 +43,7 @@ export function UpdatesModal({ visible, onClose }: { visible: boolean; onClose: 
   const pending = ready || status === "downloaded";
 
   return (
-    <ModalShell visible={visible} title="Mises à jour" onClose={onClose}>
+    <ModalShell visible={visible} title={t.updates.title} onClose={onClose}>
       {/* L'état d'abord, en gros : c'est la seule question qu'on se pose en
           ouvrant cet écran. Le détail vient après, pour qui le cherche. */}
       <View style={styles.hero}>
@@ -56,27 +60,27 @@ export function UpdatesModal({ visible, onClose }: { visible: boolean; onClose: 
           />
         </View>
         <Text style={styles.heroTitle}>
-          {pending ? "Mise à jour prête" : "Application à jour"}
+          {pending ? t.updates.ready : t.updates.upToDateTitle}
         </Text>
         <Text style={styles.heroDetail}>
           {status !== "idle" && status !== "checking"
-            ? MESSAGES[status]
+            ? messages[status]
             : pending
-              ? "Relancez pour l’appliquer."
-              : "Aucune mise à jour en attente sur cet appareil."}
+              ? t.updates.applyHint
+              : t.updates.none}
         </Text>
       </View>
 
       <View style={styles.rows}>
-        <Row label="Version installée" value={appVersion()} styles={styles} />
+        <Row label={t.updates.installedVersion} value={appVersion()} styles={styles} />
         <Row
-          label="Bundle en cours"
+          label={t.updates.runningBundle}
           // Sans identifiant, c'est celui livré avec l'application : le dire
           // vaut mieux qu'un tiret, qui se lit comme une donnée manquante.
-          value={bundle || "Livré avec l’application"}
+          value={bundle || t.updates.embedded}
           styles={styles}
         />
-        <Row label="Canal" value={Updates.channel ?? "aucun"} styles={styles} last />
+        <Row label={t.updates.channel} value={Updates.channel ?? t.updates.noChannel} styles={styles} last />
       </View>
 
       {pending ? (
@@ -85,12 +89,12 @@ export function UpdatesModal({ visible, onClose }: { visible: boolean; onClose: 
           onPress={() => void apply()}
           disabled={applying}
           accessibilityRole="button"
-          accessibilityLabel="Relancer l’application pour appliquer la mise à jour"
+          accessibilityLabel={t.updates.relaunch}
         >
           {applying ? (
             <ActivityIndicator size="small" color="#fff" />
           ) : (
-            <Text style={styles.actionLabel}>Relancer maintenant</Text>
+            <Text style={styles.actionLabel}>{t.updates.relaunch}</Text>
           )}
         </TouchableOpacity>
       ) : (
@@ -99,12 +103,12 @@ export function UpdatesModal({ visible, onClose }: { visible: boolean; onClose: 
           onPress={() => void check()}
           disabled={status === "checking"}
           accessibilityRole="button"
-          accessibilityLabel="Rechercher une mise à jour"
+          accessibilityLabel={t.updates.check}
         >
           {status === "checking" ? (
             <ActivityIndicator size="small" color="#fff" />
           ) : (
-            <Text style={styles.actionLabel}>Rechercher une mise à jour</Text>
+            <Text style={styles.actionLabel}>{t.updates.check}</Text>
           )}
         </TouchableOpacity>
       )}

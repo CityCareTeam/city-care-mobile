@@ -2,15 +2,17 @@ import { ModalShell } from "@/components/ui/ModalShell";
 import { CityCareColors, CityCareColorsDark } from "@/constants/theme";
 import { usePreferences } from "@/context/PreferencesContext";
 import { useAppColors } from "@/hooks/use-app-colors";
+import { useStrings } from "@/hooks/use-strings";
+import type { LanguagePreference } from "@/constants/i18n";
 import type { ThemePreference } from "@/storage/preferences";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useMemo } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-const THEMES: { value: ThemePreference; label: string }[] = [
-  { value: "system", label: "Système" },
-  { value: "light", label: "Clair" },
-  { value: "dark", label: "Sombre" },
+const LANGUAGES: { value: LanguagePreference; label: string; flag: string }[] = [
+  { value: "system", label: "", flag: "🌐" },
+  { value: "fr", label: "Français", flag: "🇫🇷" },
+  { value: "en", label: "English", flag: "🇬🇧" },
 ];
 
 /**
@@ -21,13 +23,20 @@ const THEMES: { value: ThemePreference; label: string }[] = [
 export function SettingsModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const { colors } = useAppColors();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { theme, setTheme } = usePreferences();
+  const { theme, setTheme, language, setLanguage } = usePreferences();
+  const s = useStrings();
+
+  const themes: { value: ThemePreference; label: string }[] = [
+    { value: "system", label: s.settings.themeSystem },
+    { value: "light", label: s.settings.themeLight },
+    { value: "dark", label: s.settings.themeDark },
+  ];
 
   return (
-    <ModalShell visible={visible} title="Réglages" onClose={onClose}>
-      <Text style={styles.label}>Thème</Text>
+    <ModalShell visible={visible} title={s.settings.title} onClose={onClose}>
+      <Text style={styles.label}>{s.settings.theme}</Text>
       <View style={styles.themes}>
-        {THEMES.map((option) => (
+        {themes.map((option) => (
           <ThemeCard
             key={option.value}
             value={option.value}
@@ -40,25 +49,38 @@ export function SettingsModal({ visible, onClose }: { visible: boolean; onClose:
         ))}
       </View>
       <Text style={styles.hint}>
-        {theme === "system"
-          ? "L’application suit le réglage de votre téléphone."
-          : "Choix fixé pour cet appareil, quel que soit le réglage du téléphone."}
+        {theme === "system" ? s.settings.themeFollowsDevice : s.settings.themeFixed}
       </Text>
 
       <View style={styles.divider} />
 
-      <Text style={styles.label}>Langue</Text>
-      <View style={styles.langRow}>
-        <View style={styles.langCurrent}>
-          <Text style={styles.langFlag}>🇫🇷</Text>
-          <Text style={styles.langName}>Français</Text>
-        </View>
-        <View style={styles.langSoon}>
-          <Text style={styles.langSoonText}>Anglais bientôt</Text>
-        </View>
+      <Text style={styles.label}>{s.settings.language}</Text>
+      <View style={styles.langs}>
+        {LANGUAGES.map((option) => {
+          const active = language === option.value;
+          return (
+            <TouchableOpacity
+              key={option.value}
+              style={[styles.langCard, active && { borderColor: colors.primary, borderWidth: 2 }]}
+              onPress={() => setLanguage(option.value)}
+              activeOpacity={0.85}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: active }}
+              accessibilityLabel={option.label || s.settings.languageSystem}
+            >
+              <Text style={styles.langFlag}>{option.flag}</Text>
+              <Text style={[styles.langName, active && { color: colors.primary, fontWeight: "700" }]}>
+                {/* Le libellé « Système » est le seul à se traduire : les deux
+                    autres portent leur propre nom, dans leur propre langue. */}
+                {option.label || s.settings.languageSystem}
+              </Text>
+              {active && <MaterialIcons name="check-circle" size={14} color={colors.primary} />}
+            </TouchableOpacity>
+          );
+        })}
       </View>
       <Text style={styles.hint}>
-        Le choix de la langue s’activera quand l’application sera traduite.
+        {language === "system" ? s.settings.languageFollowsDevice : s.settings.languageFixed}
       </Text>
     </ModalShell>
   );
@@ -183,27 +205,18 @@ function makeStyles(colors: ReturnType<typeof useAppColors>["colors"]) {
     },
 
     // ── Langue ──
-    langRow: {
+    langs: { gap: 8, marginBottom: 12 },
+    langCard: {
       flexDirection: "row",
       alignItems: "center",
-      justifyContent: "space-between",
-      gap: 12,
+      gap: 10,
       padding: 12,
       borderRadius: 14,
       borderWidth: 1,
       borderColor: colors.chipBorder,
       backgroundColor: colors.white,
-      marginBottom: 10,
     },
-    langCurrent: { flexDirection: "row", alignItems: "center", gap: 9 },
     langFlag: { fontSize: 18 },
-    langName: { fontSize: 14, fontWeight: "600", color: colors.text },
-    langSoon: {
-      paddingHorizontal: 9,
-      paddingVertical: 4,
-      borderRadius: 10,
-      backgroundColor: colors.chipBg,
-    },
-    langSoonText: { fontSize: 11, fontWeight: "600", color: colors.text, opacity: 0.5 },
+    langName: { flex: 1, fontSize: 14, fontWeight: "600", color: colors.text },
   });
 }

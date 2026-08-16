@@ -4,6 +4,7 @@ import { ReleaseNotesModal } from "@/components/profile/ReleaseNotesModal";
 import { AppVersion } from "@/components/ui/AppVersion";
 import { useAppColors } from "@/hooks/use-app-colors";
 import { useAppUpdate } from "@/hooks/use-app-update";
+import { useStrings } from "@/hooks/use-strings";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -27,16 +28,11 @@ const WIDTH = Math.min(330, Dimensions.get("window").width * 0.84);
 /** Au-delà, on considère que le geste voulait fermer et non hésiter. */
 const CLOSE_THRESHOLD = WIDTH * 0.35;
 
-const ENTRIES: {
-  key: Panel;
-  label: string;
-  detail: string;
-  icon: React.ComponentProps<typeof MaterialIcons>["name"];
-}[] = [
-  { key: "notes", label: "Notes de version", detail: "Ce qui a changé", icon: "history" },
-  { key: "updates", label: "Mises à jour", detail: "Vérifier et appliquer", icon: "system-update" },
-  { key: "settings", label: "Réglages", detail: "Thème, langue", icon: "tune" },
-];
+const ICONS: Record<Panel, React.ComponentProps<typeof MaterialIcons>["name"]> = {
+  notes: "history",
+  updates: "system-update",
+  settings: "tune",
+};
 
 /**
  * Menu latéral de l'application.
@@ -60,6 +56,13 @@ export function AppMenu({ visible, onClose }: { visible: boolean; onClose: () =>
   const insets = useSafeAreaInsets();
   const [panel, setPanel] = useState<Panel | null>(null);
   const { ready: updateReady } = useAppUpdate();
+  const t = useStrings();
+
+  const entries: { key: Panel; label: string; detail: string }[] = [
+    { key: "notes", label: t.menu.releaseNotes, detail: t.menu.releaseNotesDetail },
+    { key: "updates", label: t.menu.updates, detail: t.menu.updatesDetail },
+    { key: "settings", label: t.menu.settings, detail: t.menu.settingsDetail },
+  ];
 
   // `0` panneau ouvert, `WIDTH` panneau sorti de l'écran par la droite. Le geste
   // écrit directement dans cette valeur, l'animation aussi : une seule source.
@@ -114,7 +117,7 @@ export function AppMenu({ visible, onClose }: { visible: boolean; onClose: () =>
             style={StyleSheet.absoluteFill}
             onPress={onClose}
             accessibilityRole="button"
-            accessibilityLabel="Fermer le menu"
+            accessibilityLabel={t.menu.close}
           />
         </Animated.View>
 
@@ -134,7 +137,7 @@ export function AppMenu({ visible, onClose }: { visible: boolean; onClose: () =>
 
           <View style={styles.header}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.eyebrow}>Application</Text>
+              <Text style={styles.eyebrow}>{t.menu.eyebrow}</Text>
               <Text style={styles.title}>City Care +</Text>
             </View>
             <TouchableOpacity
@@ -142,14 +145,14 @@ export function AppMenu({ visible, onClose }: { visible: boolean; onClose: () =>
               onPress={onClose}
               hitSlop={10}
               accessibilityRole="button"
-              accessibilityLabel="Fermer le menu"
+              accessibilityLabel={t.menu.close}
             >
               <MaterialIcons name="close" size={18} color={colors.text} />
             </TouchableOpacity>
           </View>
 
           <View style={styles.entries}>
-            {ENTRIES.map((entry) => (
+            {entries.map((entry) => (
               <TouchableOpacity
                 key={entry.key}
                 style={styles.entry}
@@ -159,7 +162,7 @@ export function AppMenu({ visible, onClose }: { visible: boolean; onClose: () =>
                 accessibilityLabel={entry.label}
               >
                 <View style={[styles.entryIcon, { backgroundColor: colors.primary + "1F" }]}>
-                  <MaterialIcons name={entry.icon} size={19} color={colors.primary} />
+                  <MaterialIcons name={ICONS[entry.key]} size={19} color={colors.primary} />
                 </View>
                 <View style={styles.entryText}>
                   <Text style={styles.entryLabel}>{entry.label}</Text>

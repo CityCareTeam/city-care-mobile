@@ -1,64 +1,20 @@
-export const STRINGS = {
-  api: {
-    networkError: "Connexion impossible. Vérifiez votre réseau et réessayez.",
-    invalidCredentials: "Identifiant ou mot de passe incorrect.",
-    registerError: "La création de compte a échoué. Réessayez dans un moment.",
-    sessionExpired: "Votre session a expiré, veuillez vous reconnecter.",
-    unauthorized: "Vous n'avez pas accès à cette fonctionnalité.",
-    unauthenticated: "Veuillez vous connecter pour continuer.",
-    profileLoadError: "Impossible de charger vos informations. Réessayez.",
-    incidentsLoadError: "Impossible de charger les signalements. Réessayez.",
-    updateProfileError: "Impossible de mettre à jour le profil.",
-    deleteAccountError: "Impossible de supprimer le compte.",
-    notifSettingsLoadError: "Impossible de charger les préférences de notifications.",
-    notifSettingsUpdateError: "Impossible de mettre à jour les préférences de notifications.",
-    unknownError: "Une erreur inattendue s'est produite.",
-    genericError: "Quelque chose s'est mal passé. Réessayez.",
-  },
-  toast: {
-    missingFieldsTitle: "Champs manquants",
-    missingFields: "Veuillez remplir tous les champs avant de continuer.",
-    passwordMismatchTitle: "Mots de passe différents",
-    passwordMismatch: "Les deux mots de passe ne correspondent pas.",
-    passwordTooShort: "Le mot de passe doit contenir au moins 8 caractères.",
-    nameTooLong: "Le prénom et le nom ne peuvent pas dépasser 30 caractères.",
-    usernameTooLong: "Le nom d'utilisateur ne peut pas dépasser 30 caractères.",
-    nameInvalidChars: "Le prénom et le nom ne peuvent contenir que des lettres, espaces, tirets ou apostrophes.",
-    usernameInvalidChars: "Le nom d'utilisateur ne peut contenir que des lettres, chiffres, points, tirets ou underscores (pas d'espace).",
-    loginFailedTitle: "Connexion échouée",
-    registerFailedTitle: "Inscription échouée",
-    registerSuccessTitle: "Compte créé !",
-    registerSuccess: "Bienvenue ! Vous pouvez maintenant vous connecter.",
-    reportSuccessTitle: "Signalement envoyé !",
-    reportSuccess: "Merci, votre signalement a bien été enregistré.",
-  },
-  photos: {
-    permissionDeniedCamera: "Autorisez l'accès à l'appareil photo dans les paramètres.",
-    permissionDeniedGallery: "Autorisez l'accès à vos photos dans les paramètres.",
-    limitReached: "Vous avez atteint la limite de 3 photos par signalement.",
-    uploadError: "Certaines photos n'ont pas pu être envoyées.",
-    deleteError: "Impossible de supprimer la photo. Réessayez.",
-    loadError: "Impossible de charger les photos.",
-    deleteConfirmTitle: "Supprimer la photo",
-    deleteConfirmMsg: "Cette suppression est définitive. Confirmer ?",
-  },
-  alert: {
-    errorTitle: "Oups, une erreur",
-    sessionExpiredTitle: "Session expirée",
-    sessionExpiredMsg: "Votre session a expiré. Reconnectez-vous pour continuer.",
-    deleteIncidentTitle: "Supprimer le signalement",
-    deleteIncidentMsg: "Cette suppression est définitive. Confirmer ?",
-    deleteAccountTitle: "Supprimer le compte",
-    deleteAccountMsg: "Cette action est irréversible. Votre compte sera définitivement supprimé.",
-    deleteAccountConfirm: "Supprimer définitivement",
-    passwordChangedTitle: "Succès",
-    passwordChangedMsg: "Votre mot de passe a bien été modifié.",
-  },
-  emptyState: {
-    noMyIncidents: "Vous n'avez pas encore fait de signalement.",
-    noFilterResults: "Aucun résultat pour ces filtres.",
-    noAllIncidents: "Aucun signalement dans la ville pour le moment.",
-    agentAllDone: "Tout est traité, bon travail !",
-    noIncidents: "Aucun signalement.",
-  },
-} as const;
+import { getStrings, type Dictionary } from "@/constants/i18n";
+
+/**
+ * Textes de l'application, dans la langue active.
+ *
+ * Ce fichier portait les chaînes en dur. Elles vivent maintenant dans
+ * `constants/i18n/`, une par langue — mais une quinzaine de fichiers lisent
+ * `STRINGS.api.networkError` et consorts, et ces lectures se font pour la
+ * plupart dans des gestionnaires d'événements, hors de tout rendu.
+ *
+ * D'où ce relais : chaque accès interroge la langue active plutôt qu'une valeur
+ * figée à l'import. Une alerte déclenchée après un changement de langue sort
+ * dans la bonne, sans que l'appelant ait à s'en occuper.
+ *
+ * Pour du texte *affiché*, préférez `useStrings()` : il redéclenche le rendu au
+ * changement de langue, ce qu'un objet ne peut pas faire.
+ */
+export const STRINGS = new Proxy({} as Dictionary, {
+  get: (_target, key: string) => getStrings()[key as keyof Dictionary],
+});

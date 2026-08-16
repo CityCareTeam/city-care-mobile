@@ -7,11 +7,11 @@ describe('preferences', () => {
   // `system` n'est pas un pis-aller : tant que personne n'a choisi, l'application
   // suit l'appareil.
   it('suit le système par défaut', async () => {
-    expect(await loadPreferences()).toEqual({ theme: 'system' });
+    expect(await loadPreferences()).toEqual({ theme: 'system', language: 'system' });
   });
 
   it('retient le thème choisi', async () => {
-    await savePreferences({ theme: 'dark' });
+    await savePreferences({ theme: 'dark', language: 'system' });
     expect((await loadPreferences()).theme).toBe('dark');
   });
 

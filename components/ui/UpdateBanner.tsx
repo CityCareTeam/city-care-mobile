@@ -1,5 +1,6 @@
 import { useAppUpdate } from "@/hooks/use-app-update";
 import { useAppColors } from "@/hooks/use-app-colors";
+import { useStrings } from "@/hooks/use-strings";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useMemo } from "react";
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -19,6 +20,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
  */
 export function UpdateBanner() {
   const { ready, applying, apply, dismiss } = useAppUpdate();
+  const t = useStrings();
   const { colors, isDark } = useAppColors();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(isDark), [isDark]);
@@ -32,8 +34,8 @@ export function UpdateBanner() {
     >
       <MaterialIcons name="system-update" size={20} color="#fff" />
       <View style={styles.text}>
-        <Text style={styles.title}>Mise à jour prête</Text>
-        <Text style={styles.detail}>Relancez l’application pour l’appliquer.</Text>
+        <Text style={styles.title}>{t.updates.bannerTitle}</Text>
+        <Text style={styles.detail}>{t.updates.bannerDetail}</Text>
       </View>
       <TouchableOpacity
         style={styles.action}
@@ -41,19 +43,19 @@ export function UpdateBanner() {
         disabled={applying}
         activeOpacity={0.8}
         accessibilityRole="button"
-        accessibilityLabel="Relancer l’application pour appliquer la mise à jour"
+        accessibilityLabel={t.updates.bannerApply}
       >
         {applying ? (
           <ActivityIndicator size="small" color={colors.primary} />
         ) : (
-          <Text style={[styles.actionLabel, { color: colors.primary }]}>Relancer</Text>
+          <Text style={[styles.actionLabel, { color: colors.primary }]}>{t.updates.bannerAction}</Text>
         )}
       </TouchableOpacity>
       <TouchableOpacity
         onPress={dismiss}
         hitSlop={10}
         accessibilityRole="button"
-        accessibilityLabel="Ignorer la mise à jour"
+        accessibilityLabel={t.updates.bannerDismiss}
       >
         <MaterialIcons name="close" size={18} color="rgba(255,255,255,0.85)" />
       </TouchableOpacity>

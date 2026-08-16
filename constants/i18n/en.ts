@@ -1,0 +1,132 @@
+import type { fr } from "@/constants/i18n/fr";
+
+/**
+ * Traduction anglaise, typée d'après le dictionnaire français : oublier une clé
+ * ne compile pas.
+ *
+ * On traduit l'intention, pas les mots. « Oups, une erreur » ne devient pas
+ * « Oops, an error » — l'anglais d'interface est plus sobre que le français sur
+ * ce registre.
+ */
+export const en: typeof fr = {
+  api: {
+    networkError: "Can’t connect. Check your network and try again.",
+    invalidCredentials: "Incorrect username or password.",
+    registerError: "Account creation failed. Try again in a moment.",
+    sessionExpired: "Your session has expired, please sign in again.",
+    unauthorized: "You don’t have access to this feature.",
+    unauthenticated: "Please sign in to continue.",
+    profileLoadError: "Couldn’t load your details. Try again.",
+    incidentsLoadError: "Couldn’t load reports. Try again.",
+    updateProfileError: "Couldn’t update your profile.",
+    deleteAccountError: "Couldn’t delete the account.",
+    notifSettingsLoadError: "Couldn’t load notification preferences.",
+    notifSettingsUpdateError: "Couldn’t update notification preferences.",
+    unknownError: "Something unexpected happened.",
+    genericError: "Something went wrong. Try again.",
+  },
+  toast: {
+    missingFieldsTitle: "Missing fields",
+    missingFields: "Please fill in every field before continuing.",
+    passwordMismatchTitle: "Passwords don’t match",
+    passwordMismatch: "The two passwords are different.",
+    passwordTooShort: "Password must be at least 8 characters.",
+    nameTooLong: "First and last name can’t exceed 30 characters.",
+    usernameTooLong: "Username can’t exceed 30 characters.",
+    nameInvalidChars: "First and last name can only contain letters, spaces, hyphens or apostrophes.",
+    usernameInvalidChars: "Username can only contain letters, digits, dots, hyphens or underscores — no spaces.",
+    loginFailedTitle: "Sign-in failed",
+    registerFailedTitle: "Sign-up failed",
+    registerSuccessTitle: "Account created",
+    registerSuccess: "Welcome! You can now sign in.",
+    reportSuccessTitle: "Report sent",
+    reportSuccess: "Thank you, your report has been recorded.",
+  },
+  photos: {
+    permissionDeniedCamera: "Allow camera access in your settings.",
+    permissionDeniedGallery: "Allow photo access in your settings.",
+    limitReached: "You’ve reached the limit of 3 photos per report.",
+    uploadError: "Some photos couldn’t be sent.",
+    deleteError: "Couldn’t delete the photo. Try again.",
+    loadError: "Couldn’t load photos.",
+    deleteConfirmTitle: "Delete photo",
+    deleteConfirmMsg: "This can’t be undone. Confirm?",
+  },
+  alert: {
+    errorTitle: "Something went wrong",
+    sessionExpiredTitle: "Session expired",
+    sessionExpiredMsg: "Your session has expired. Sign in again to continue.",
+    deleteIncidentTitle: "Delete report",
+    deleteIncidentMsg: "This can’t be undone. Confirm?",
+    deleteAccountTitle: "Delete account",
+    deleteAccountMsg: "This can’t be undone. Your account will be permanently deleted.",
+    deleteAccountConfirm: "Delete permanently",
+    passwordChangedTitle: "Done",
+    passwordChangedMsg: "Your password has been changed.",
+    cancel: "Cancel",
+  },
+  emptyState: {
+    noMyIncidents: "You haven’t reported anything yet.",
+    noFilterResults: "Nothing matches these filters.",
+    noAllIncidents: "No reports in the city right now.",
+    agentAllDone: "All caught up — nice work.",
+    noIncidents: "No reports.",
+  },
+
+  tabs: {
+    home: "Home",
+    map: "Map",
+    notifications: "Alerts",
+    profile: "Profile",
+  },
+
+  menu: {
+    eyebrow: "Application",
+    close: "Close menu",
+    open: "Open the app menu",
+    releaseNotes: "Release notes",
+    releaseNotesDetail: "What’s changed",
+    updates: "Updates",
+    updatesDetail: "Check and apply",
+    settings: "Settings",
+    settingsDetail: "Theme, language",
+  },
+
+  updates: {
+    title: "Updates",
+    ready: "Update ready",
+    upToDateTitle: "App is up to date",
+    installedVersion: "Installed version",
+    runningBundle: "Running bundle",
+    embedded: "Shipped with the app",
+    channel: "Channel",
+    noChannel: "none",
+    none: "No update waiting on this device.",
+    applyHint: "Restart to apply it.",
+    check: "Check for updates",
+    relaunch: "Restart now",
+    upToDate: "You already have the latest version.",
+    downloaded: "Update downloaded. Restart to apply it.",
+    unavailable: "Updates aren’t enabled on this installation.",
+    failed: "Check failed. Verify your connection.",
+    bannerTitle: "Update ready",
+    bannerDetail: "Restart the app to apply it.",
+    bannerAction: "Restart",
+    bannerApply: "Restart the app to apply the update",
+    bannerDismiss: "Dismiss the update",
+  },
+
+  settings: {
+    title: "Settings",
+    theme: "Theme",
+    themeSystem: "System",
+    themeLight: "Light",
+    themeDark: "Dark",
+    themeFollowsDevice: "The app follows your phone’s setting.",
+    themeFixed: "Fixed for this device, whatever your phone is set to.",
+    language: "Language",
+    languageSystem: "System",
+    languageFollowsDevice: "The app follows your phone’s language.",
+    languageFixed: "Fixed for this device, whatever your phone is set to.",
+  },
+};

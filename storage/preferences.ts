@@ -1,3 +1,4 @@
+import type { LanguagePreference } from "@/constants/i18n";
 import { readJson, writeJson } from "@/storage/local-store";
 
 const KEY = "app_preferences";
@@ -11,11 +12,13 @@ export type ThemePreference = "light" | "dark" | "system";
 
 export type Preferences = {
   theme: ThemePreference;
+  language: LanguagePreference;
 };
 
-export const DEFAULT_PREFERENCES: Preferences = { theme: "system" };
+export const DEFAULT_PREFERENCES: Preferences = { theme: "system", language: "system" };
 
 const THEMES: ThemePreference[] = ["light", "dark", "system"];
+const LANGUAGES: LanguagePreference[] = ["fr", "en", "system"];
 
 /**
  * Réglages d'application — ceux qui n'appartiennent pas au compte.
@@ -27,10 +30,16 @@ const THEMES: ThemePreference[] = ["light", "dark", "system"];
 export async function loadPreferences(): Promise<Preferences> {
   const stored = await readJson<Partial<Preferences>>(KEY);
   const theme = stored?.theme;
+  const language = stored?.language;
   return {
     // Une valeur écrite par une version antérieure du format ne doit pas
-    // bloquer l'application sur un thème qui n'existe plus.
+    // bloquer l'application sur un thème ou une langue qui n'existent plus —
+    // ni sur `undefined`, pour les préférences enregistrées avant que la langue
+    // n'existe.
     theme: THEMES.includes(theme as ThemePreference) ? (theme as ThemePreference) : "system",
+    language: LANGUAGES.includes(language as LanguagePreference)
+      ? (language as LanguagePreference)
+      : "system",
   };
 }
 

@@ -1,4 +1,5 @@
 import { AuthProvider } from "@/context/AuthContext";
+import { useStrings } from "@/hooks/use-strings";
 import { NotificationProvider, useNotificationContext } from "@/context/NotificationContext";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { Tabs } from "expo-router";
@@ -27,10 +28,10 @@ import { CityCareColors, CityCareColorsDark } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
 const TABS = [
-  { name: "index",         label: "Accueil", icon: "chart.bar.fill" as const },
-  { name: "explore",       label: "Carte",   icon: "map.fill" as const },
-  { name: "notifications", label: "Notifs",  icon: "bell.fill" as const },
-  { name: "profile",       label: "Profil",  icon: "person.fill" as const },
+  { name: "index",         key: "home" as const,          icon: "chart.bar.fill" as const },
+  { name: "explore",       key: "map" as const,           icon: "map.fill" as const },
+  { name: "notifications", key: "notifications" as const, icon: "bell.fill" as const },
+  { name: "profile",       key: "profile" as const,       icon: "person.fill" as const },
 ];
 
 /** Capturé hors composant : un worklet ne doit lire que des valeurs simples. */
@@ -50,6 +51,7 @@ const STRETCH_VELOCITY = 4000;
 
 function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
   const { unreadCount } = useNotificationContext();
+  const t = useStrings();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const colors = isDark ? CityCareColorsDark : CityCareColors;
@@ -192,7 +194,7 @@ function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
                   )}
                 </View>
                 {isFocused && (
-                  <Text style={styles.label}>{tab.label}</Text>
+                  <Text style={styles.label}>{t.tabs[tab.key]}</Text>
                 )}
               </View>
             </Pressable>
@@ -216,7 +218,7 @@ export default function TabLayout() {
           <Tabs.Screen
             key={tab.name}
             name={tab.name}
-            options={{ title: tab.label }}
+            options={{ title: tab.name }}
           />
         ))}
       </Tabs>
