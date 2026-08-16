@@ -1,4 +1,5 @@
 import { ToastMessage } from "@/components/ui/ToastMessage";
+import { UpdateBanner } from "@/components/ui/UpdateBanner";
 import { CityCareColors, CityCareColorsDark } from "@/constants/theme";
 import {
     DarkTheme,
@@ -39,6 +40,7 @@ export default function RootLayout() {
           />
         </Stack>
         <StatusBar style="auto" />
+        <UpdateBanner />
         <ToastMessage />
       </ThemeProvider>
     </GestureHandlerRootView>

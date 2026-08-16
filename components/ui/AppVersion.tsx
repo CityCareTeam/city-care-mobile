@@ -1,6 +1,7 @@
+import { useRunningUpdate } from "@/hooks/use-app-update";
 import { useAppColors } from "@/hooks/use-app-colors";
 import { baseVersion, buildLabel, releaseTag } from "@/utils/app-version";
-import { useMemo } from "react";
+import { Fragment, useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 /**
@@ -19,6 +20,16 @@ import { StyleSheet, Text, View } from "react-native";
  * Posé à côté, il flottait — un « 3 » orphelin entre deux blancs, qu'on lisait
  * comme une note de bas de page plutôt que comme le numéro de la beta qu'on a
  * sous les yeux. Segmenté, il appartient visiblement au canal qu'il numérote.
+ *
+ * Un troisième segment s'ajoute lorsqu'une mise à jour à la volée a remplacé le
+ * bundle livré avec l'APK :
+ *
+ *     v1.5.6  ( ● BETA │ #3 │ a1b2c3d4 )
+ *
+ * Depuis l'OTA, le rang de build ne suffit plus à dire ce qui tourne : deux
+ * appareils portant la même beta #3 peuvent exécuter deux JS différents. Le
+ * segment ne paraît que dans ce cas — sur un APK fraîchement installé il n'y a
+ * rien à distinguer, et l'afficher quand même n'aurait été que du bruit.
  */
 
 /**
@@ -38,6 +49,12 @@ export function AppVersion() {
   const tag = releaseTag();
   const base = baseVersion();
   const label = buildLabel();
+  const update = useRunningUpdate();
+
+  // Les segments qui suivent le canal, dans l'ordre où on les lit : d'abord quel
+  // binaire, ensuite quel JS tourne dessus.
+  const segments = [label !== "" ? decorate(label) : null, update !== "" ? update : null]
+    .filter((seg): seg is string => seg !== null);
 
   return (
     <View
@@ -45,7 +62,8 @@ export function AppVersion() {
       accessibilityRole="text"
       accessibilityLabel={
         tag
-          ? `Version ${base}, version d'essai ${tag}${label ? `, build ${label}` : ""}`
+          ? `Version ${base}, version d'essai ${tag}${label ? `, build ${label}` : ""}` +
+            (update ? `, mise à jour ${update}` : "")
           : `Version ${base}`
       }
     >
@@ -62,12 +80,12 @@ export function AppVersion() {
           <Text style={[styles.badgeText, { color: colors.primary }]}>
             {tag.toUpperCase()}
           </Text>
-          {label !== "" && (
-            <>
+          {segments.map((segment) => (
+            <Fragment key={segment}>
               <View style={[styles.divider, { backgroundColor: colors.primary + "40" }]} />
-              <Text style={[styles.label, { color: colors.primary }]}>{decorate(label)}</Text>
-            </>
-          )}
+              <Text style={[styles.label, { color: colors.primary }]}>{segment}</Text>
+            </Fragment>
+          ))}
         </View>
       )}
     </View>

@@ -8,6 +8,23 @@ const expoConfig: { version: string; extra: Record<string, unknown> } = {
 
 jest.mock('expo-constants', () => ({ __esModule: true, default: { get expoConfig() { return expoConfig; } } }));
 
+// Bundle en cours d'exécution. Par défaut celui embarqué dans l'APK — l'état
+// de tout appareil qui n'a pas encore reçu de mise à jour à la volée.
+const running: { updateId: string | null; isEmbeddedLaunch: boolean } = {
+  updateId: null,
+  isEmbeddedLaunch: true,
+};
+
+jest.mock('expo-updates', () => ({
+  useUpdates: () => ({ isUpdatePending: false, currentlyRunning: running }),
+  reloadAsync: () => Promise.resolve(),
+}));
+
+beforeEach(() => {
+  running.updateId = null;
+  running.isEmbeddedLaunch = true;
+});
+
 function renderVersion(version: string, extra: Record<string, unknown>) {
   expoConfig.version = version;
   expoConfig.extra = extra;
@@ -57,6 +74,25 @@ describe('AppVersion', () => {
     const badge = within(getByTestId('release-badge'));
     expect(badge.getByText('BETA')).toBeTruthy();
     expect(badge.getByText('#3')).toBeTruthy();
+  });
+
+  // Depuis l'OTA, le rang de build ne suffit plus : deux appareils portant la
+  // même beta #3 peuvent exécuter deux JS différents.
+  it('ajoute le bundle appliqué à la pastille', () => {
+    running.updateId = 'a1b2c3d4-0000-0000-0000-000000000000';
+    running.isEmbeddedLaunch = false;
+    const { getByTestId } = renderVersion('1.5.5-beta.3', { releaseTag: 'beta' });
+    const badge = within(getByTestId('release-badge'));
+    expect(badge.getByText('#3')).toBeTruthy();
+    expect(badge.getByText('a1b2c3d4')).toBeTruthy();
+  });
+
+  // Sur un APK fraîchement installé il n'y a rien à distinguer : l'afficher
+  // quand même n'aurait été que du bruit.
+  it('n’affiche aucun bundle sur le JS embarqué', () => {
+    running.updateId = 'a1b2c3d4-0000-0000-0000-000000000000';
+    const { queryByText } = renderVersion('1.5.5-beta.3', { releaseTag: 'beta' });
+    expect(queryByText('a1b2c3d4')).toBeNull();
   });
 
   // Un repère nommé se suffit à lui-même : pas de croisillon devant.

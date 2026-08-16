@@ -14,7 +14,9 @@
     "audit": "node scripts/audit.mjs",
     "changelog": "node scripts/generate-changelog.mjs",
     "build:beta": "node scripts/generate-changelog.mjs --commit --prerelease && eas build --profile dev-local --platform android",
-    "build:prod": "eas build --profile production --platform android"
+    "build:prod": "eas build --profile production --platform android",
+    "update:beta": "node scripts/publish-update.mjs beta",
+    "update:prod": "node scripts/publish-update.mjs production"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -38,6 +40,7 @@
     "expo-status-bar": "~3.0.9",
     "expo-symbols": "~1.0.8",
     "expo-system-ui": "~6.0.9",
+    "expo-updates": "~29.0.19",
     "expo-web-browser": "~15.0.10",
     "jest": "~29.7.0",
     "jest-expo": "~54.0.17",

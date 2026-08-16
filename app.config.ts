@@ -114,6 +114,27 @@ export default ({ config }: ConfigContext) => ({
   scheme: "citycaremobile",
   userInterfaceStyle: "automatic",
   newArchEnabled: true,
+  // ─── Mises à jour à la volée ───────────────────────────────────────────────
+  //
+  // Le bundle JS se remplace sans repasser par un APK. `fallbackToCacheTimeout`
+  // à 0 : on ne bloque jamais le démarrage à attendre le réseau. La mise à jour
+  // se télécharge en fond et s'applique au lancement suivant — ou tout de suite
+  // si l'utilisateur accepte la bannière (`hooks/use-app-update.ts`).
+  //
+  // Le code natif, lui, ne bouge pas : toute nouvelle dépendance native exige
+  // toujours un build EAS complet.
+  updates: {
+    url: "https://u.expo.dev/3a2efec0-7cf2-4e4b-8709-a785e0de8ca8",
+    fallbackToCacheTimeout: 0,
+  },
+  // `fingerprint`, surtout pas `appVersion` : semantic-release incrémente la
+  // version à chaque release, et une politique adossée à la version rendrait
+  // chaque APK incompatible avec ses propres mises à jour dès le patch suivant.
+  // L'empreinte ne bouge que si le natif bouge — exactement la frontière que
+  // l'OTA sait franchir ou non.
+  runtimeVersion: {
+    policy: "fingerprint",
+  },
   ios: {
     supportsTablet: true,
     bundleIdentifier: "com.citycare.mobile",

@@ -92,7 +92,8 @@ CityCare+ connecte les citoyens à leur mairie. Les signalements remontent en te
 | expo-location               | ~19.0.8     | Géolocalisation                            |
 | expo-notifications          | ~0.32.17    | Push notifications                         |
 | expo-secure-store           | ~15.0.8     | Stockage sécurisé des tokens JWT           |
-| Jest / jest-expo            | ~29.7 / ~54 | Tests unitaires (300 tests)                |
+| expo-updates                | ~29.0.19    | Mises à jour du bundle JS à la volée (OTA) |
+| Jest / jest-expo            | ~29.7 / ~54 | Tests unitaires (418 tests)                |
 
 ---
 
@@ -321,6 +322,25 @@ eas build --profile preview --platform android
 # Build production
 eas build --platform android --profile production --non-interactive --clear-cache
 ```
+
+### Mises à jour à la volée (OTA)
+
+Un correctif qui ne touche que du JS n'a pas besoin d'un nouvel APK : il se
+pousse sur les appareils déjà installés, appliqué au lancement suivant ou tout
+de suite via la bannière.
+
+```bash
+npm run update:beta   # canal beta  (profil dev-local)
+npm run update:prod   # canal production
+```
+
+Le message publié est le sujet du dernier commit, et les `EXPO_PUBLIC_*` du
+profil correspondant sont réinjectés à la publication — ils sont inlinés dans le
+bundle, un update publié depuis le mauvais environnement enverrait les appareils
+sur le mauvais back.
+
+Toute modification native (nouvelle dépendance, permission, plugin) sort du
+périmètre de l'OTA et exige un build complet.
 
 ---
 
