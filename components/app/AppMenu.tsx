@@ -269,8 +269,25 @@ export function MenuSwipeArea({
     [onOpen, width, startX, startY],
   );
 
-  return <GestureDetector gesture={pan}>{children}</GestureDetector>;
+  // `collapsable={false}` n'est pas décoratif : React Native supprime les vues
+  // qui ne portent ni style ni gestionnaire, et `GestureDetector` se retrouve
+  // alors sans vue à laquelle rattacher son geste — il le dit en avertissement,
+  // puis se comporte de travers. La vue conservée est celle qui reçoit le
+  // toucher pour toute la zone des onglets.
+  return (
+    <GestureDetector gesture={pan}>
+      <View style={styles.swipeArea} collapsable={false}>
+        {children}
+      </View>
+    </GestureDetector>
+  );
 }
+
+const styles = StyleSheet.create({
+  // Le conteneur enveloppe le navigateur d'onglets : il doit occuper la place
+  // que celui-ci occupait, ni plus ni moins.
+  swipeArea: { flex: 1 },
+});
 
 function makeStyles(colors: ReturnType<typeof useAppColors>["colors"], isDark: boolean) {
   return StyleSheet.create({
