@@ -180,6 +180,11 @@ export const en: typeof fr = {
 
   stats: {
     title: "My record",
+    reports: (count: number) => `report${count > 1 ? "s" : ""}`,
+    cityShare: (percent: number) => `${percent}% of the city`,
+    resolved: "resolved",
+    pending: "in progress",
+    open: "reported",
     resolutionRate: "Resolution rate",
     resolvedOf: (resolved: number, total: number) => `${resolved} resolved out of ${total}`,
     topCategory: "Most reported category",

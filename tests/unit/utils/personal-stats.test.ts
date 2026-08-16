@@ -14,7 +14,16 @@ describe('personalStats', () => {
     expect(stats.total).toBe(4);
     expect(stats.resolved).toBe(2);
     expect(stats.inProgress).toBe(1);
+    expect(stats.reported).toBe(1);
     expect(stats.resolutionRate).toBe(0.5);
+  });
+
+  // Déduit et non filtré : un statut ajouté côté serveur après coup doit être
+  // compté quelque part, pas disparaître d'un décompte qui prétend faire le tour.
+  it('range un statut inconnu avec les déclarés', () => {
+    const stats = personalStats([report('resolved'), report('sous_traite')]);
+    expect(stats.total).toBe(2);
+    expect(stats.reported).toBe(1);
   });
 
   // Un taux affiché tel quel : `NaN %` serait le premier chiffre qu'un nouvel

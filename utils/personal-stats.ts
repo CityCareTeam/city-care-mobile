@@ -8,6 +8,7 @@ export type PersonalStats = {
   total: number;
   resolved: number;
   inProgress: number;
+  reported: number;
   /** Part des signalements résolus, entre 0 et 1. */
   resolutionRate: number;
   /** Catégorie la plus signalée, et son compte. `null` si rien n'a été signalé. */
@@ -33,6 +34,10 @@ export function personalStats(incidents: Reported[]): PersonalStats {
   const total = incidents.length;
   const resolved = incidents.filter((i) => i.status === "resolved").length;
   const inProgress = incidents.filter((i) => i.status === "in_progress").length;
+  // Déduit plutôt que filtré : un statut inconnu du client — ajouté côté
+  // serveur après coup — compterait quand même, au lieu de disparaître d'un
+  // décompte qui prétend faire le tour.
+  const reported = total - resolved - inProgress;
 
   const counts = new Map<string, number>();
   for (const { type } of incidents) counts.set(type, (counts.get(type) ?? 0) + 1);
@@ -53,6 +58,7 @@ export function personalStats(incidents: Reported[]): PersonalStats {
     total,
     resolved,
     inProgress,
+    reported,
     // Zéro signalement donne zéro pour cent, jamais `NaN` : c'est un taux qui
     // finirait affiché tel quel.
     resolutionRate: total === 0 ? 0 : resolved / total,

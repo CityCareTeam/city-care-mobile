@@ -184,6 +184,11 @@ export const fr = {
   // ── Bilan personnel ──
   stats: {
     title: "Mon bilan",
+    reports: (count: number) => `signalement${count > 1 ? "s" : ""}`,
+    cityShare: (percent: number) => `${percent} % de la ville`,
+    resolved: "résolus",
+    pending: "en cours",
+    open: "déclarés",
     resolutionRate: "Taux de résolution",
     resolvedOf: (resolved: number, total: number) => `${resolved} résolu${resolved > 1 ? "s" : ""} sur ${total}`,
     topCategory: "Catégorie la plus signalée",

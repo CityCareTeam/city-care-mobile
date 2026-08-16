@@ -396,7 +396,7 @@ function CitizenView({
       {/* ── Contenu de l'onglet actif ── */}
       {/* Le bilan n'accompagne que « les miens » : il parle de ce qu'on a fait,
           pas de ce que la ville signale. */}
-      {isMineTab && <PersonalStatsCard incidents={incidents} />}
+      {isMineTab && <PersonalStatsCard incidents={incidents} cityTotal={paging.totalCount} />}
 
       {isMineTab ? (
         filteredMine.length === 0 ? (

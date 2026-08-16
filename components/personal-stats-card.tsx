@@ -1,4 +1,4 @@
-import { TYPE_LABEL } from "@/constants/incidents";
+import { STATUS_COLOR, TYPE_LABEL } from "@/constants/incidents";
 import { useAppColors } from "@/hooks/use-app-colors";
 import { useStrings } from "@/hooks/use-strings";
 import { formatDate } from "@/utils/format-date";
@@ -9,21 +9,30 @@ import { StyleSheet, Text, View } from "react-native";
 
 type Props = {
   incidents: { type: string; status: string; created_at: string }[];
+  /** Total de la ville, pour situer sa contribution. Ignoré s'il vaut zéro. */
+  cityTotal?: number;
 };
 
 /**
  * Bilan personnel.
  *
  * Les compteurs juste au-dessus disent l'état du moment ; celui-ci dit ce qu'on
- * a accompli — combien de signalements ont abouti, sur quoi on signale le plus,
- * depuis quand. C'est la seule chose de l'écran qui donne une raison de revenir
- * quand on n'a rien à signaler.
+ * a accompli — combien, où ça en est, sur quoi on signale le plus, depuis quand.
+ * C'est la seule chose de l'écran qui donne une raison de revenir quand on n'a
+ * rien à signaler.
+ *
+ * Il a d'abord affiché un seul taux de résolution. Un pourcentage résume, mais
+ * il efface : « 50 % » se lit pareil avec deux signalements ou deux cents, et
+ * ne dit rien de ce qui reste en attente. La barre segmentée montre les trois
+ * états dans leurs proportions réelles, avec les couleurs déjà utilisées
+ * partout ailleurs pour les dire.
  *
  * Les chiffres portent sur la liste complète des signalements de l'utilisateur,
  * jamais sur les pages chargées du fil : un taux calculé sur un échantillon
- * n'est pas un taux.
+ * n'est pas un taux. La part de la ville fait exception et reste exacte —
+ * `totalCount` vient du serveur, pas du fil chargé.
  */
-export function PersonalStatsCard({ incidents }: Props) {
+export function PersonalStatsCard({ incidents, cityTotal = 0 }: Props) {
   const { colors, isDark } = useAppColors();
   const t = useStrings();
   const styles = useMemo(() => makeStyles(colors, isDark), [colors, isDark]);
@@ -31,44 +40,65 @@ export function PersonalStatsCard({ incidents }: Props) {
 
   if (stats.total === 0) return null;
 
-  const percent = Math.round(stats.resolutionRate * 100);
+  const share = cityTotal > 0 ? Math.max(1, Math.round((stats.total / cityTotal) * 100)) : null;
+
+  const segments = [
+    { key: "resolved", count: stats.resolved, color: STATUS_COLOR.resolved, label: t.stats.resolved },
+    { key: "in_progress", count: stats.inProgress, color: STATUS_COLOR.in_progress, label: t.stats.pending },
+    { key: "reported", count: stats.reported, color: STATUS_COLOR.reported, label: t.stats.open },
+  ].filter((segment) => segment.count > 0);
 
   return (
     <View style={styles.card}>
       <View style={styles.header}>
         <MaterialIcons name="workspace-premium" size={17} color={colors.primary} />
         <Text style={styles.title}>{t.stats.title}</Text>
+        {/* Situer sa contribution : « 3 % de la ville » donne au chiffre brut
+            une échelle qu'il n'a pas tout seul. */}
+        {share !== null && <Text style={styles.share}>{t.stats.cityShare(share)}</Text>}
       </View>
 
-      <View style={styles.rateRow}>
-        <Text style={styles.percent}>{percent}%</Text>
-        <View style={styles.rateText}>
-          <Text style={styles.rateLabel}>{t.stats.resolutionRate}</Text>
-          <Text style={styles.rateDetail}>{t.stats.resolvedOf(stats.resolved, stats.total)}</Text>
-        </View>
+      <View style={styles.totalRow}>
+        <Text style={styles.total}>{stats.total}</Text>
+        <Text style={styles.totalLabel}>{t.stats.reports(stats.total)}</Text>
       </View>
 
-      {/* La barre redit le pourcentage, et c'est voulu : un chiffre se lit, une
-          barre se saisit d'un coup d'œil. */}
+      {/* Une barre par état, à la largeur de sa part. Elle remplace un
+          pourcentage unique qui se lisait pareil avec deux signalements ou deux
+          cents. */}
       <View style={styles.track}>
-        <View style={[styles.fill, { width: `${percent}%`, backgroundColor: colors.primary }]} />
+        {segments.map((segment) => (
+          <View
+            key={segment.key}
+            style={{ flex: segment.count, backgroundColor: segment.color }}
+          />
+        ))}
       </View>
 
-      {stats.inProgress > 0 && (
-        <Text style={styles.pending}>{t.stats.inProgress(stats.inProgress)}</Text>
-      )}
+      <View style={styles.legend}>
+        {segments.map((segment) => (
+          <View key={segment.key} style={styles.legendItem}>
+            <View style={[styles.dot, { backgroundColor: segment.color }]} />
+            <Text style={styles.legendText}>
+              {segment.count} {segment.label}
+            </Text>
+          </View>
+        ))}
+      </View>
 
       <View style={styles.divider} />
 
-      {stats.topType && (
-        <View style={styles.line}>
-          <Text style={styles.lineLabel}>{t.stats.topCategory}</Text>
-          <Text style={styles.lineValue}>
-            {TYPE_LABEL[stats.topType.type] ?? stats.topType.type} · {stats.topType.count}
-          </Text>
-        </View>
-      )}
-      {stats.since && <Text style={styles.since}>{t.stats.since(formatDate(stats.since))}</Text>}
+      <View style={styles.footer}>
+        {stats.topType && (
+          <View style={styles.footerItem}>
+            <Text style={styles.footerLabel}>{t.stats.topCategory}</Text>
+            <Text style={styles.footerValue}>
+              {TYPE_LABEL[stats.topType.type] ?? stats.topType.type} · {stats.topType.count}
+            </Text>
+          </View>
+        )}
+        {stats.since && <Text style={styles.since}>{t.stats.since(formatDate(stats.since))}</Text>}
+      </View>
     </View>
   );
 }
@@ -88,8 +118,9 @@ function makeStyles(colors: ReturnType<typeof useAppColors>["colors"], isDark: b
       shadowRadius: 4,
       elevation: 2,
     },
-    header: { flexDirection: "row", alignItems: "center", gap: 7, marginBottom: 14 },
+    header: { flexDirection: "row", alignItems: "center", gap: 7, marginBottom: 12 },
     title: {
+      flex: 1,
       fontSize: 12,
       fontWeight: "800",
       letterSpacing: 0.6,
@@ -97,29 +128,42 @@ function makeStyles(colors: ReturnType<typeof useAppColors>["colors"], isDark: b
       color: colors.text,
       opacity: 0.55,
     },
-    rateRow: { flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 12 },
-    percent: {
+    share: {
+      fontSize: 11,
+      fontWeight: "700",
+      color: colors.primary,
+      backgroundColor: colors.primary + "1A",
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 9,
+      overflow: "hidden",
+    },
+    totalRow: { flexDirection: "row", alignItems: "baseline", gap: 8, marginBottom: 12 },
+    total: {
       fontSize: 34,
       fontWeight: "800",
-      color: colors.primary,
+      color: colors.text,
       letterSpacing: -1,
       fontVariant: ["tabular-nums"],
     },
-    rateText: { flex: 1, gap: 2 },
-    rateLabel: { fontSize: 14, fontWeight: "700", color: colors.text },
-    rateDetail: { fontSize: 12, color: colors.text, opacity: 0.5 },
+    totalLabel: { fontSize: 14, color: colors.text, opacity: 0.5 },
     track: {
-      height: 6,
-      borderRadius: 3,
-      backgroundColor: colors.chipBg,
+      flexDirection: "row",
+      height: 8,
+      borderRadius: 4,
       overflow: "hidden",
+      backgroundColor: colors.chipBg,
+      gap: 2,
     },
-    fill: { height: 6, borderRadius: 3 },
-    pending: { fontSize: 12, color: colors.text, opacity: 0.5, marginTop: 10 },
+    legend: { flexDirection: "row", flexWrap: "wrap", gap: 14, marginTop: 12 },
+    legendItem: { flexDirection: "row", alignItems: "center", gap: 6 },
+    dot: { width: 7, height: 7, borderRadius: 3.5 },
+    legendText: { fontSize: 12, color: colors.text, opacity: 0.6 },
     divider: { height: 1, backgroundColor: colors.chipBorder, marginVertical: 14 },
-    line: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
-    lineLabel: { fontSize: 13, color: colors.text, opacity: 0.55, flexShrink: 1 },
-    lineValue: { fontSize: 13, fontWeight: "700", color: colors.text },
-    since: { fontSize: 12, color: colors.text, opacity: 0.4, marginTop: 10 },
+    footer: { gap: 8 },
+    footerItem: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
+    footerLabel: { fontSize: 13, color: colors.text, opacity: 0.55, flexShrink: 1 },
+    footerValue: { fontSize: 13, fontWeight: "700", color: colors.text },
+    since: { fontSize: 12, color: colors.text, opacity: 0.4 },
   });
 }
