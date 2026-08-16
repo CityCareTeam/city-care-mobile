@@ -10,7 +10,9 @@ import { STRINGS } from "@/constants/strings";
 import { useAuth } from "@/context/AuthContext";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
+import { AppRefreshControl } from "@/components/ui/AppRefreshControl";
 import { ErrorNotice } from "@/components/ui/ErrorNotice";
+import { Toast } from "@/components/ui/ToastMessage";
 import { useAutoRefresh } from "@/hooks/use-auto-refresh";
 import { INCIDENTS_PAGE_SIZE, POLL_INTERVAL_MS } from "@/constants/config";
 import { applyFilters, useIncidentFilters } from "@/hooks/use-incident-filters";
@@ -30,7 +32,6 @@ import { router } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
     ActivityIndicator,
-    RefreshControl,
     ScrollView,
     StyleSheet,
     Text,
@@ -667,7 +668,16 @@ export default function HomeScreen() {
       void saveIncidentsCache(allRes.data, allRes.pagination.total_count);
       // Le réseau vient de répondre : c'est le meilleur moment pour rejouer ce
       // qui attendait, et un signal plus fiable qu'un indicateur de connexion.
-      void flush();
+      // Le bandeau « en attente » disparaîtrait sinon sans un mot, et rien ne
+      // dirait à l'utilisateur si son signalement est parti ou s'il a été perdu.
+      void flush().then((sent) => {
+        if (sent === 0) return;
+        Toast.show({
+          type: "success",
+          text1: `${sent} signalement${sent > 1 ? "s" : ""} envoyé${sent > 1 ? "s" : ""}`,
+          text2: "Ce qui attendait le réseau est parti.",
+        });
+      });
     } catch {
       setFailed(true);
     } finally {
@@ -721,10 +731,10 @@ export default function HomeScreen() {
       style={styles.scroll}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: getTabBarScrollPadding(insets.bottom) }]}
       refreshControl={
-        <RefreshControl
+        <AppRefreshControl
           refreshing={refreshing}
-          onRefresh={() => load(true)}
-          tintColor={colors.primary}
+          onRefresh={() => void load(true)}
+          offset={insets.top}
         />
       }
     >

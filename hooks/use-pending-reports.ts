@@ -40,13 +40,18 @@ export function usePendingReports() {
    * Vide la file, un signalement à la fois et dans l'ordre d'arrivée : deux
    * envois simultanés sur un réseau qui vient tout juste de revenir, c'est le
    * meilleur moyen de les rater tous les deux.
+   *
+   * Renvoie le nombre effectivement parti — l'appelant en fait un retour à
+   * l'utilisateur, à qui le bandeau « en attente d'envoi » disparaîtrait sinon
+   * sous les yeux sans qu'il sache si c'est parti ou si ça a été perdu.
    */
-  const flush = useCallback(async () => {
+  const flush = useCallback(async (): Promise<number> => {
     // Le drapeau se pose avant la première attente, jamais après : deux rejeux
     // déclenchés dans le même tour de boucle liraient tous deux une file encore
     // pleine, et créeraient deux fois le même signalement.
-    if (flushing.current) return;
+    if (flushing.current) return 0;
     flushing.current = true;
+    let sent = 0;
     try {
       const queue = await listPendingReports();
       for (const report of queue) {
@@ -78,6 +83,7 @@ export function usePendingReports() {
           }
 
           await removePendingReport(report.id);
+          sent++;
         } catch (error) {
           if (isNetworkError(error)) {
             // Le réseau est reparti : inutile d'essayer les suivants.
@@ -94,6 +100,7 @@ export function usePendingReports() {
       flushing.current = false;
       await refresh();
     }
+    return sent;
   }, [refresh]);
 
   /** L'utilisateur a lu l'échec : on ne le lui répète pas à chaque écran. */

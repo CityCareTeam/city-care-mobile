@@ -56,6 +56,31 @@ describe('usePendingReports', () => {
     expect(await listPendingReports()).toEqual([]);
   });
 
+  // Le bandeau « en attente d'envoi » disparaîtrait sinon sans un mot : c'est ce
+  // compte qui permet de dire à l'utilisateur que c'est bien parti.
+  it('rend le nombre effectivement parti', async () => {
+    await enqueueReport({ ...report, description: 'premier' });
+    await enqueueReport({ ...report, description: 'second' });
+    mockCreateIncident.mockResolvedValue({ id: 'inc-1' });
+
+    const { result } = renderHook(() => usePendingReports());
+    let sent = 0;
+    await act(async () => { sent = await result.current.flush(); });
+
+    expect(sent).toBe(2);
+  });
+
+  it('ne compte pas ce que le serveur a refusé', async () => {
+    await enqueueReport(report);
+    mockCreateIncident.mockRejectedValue(new Error('Refusé'));
+
+    const { result } = renderHook(() => usePendingReports());
+    let sent = -1;
+    await act(async () => { sent = await result.current.flush(); });
+
+    expect(sent).toBe(0);
+  });
+
   it('envoie les photos du signalement rejoué', async () => {
     await enqueueReport({
       ...report,

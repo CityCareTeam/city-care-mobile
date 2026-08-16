@@ -11,13 +11,13 @@ import { STRINGS } from "@/constants/strings";
 import { deleteAllNotifications, deleteNotification, getNotifications, markAllAsRead, markAsRead } from "@/services/notifications";
 import { getValidToken } from "@/storage/tokens";
 import type { NotificationResponse } from "@/types/notifications";
+import { AppRefreshControl } from "@/components/ui/AppRefreshControl";
 import { router } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   FlatList,
-  RefreshControl,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -253,7 +253,7 @@ export default function NotificationsScreen() {
       )}
       ItemSeparatorComponent={() => <View style={styles.separator} />}
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />
+        <AppRefreshControl refreshing={refreshing} onRefresh={handleRefresh} offset={24} />
       }
       ListHeaderComponent={
         <>
