@@ -14,7 +14,7 @@ function at(hour: number, minute: number, second = 0) {
 describe('HeaderClock', () => {
   it('affiche l’heure sur deux chiffres', () => {
     at(9, 5);
-    expect(render(<HeaderClock />).getByText('09:05')).toBeTruthy();
+    expect(render(<HeaderClock />).getByLabelText('09 heures 05')).toBeTruthy();
   });
 
   // Le point de tout le composant : un intervalle d'une minute lancé à
@@ -22,22 +22,22 @@ describe('HeaderClock', () => {
   // retard, définitivement. On vise la seconde 0 suivante.
   it('se cale sur la minute pleine, pas sur soixante secondes', () => {
     at(10, 30, 40);
-    const { getByText } = render(<HeaderClock />);
-    expect(getByText('10:30')).toBeTruthy();
+    const { getByLabelText } = render(<HeaderClock />);
+    expect(getByLabelText('10 heures 30')).toBeTruthy();
 
     // Vingt secondes plus tard : la minute vient de tourner. Avancer les
     // minuteurs avance aussi l'horloge — inutile de la repositionner.
     act(() => jest.advanceTimersByTime(20_000));
-    expect(getByText('10:31')).toBeTruthy();
+    expect(getByLabelText('10 heures 31')).toBeTruthy();
   });
 
   it('continue de battre chaque minute ensuite', () => {
     at(10, 30, 40);
-    const { getByText } = render(<HeaderClock />);
+    const { getByLabelText } = render(<HeaderClock />);
 
     act(() => jest.advanceTimersByTime(20_000));
     act(() => jest.advanceTimersByTime(60_000));
-    expect(getByText('10:32')).toBeTruthy();
+    expect(getByLabelText('10 heures 32')).toBeTruthy();
   });
 
   it('se décrit aux lecteurs d’écran', () => {

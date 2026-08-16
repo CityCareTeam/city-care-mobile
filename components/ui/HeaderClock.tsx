@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { Animated, StyleSheet, Text, View } from "react-native";
 
 /**
  * Heure courante, dans l'en-tête de l'accueil.
@@ -37,10 +37,57 @@ export function HeaderClock() {
       accessibilityRole="text"
       accessibilityLabel={`${hours} heures ${minutes}`}
     >
-      {/* Chiffres en chasse fixe : sans quoi l'heure se décale d'un pixel à
-          chaque changement de minute. */}
-      <Text style={styles.digits}>{`${hours}:${minutes}`}</Text>
+      {/* Heures et minutes séparées pour que chacune s'anime quand elle change :
+          à 10 h 59 → 11 h 00, les deux bougent ; le reste du temps, une seule.
+          Les chiffres sont en chasse fixe, sans quoi l'heure se décale d'un
+          pixel à chaque changement. */}
+      <Turning value={hours} />
+      <Text style={styles.digits}>:</Text>
+      <Turning value={minutes} />
     </View>
+  );
+}
+
+/**
+ * Un nombre qui se renouvelle en glissant, brièvement.
+ *
+ * Volontairement discret : un chiffre qui tombe de quatre pixels en un quart de
+ * seconde se remarque du coin de l'œil et s'oublie aussitôt. Une rotation de
+ * carte ou un rebond auraient attiré le regard sur ce qui est, au fond, une
+ * décoration d'en-tête.
+ *
+ * Rien ne bouge au premier rendu : l'animation dit « ça vient de changer », et
+ * l'affichage initial n'est le changement de rien.
+ */
+function Turning({ value }: { value: string }) {
+  const progress = useRef(new Animated.Value(1)).current;
+  const previous = useRef(value);
+
+  useEffect(() => {
+    if (previous.current === value) return;
+    previous.current = value;
+    progress.setValue(0);
+    Animated.timing(progress, {
+      toValue: 1,
+      duration: 260,
+      useNativeDriver: true,
+    }).start();
+  }, [value, progress]);
+
+  return (
+    <Animated.Text
+      style={[
+        styles.digits,
+        {
+          opacity: progress.interpolate({ inputRange: [0, 1], outputRange: [0.2, 1] }),
+          transform: [
+            { translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [-4, 0] }) },
+          ],
+        },
+      ]}
+    >
+      {value}
+    </Animated.Text>
   );
 }
 
