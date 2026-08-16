@@ -742,6 +742,11 @@ export const LAST_RELEASED_VERSION = "1.5.5";
 export const UNRELEASED_CHANGES: Change[] = [
   {
     "kind": "fix",
+    "scope": "ui",
+    "text": "Stop the refresh control from swallowing the whole screen"
+  },
+  {
+    "kind": "fix",
     "scope": "release",
     "text": "Quote publish arguments so the update message survives Windows"
   },
