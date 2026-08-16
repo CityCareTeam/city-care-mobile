@@ -10,7 +10,7 @@ import { STRINGS } from "@/constants/strings";
 import { useAuth } from "@/context/AuthContext";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
-import { AppRefreshControl } from "@/components/ui/AppRefreshControl";
+import { useAppRefreshControl } from "@/components/ui/AppRefreshControl";
 import { ErrorNotice } from "@/components/ui/ErrorNotice";
 import { Toast } from "@/components/ui/ToastMessage";
 import { useAutoRefresh } from "@/hooks/use-auto-refresh";
@@ -714,6 +714,13 @@ export default function HomeScreen() {
 
   const insets = useSafeAreaInsets();
 
+  // Avant le retour anticipé qui suit : c'est un crochet.
+  const refreshControl = useAppRefreshControl({
+    refreshing,
+    onRefresh: () => void load(true),
+    offset: insets.top,
+  });
+
   // Voile plein réservé au premier chargement : il effaçait l'écran entier à
   // chaque retour sur l'onglet, alors qu'il y avait déjà quelque chose à voir.
   const hasContent = allIncidents.length > 0 || myIncidents.length > 0;
@@ -730,13 +737,7 @@ export default function HomeScreen() {
     <ScrollView
       style={styles.scroll}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: getTabBarScrollPadding(insets.bottom) }]}
-      refreshControl={
-        <AppRefreshControl
-          refreshing={refreshing}
-          onRefresh={() => void load(true)}
-          offset={insets.top}
-        />
-      }
+      refreshControl={refreshControl}
     >
       {failed && (
         <ErrorNotice

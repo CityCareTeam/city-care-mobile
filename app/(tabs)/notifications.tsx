@@ -11,7 +11,7 @@ import { STRINGS } from "@/constants/strings";
 import { deleteAllNotifications, deleteNotification, getNotifications, markAllAsRead, markAsRead } from "@/services/notifications";
 import { getValidToken } from "@/storage/tokens";
 import type { NotificationResponse } from "@/types/notifications";
-import { AppRefreshControl } from "@/components/ui/AppRefreshControl";
+import { useAppRefreshControl } from "@/components/ui/AppRefreshControl";
 import { router } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -223,6 +223,13 @@ export default function NotificationsScreen() {
     }
   };
 
+  // Avant le retour anticipé qui suit : c'est un crochet.
+  const refreshControl = useAppRefreshControl({
+    refreshing,
+    onRefresh: handleRefresh,
+    offset: 24,
+  });
+
   // Voile plein seulement quand il n'y a encore rien à montrer. Il remplaçait
   // l'écran entier — en-tête compris — à chaque retour sur l'onglet.
   if (loading || (fetching && items.length === 0)) {
@@ -252,9 +259,7 @@ export default function NotificationsScreen() {
         />
       )}
       ItemSeparatorComponent={() => <View style={styles.separator} />}
-      refreshControl={
-        <AppRefreshControl refreshing={refreshing} onRefresh={handleRefresh} offset={24} />
-      }
+      refreshControl={refreshControl}
       ListHeaderComponent={
         <>
           <View style={styles.header}>

@@ -1,7 +1,7 @@
 import { useAppColors } from "@/hooks/use-app-colors";
 import { RefreshControl } from "react-native";
 
-type Props = {
+type Options = {
   refreshing: boolean;
   onRefresh: () => void;
   /**
@@ -14,17 +14,23 @@ type Props = {
 /**
  * Tiré-pour-rafraîchir aux couleurs de l'application.
  *
- * Les écrans passaient `tintColor`, qui **n'existe que sur iOS**. Sur Android —
- * la seule plateforme qu'on distribue — la pastille tournait donc dans le bleu
- * par défaut du système, sur un disque blanc, au milieu d'une interface ocre :
- * le seul élément de l'application à ne pas être à sa charte. Android lit
+ * Les écrans ne passaient que `tintColor`, qui **n'existe que sur iOS**. Sur
+ * Android — la seule plateforme qu'on distribue — la pastille tournait donc dans
+ * le bleu par défaut du système, sur un disque blanc, au milieu d'une interface
+ * ocre : le seul élément de l'application à ne pas être à sa charte. Android lit
  * `colors` et `progressBackgroundColor`.
  *
- * D'où ce composant plutôt qu'un correctif sur chaque écran : les quatre
- * propriétés doivent rester ensemble, et la prochaine liste qui apparaîtra les
- * aura sans y penser.
+ * ⚠️ **Un crochet, et surtout pas un composant.** `ScrollView` ne rend pas
+ * l'élément qu'on lui donne en `refreshControl` : il le *clone* en lui passant
+ * tout le contenu de l'écran comme enfants (`ScrollView.js:1838`). Un composant
+ * intermédiaire recevrait donc ces enfants et, s'il ne les transmet pas — ce
+ * qu'un composant n'a aucune raison de faire — l'écran entier disparaît. Ce
+ * qu'on avait : deux écrans noirs. Le crochet rend un vrai `RefreshControl`,
+ * c'est lui que `ScrollView` clone, et le contenu retrouve sa place.
+ *
+ * À appeler avant tout retour anticipé de l'écran, comme n'importe quel crochet.
  */
-export function AppRefreshControl({ refreshing, onRefresh, offset = 0 }: Props) {
+export function useAppRefreshControl({ refreshing, onRefresh, offset = 0 }: Options) {
   const { colors } = useAppColors();
 
   return (
