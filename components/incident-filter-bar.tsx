@@ -23,6 +23,8 @@ type Props = {
   /** Absent pour un visiteur non connecté : il n'a pas de signalements à isoler. */
   mineOnly?: boolean;
   onToggleMine?: () => void;
+  followedOnly?: boolean;
+  onToggleFollowed?: () => void;
 };
 
 /** Construites au rendu : « Tous » suit la langue, une constante l'aurait figé. */
@@ -94,6 +96,8 @@ export function IncidentFilterBar({
   paddingTop = 0,
   mineOnly,
   onToggleMine,
+  followedOnly,
+  onToggleFollowed,
 }: Props) {
   const { colors, isDark } = useAppColors();
   // Nommé `strings` et non `t` : la boucle des types utilise déjà `t`.
@@ -139,6 +143,27 @@ export function IncidentFilterBar({
               />
               <Text style={[styles.typeChipText, mineOnly && styles.typeChipTextActive]}>
                 {strings.incident.mineOnly}
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {onToggleFollowed && (
+            <TouchableOpacity
+              style={[styles.typeChip, styles.mineChip, followedOnly && styles.typeChipActive]}
+              onPress={onToggleFollowed}
+              activeOpacity={0.75}
+              accessibilityRole="button"
+              accessibilityState={{ selected: followedOnly }}
+              accessibilityLabel={strings.incident.followedFilterA11y}
+            >
+              <MaterialIcons
+                name="bookmark"
+                size={13}
+                color={followedOnly ? "#fff" : colors.text}
+                style={!followedOnly && { opacity: 0.55 }}
+              />
+              <Text style={[styles.typeChipText, followedOnly && styles.typeChipTextActive]}>
+                {strings.incident.followedFilter}
               </Text>
             </TouchableOpacity>
           )}

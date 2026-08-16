@@ -324,6 +324,12 @@ export const fr = {
 
   // ── Carte : détail d'un incident ──
   incident: {
+    follow: "Suivre",
+    unfollow: "Suivi",
+    followA11y: "Suivre ce signalement",
+    unfollowA11y: "Ne plus suivre ce signalement",
+    followedFilter: "Suivis",
+    followedFilterA11y: "N’afficher que les signalements suivis",
     mineOnly: "Les miens",
     mineOnlyA11y: "N’afficher que mes signalements",
     share: "Partager",

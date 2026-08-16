@@ -12,6 +12,7 @@ import { STRINGS } from "@/constants/strings";
 import { useAuth } from "@/context/AuthContext";
 import { useAppColors } from "@/hooks/use-app-colors";
 import { useStrings } from "@/hooks/use-strings";
+import { useFollowedIncidents } from "@/hooks/use-followed-incidents";
 import { warned } from "@/utils/haptics";
 import { incidentShareMessage } from "@/utils/share-incident";
 import { useIncidentChat } from "@/hooks/use-incident-chat";
@@ -52,6 +53,8 @@ type Props = {
 export function IncidentDetailSheet({ incident, initialTab, onClose, onStatusUpdated, onDeleted }: Props) {
   const { colors } = useAppColors();
   const t = useStrings();
+  const { followed, toggle: toggleFollow } = useFollowedIncidents();
+  const isFollowed = incident ? followed.has(incident.id) : false;
   const { dbUser } = useAuth();
   const [activeTab, setActiveTab] = useState<"details" | "chat">("details");
   const [zoomedPhoto, setZoomedPhoto] = useState<string | null>(null);
@@ -264,6 +267,23 @@ export function IncidentDetailSheet({ incident, initialTab, onClose, onStatusUpd
                   <Text style={s.statusBadgeText}>{STATUS_LABEL[incident.status] ?? incident.status}</Text>
                 </View>
               </View>
+              {/* Suivre : un repère personnel, gardé sur l'appareil. On ne peut
+                  sinon garder un œil que sur ses propres signalements. */}
+              <TouchableOpacity
+                style={[s.shareBtn, isFollowed && { backgroundColor: colors.primary + "26" }]}
+                onPress={() => incident && void toggleFollow(incident.id)}
+                activeOpacity={0.75}
+                accessibilityRole="button"
+                accessibilityState={{ selected: isFollowed }}
+                accessibilityLabel={isFollowed ? t.incident.unfollowA11y : t.incident.followA11y}
+              >
+                <MaterialIcons
+                  name={isFollowed ? "bookmark" : "bookmark-border"}
+                  size={17}
+                  color={isFollowed ? colors.primary : colors.text}
+                  style={!isFollowed && { opacity: 0.6 }}
+                />
+              </TouchableOpacity>
               <TouchableOpacity
                 style={s.shareBtn}
                 onPress={handleShare}

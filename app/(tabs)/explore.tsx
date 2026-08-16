@@ -11,6 +11,7 @@ import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
 import { useAuth } from "@/context/AuthContext";
 import { useDraftCount } from "@/hooks/use-draft-indicator";
+import { useFollowedIncidents } from "@/hooks/use-followed-incidents";
 import { useStrings } from "@/hooks/use-strings";
 import { useIncidentFilters } from "@/hooks/use-incident-filters";
 import { useIncidentPermissions } from "@/hooks/use-incident-permissions";
@@ -144,11 +145,16 @@ export default function SignalementsScreen() {
   // épingles individuelles quand il est actif : les siens se comptent en
   // dizaines, les afficher tous ne coûte rien.
   const [mineOnly, setMineOnly] = useState(false);
+  const [followedOnly, setFollowedOnly] = useState(false);
   const { dbUser } = useAuth();
-  const visibleIncidents = useMemo(
-    () => (mineOnly && dbUser ? filteredIncidents.filter((i) => i.authorUserId === dbUser.id) : filteredIncidents),
-    [filteredIncidents, mineOnly, dbUser],
-  );
+  const { followed } = useFollowedIncidents();
+
+  const visibleIncidents = useMemo(() => {
+    let visible = filteredIncidents;
+    if (mineOnly && dbUser) visible = visible.filter((i) => i.authorUserId === dbUser.id);
+    if (followedOnly) visible = visible.filter((i) => followed.has(i.id));
+    return visible;
+  }, [filteredIncidents, mineOnly, dbUser, followedOnly, followed]);
   const { clusters, failed: clustersFailed, currentZoom, onRegionChangeComplete, reload: reloadClusters } =
     useMapClusters(filterStatus, filterType, userRegion ?? INITIAL_REGION);
 
@@ -254,7 +260,9 @@ export default function SignalementsScreen() {
   }, [incidents, selected]);
 
   // ── Markers ──
-  const isClusterMode = currentZoom < CLUSTER_ZOOM_THRESHOLD && !mineOnly;
+  // Les grappes viennent du serveur, qui ne connaît ni « les miens » ni les
+  // suivis : dès qu'un de ces filtres est actif, on repasse aux épingles.
+  const isClusterMode = currentZoom < CLUSTER_ZOOM_THRESHOLD && !mineOnly && !followedOnly;
 
   // Ne légender que les paliers réellement présents à l'écran : expliquer un
   // rouge que l'utilisateur n'a pas sous les yeux ne fait qu'encombrer.
@@ -342,6 +350,8 @@ export default function SignalementsScreen() {
           paddingTop={insets.top + FILTER_BAR_TOP}
           mineOnly={mineOnly}
           onToggleMine={dbUser ? () => setMineOnly((on) => !on) : undefined}
+          followedOnly={followedOnly}
+          onToggleFollowed={followed.size > 0 ? () => setFollowedOnly((on) => !on) : undefined}
         />
       </View>
 

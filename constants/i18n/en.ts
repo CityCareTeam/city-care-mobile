@@ -313,6 +313,12 @@ export const en: typeof fr = {
   },
 
   incident: {
+    follow: "Follow",
+    unfollow: "Following",
+    followA11y: "Follow this report",
+    unfollowA11y: "Stop following this report",
+    followedFilter: "Followed",
+    followedFilterA11y: "Show only followed reports",
     mineOnly: "Mine",
     mineOnlyA11y: "Show only my reports",
     share: "Share",
