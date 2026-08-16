@@ -13,6 +13,7 @@ import "react-native-reanimated";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useStrings } from "@/hooks/use-strings";
 
 export const unstable_settings = {
   anchor: "login",
@@ -24,6 +25,7 @@ export const unstable_settings = {
  */
 function RootContent() {
   const colorScheme = useColorScheme();
+  const t = useStrings();
   const c = colorScheme === "dark" ? CityCareColorsDark : CityCareColors;
 
   return (
@@ -37,7 +39,7 @@ function RootContent() {
             name="report"
             options={{
               presentation: "modal",
-              title: "Signaler un incident",
+              title: t.report.screenTitle,
               headerStyle: { backgroundColor: c.background },
               headerTintColor: c.primary,
               headerTitleStyle: { fontWeight: "700", color: c.text },

@@ -5,6 +5,7 @@ import { Toast } from "@/components/ui/ToastMessage";
 import { STRINGS } from "@/constants/strings";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
+import { useStrings } from "@/hooks/use-strings";
 import { getStrength, type StrengthLevel } from "@/utils/password-strength";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { register } from "@/services/auth";
@@ -61,6 +62,7 @@ function makeStyles(c: AppColors) {
 
 export default function RegisterScreen() {
   const { colors } = useAppColors();
+  const t = useStrings();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
 
@@ -83,16 +85,16 @@ export default function RegisterScreen() {
     const nameRegex     = /^[\p{L} \-'.]+$/u;
     const usernameRegex = /^[\p{L}\p{N}._\-]+$/u;
     if (firstName.trim().length > 30 || lastName.trim().length > 30) {
-      Toast.show({ type: "error", text1: "Champs invalides", text2: STRINGS.toast.nameTooLong }); return;
+      Toast.show({ type: "error", text1: t.auth.invalidFields, text2: STRINGS.toast.nameTooLong }); return;
     }
     if (!nameRegex.test(firstName.trim()) || !nameRegex.test(lastName.trim())) {
-      Toast.show({ type: "error", text1: "Champs invalides", text2: STRINGS.toast.nameInvalidChars }); return;
+      Toast.show({ type: "error", text1: t.auth.invalidFields, text2: STRINGS.toast.nameInvalidChars }); return;
     }
     if (username.trim().length > 30) {
-      Toast.show({ type: "error", text1: "Champs invalides", text2: STRINGS.toast.usernameTooLong }); return;
+      Toast.show({ type: "error", text1: t.auth.invalidFields, text2: STRINGS.toast.usernameTooLong }); return;
     }
     if (!usernameRegex.test(username.trim())) {
-      Toast.show({ type: "error", text1: "Champs invalides", text2: STRINGS.toast.usernameInvalidChars }); return;
+      Toast.show({ type: "error", text1: t.auth.invalidFields, text2: STRINGS.toast.usernameInvalidChars }); return;
     }
     if (password !== confirm) {
       Toast.show({ type: "error", text1: STRINGS.toast.passwordMismatchTitle, text2: STRINGS.toast.passwordMismatch }); return;
@@ -124,16 +126,16 @@ export default function RegisterScreen() {
 
         {/* ── Form card ── */}
         <View style={styles.formCard}>
-          <Text style={styles.formTitle}>Créer un compte</Text>
-          <Text style={styles.formSub}>Rejoignez la communauté CityCare</Text>
+          <Text style={styles.formTitle}>{t.auth.createAccount}</Text>
+          <Text style={styles.formSub}>{t.auth.joinCommunity}</Text>
 
           {/* ── Identité ── */}
-          <SectionHeader title="Identité" colors={colors} />
+          <SectionHeader title={t.auth.identity} colors={colors} />
           <View style={styles.row}>
             <View style={styles.rowField}>
               <Input
-                label="Prénom"
-                placeholder="Jean"
+                label={t.auth.firstName}
+                placeholder={t.auth.firstNamePlaceholder}
                 autoCapitalize="words"
                 autoCorrect={false}
                 icon="person"
@@ -143,8 +145,8 @@ export default function RegisterScreen() {
             </View>
             <View style={styles.rowField}>
               <Input
-                label="Nom"
-                placeholder="Dupont"
+                label={t.auth.lastName}
+                placeholder={t.auth.lastNamePlaceholder}
                 autoCapitalize="words"
                 autoCorrect={false}
                 value={lastName}
@@ -154,9 +156,9 @@ export default function RegisterScreen() {
           </View>
 
           {/* ── Compte ── */}
-          <SectionHeader title="Compte" colors={colors} />
+          <SectionHeader title={t.auth.account} colors={colors} />
           <Input
-            label="Email"
+            label={t.auth.email}
             placeholder="jean@mail.com"
             keyboardType="email-address"
             autoCapitalize="none"
@@ -166,7 +168,7 @@ export default function RegisterScreen() {
             onChangeText={setEmail}
           />
           <Input
-            label="Nom d'utilisateur"
+            label={t.auth.username}
             placeholder="jean.dupont"
             autoCapitalize="none"
             autoCorrect={false}
@@ -176,9 +178,9 @@ export default function RegisterScreen() {
           />
 
           {/* ── Sécurité ── */}
-          <SectionHeader title="Sécurité" colors={colors} />
+          <SectionHeader title={t.auth.security} colors={colors} />
           <Input
-            label="Mot de passe"
+            label={t.auth.password}
             placeholder="••••••••"
             secureTextEntry
             icon="lock"
@@ -207,17 +209,17 @@ export default function RegisterScreen() {
           )}
 
           <Input
-            label="Confirmer le mot de passe"
+            label={t.auth.confirmPassword}
             placeholder="••••••••"
             secureTextEntry
             icon="lock-outline"
             value={confirm}
             onChangeText={setConfirm}
-            error={confirmMismatch ? "Les mots de passe ne correspondent pas" : undefined}
+            error={confirmMismatch ? t.auth.passwordsDiffer : undefined}
           />
 
           <Button
-            label="S'inscrire"
+            label={t.auth.signUpAction}
             onPress={handleRegister}
             loading={loading}
             disabled={confirmMismatch}
@@ -231,7 +233,7 @@ export default function RegisterScreen() {
           </View>
 
           <Button
-            label="Se connecter"
+            label={t.auth.signInAction}
             variant="secondary"
             onPress={() => router.back()}
             disabled={loading}

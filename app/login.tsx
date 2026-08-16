@@ -7,6 +7,7 @@ import { STRINGS } from "@/constants/strings";
 import { API_BASE_URL, API_ENDPOINTS } from "@/constants/api";
 import { DEBUG_NETWORK } from "@/constants/config";
 import { useAppColors } from "@/hooks/use-app-colors";
+import { useStrings } from "@/hooks/use-strings";
 import { login } from "@/services/auth";
 import { saveTokens } from "@/storage/tokens";
 import { router } from "expo-router";
@@ -83,6 +84,7 @@ function makeStyles(c: AppColors) {
 
 export default function LoginScreen() {
   const { colors } = useAppColors();
+  const t = useStrings();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
 
@@ -126,16 +128,16 @@ export default function LoginScreen() {
         <View style={[styles.hero, { paddingTop: insets.top + 36 }]}>
           <Logo size={82} />
           <Text style={styles.appName}>CityCare+</Text>
-          <Text style={styles.tagline}>Signalez, suivez, améliorez votre ville</Text>
+          <Text style={styles.tagline}>{t.auth.tagline}</Text>
         </View>
 
         {/* ── Form card ── */}
         <View style={styles.formCard}>
-          <Text style={styles.formTitle}>Connexion</Text>
+          <Text style={styles.formTitle}>{t.auth.signIn}</Text>
 
           <Input
-            label="Email ou nom d'utilisateur"
-            placeholder="Email ou nom d'utilisateur"
+            label={t.auth.identifier}
+            placeholder={t.auth.identifier}
             autoCapitalize="none"
             autoCorrect={false}
             icon="person"
@@ -143,7 +145,7 @@ export default function LoginScreen() {
             onChangeText={setUsername}
           />
           <Input
-            label="Mot de passe"
+            label={t.auth.password}
             placeholder="••••••••"
             secureTextEntry
             icon="lock"
@@ -152,13 +154,13 @@ export default function LoginScreen() {
           />
           <TouchableOpacity
             style={styles.forgotBtn}
-            onPress={() => Toast.show({ type: "success", text1: "Bientôt disponible", text2: "La réinitialisation du mot de passe arrive prochainement." })}
+            onPress={() => Toast.show({ type: "success", text1: t.auth.forgotSoonTitle, text2: t.auth.forgotSoon })}
             activeOpacity={0.7}
           >
-            <Text style={styles.forgotText}>Mot de passe oublié ?</Text>
+            <Text style={styles.forgotText}>{t.auth.forgotPassword}</Text>
           </TouchableOpacity>
 
-          <Button label="Se connecter" onPress={handleLogin} loading={loading} style={styles.btnTop} />
+          <Button label={t.auth.signInAction} onPress={handleLogin} loading={loading} style={styles.btnTop} />
 
           <View style={styles.divider}>
             <View style={styles.dividerLine} />
@@ -167,7 +169,7 @@ export default function LoginScreen() {
           </View>
 
           <Button
-            label="Créer un compte"
+            label={t.auth.createAccount}
             variant="secondary"
             onPress={() => router.push("/register")}
             disabled={loading}

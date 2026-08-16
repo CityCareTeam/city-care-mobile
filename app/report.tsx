@@ -12,6 +12,7 @@ import { getValidToken } from "@/storage/tokens";
 import type { IncidentType } from "@/types/incidents";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
+import { useStrings } from "@/hooks/use-strings";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { useUserLocation } from "@/hooks/use-user-location";
 import { Image } from "expo-image";
@@ -44,21 +45,21 @@ type NominatimResult = {
 
 const INCIDENT_TYPES: {
   value: IncidentType;
-  label: string;
   icon: React.ComponentProps<typeof MaterialIcons>["name"];
   color: string;
 }[] = [
-  { value: "Road",     label: "Voirie",    icon: "construction",   color: "#FF7043" },
-  { value: "Lighting", label: "Éclairage", icon: "lightbulb",      color: "#FFC107" },
-  { value: "Waste",    label: "Déchets",   icon: "delete-outline",  color: "#66BB6A" },
-  { value: "Graffiti", label: "Graffiti",  icon: "format-paint",   color: "#AB47BC" },
-  { value: "Safety",   label: "Sécurité",  icon: "shield",         color: "#EF5350" },
-  { value: "Other",    label: "Autre",     icon: "help-outline",   color: "#78909C" },
+  { value: "Road",     icon: "construction",    color: "#FF7043" },
+  { value: "Lighting", icon: "lightbulb",       color: "#FFC107" },
+  { value: "Waste",    icon: "delete-outline",  color: "#66BB6A" },
+  { value: "Graffiti", icon: "format-paint",    color: "#AB47BC" },
+  { value: "Safety",   icon: "shield",          color: "#EF5350" },
+  { value: "Other",    icon: "help-outline",    color: "#78909C" },
 ];
 
 
 export default function ReportScreen() {
   const { colors, isDark } = useAppColors();
+  const t = useStrings();
   const styles = useMemo(() => makeStyles(colors, isDark), [colors, isDark]);
 
   const mapRef = useRef<MapView>(null);
@@ -170,7 +171,7 @@ export default function ReportScreen() {
   async function handlePickPhoto() {
     if (photos.length >= MAX_INCIDENT_PHOTOS) { Alert.alert(STRINGS.alert.errorTitle, STRINGS.photos.limitReached); return; }
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") { Alert.alert("Permission refusée", STRINGS.photos.permissionDeniedGallery); return; }
+    if (status !== "granted") { Alert.alert(t.report.permissionDenied, t.photos.permissionDeniedGallery); return; }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: "images", allowsMultipleSelection: true, quality: 0.8,
       selectionLimit: MAX_INCIDENT_PHOTOS - photos.length,
@@ -185,7 +186,7 @@ export default function ReportScreen() {
   async function handleTakePhoto() {
     if (photos.length >= MAX_INCIDENT_PHOTOS) { Alert.alert(STRINGS.alert.errorTitle, STRINGS.photos.limitReached); return; }
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== "granted") { Alert.alert("Permission refusée", STRINGS.photos.permissionDeniedCamera); return; }
+    if (status !== "granted") { Alert.alert(t.report.permissionDenied, t.photos.permissionDeniedCamera); return; }
     const result = await ImagePicker.launchCameraAsync({ mediaTypes: "images", quality: 0.8 });
     if (result.canceled) return;
     const a = result.assets[0];
@@ -196,10 +197,10 @@ export default function ReportScreen() {
 
   function handleAddPhoto() {
     if (photos.length >= MAX_INCIDENT_PHOTOS) { Alert.alert(STRINGS.alert.errorTitle, STRINGS.photos.limitReached); return; }
-    Alert.alert("Ajouter une photo", undefined, [
-      { text: "Prendre une photo",        onPress: handleTakePhoto },
-      { text: "Choisir depuis la galerie", onPress: handlePickPhoto },
-      { text: "Annuler", style: "cancel" },
+    Alert.alert(t.report.addPhoto, undefined, [
+      { text: t.report.takePhoto, onPress: handleTakePhoto },
+      { text: t.report.pickPhoto, onPress: handlePickPhoto },
+      { text: t.alert.cancel, style: "cancel" },
     ]);
   }
 
@@ -242,8 +243,8 @@ export default function ReportScreen() {
         await clearDraft();
         Toast.show({
           type: "success",
-          text1: "Signalement enregistré",
-          text2: "Il sera envoyé dès le retour du réseau.",
+          text1: t.report.queuedTitle,
+          text2: t.report.queuedDetail,
         });
         router.back();
         return;
@@ -265,15 +266,15 @@ export default function ReportScreen() {
       {draftRestored && (
         <View style={styles.draftBar} testID="draft-restored">
           <MaterialIcons name="history" size={16} color={colors.primary} />
-          <Text style={styles.draftText}>Brouillon repris là où vous l’aviez laissé.</Text>
+          <Text style={styles.draftText}>{t.report.draftRestored}</Text>
           <TouchableOpacity onPress={discardDraft} accessibilityRole="button" hitSlop={8}>
-            <Text style={styles.draftDiscard}>Effacer</Text>
+            <Text style={styles.draftDiscard}>{t.report.discardDraft}</Text>
           </TouchableOpacity>
         </View>
       )}
 
       {/* ── Localisation ── */}
-      <SectionHeader title="Localisation" colors={colors} required />
+      <SectionHeader title={t.report.location} colors={colors} required />
       <View style={styles.mapContainer}>
         {locLoading ? (
           <View style={styles.mapLoader}><ActivityIndicator color={colors.primary} /></View>
@@ -298,7 +299,7 @@ export default function ReportScreen() {
             style={styles.addressInput}
             value={addressQuery}
             onChangeText={handleAddressChange}
-            placeholder="Rechercher ou taper une adresse..."
+            placeholder={t.report.addressPlaceholder}
             placeholderTextColor={colors.text + "55"}
             returnKeyType="search"
             onSubmitEditing={() => {
@@ -329,22 +330,22 @@ export default function ReportScreen() {
       </View>
 
       {/* ── Catégorie ── */}
-      <SectionHeader title="Catégorie" colors={colors} required />
+      <SectionHeader title={t.report.category} colors={colors} required />
       <View style={styles.typeGrid}>
-        {INCIDENT_TYPES.map((t) => {
-          const active = selectedType === t.value;
+        {INCIDENT_TYPES.map((incidentType) => {
+          const active = selectedType === incidentType.value;
           return (
             <TouchableOpacity
-              key={t.value}
-              style={[styles.typeCard, { backgroundColor: active ? t.color : colors.white, borderColor: active ? t.color : colors.chipBorder }]}
-              onPress={() => setSelectedType(t.value)}
+              key={incidentType.value}
+              style={[styles.typeCard, { backgroundColor: active ? incidentType.color : colors.white, borderColor: active ? incidentType.color : colors.chipBorder }]}
+              onPress={() => setSelectedType(incidentType.value)}
               activeOpacity={0.75}
             >
-              <View style={[styles.typeIconBubble, { backgroundColor: active ? "rgba(255,255,255,0.22)" : t.color + "18" }]}>
-                <MaterialIcons name={t.icon} size={22} color={active ? "#fff" : t.color} />
+              <View style={[styles.typeIconBubble, { backgroundColor: active ? "rgba(255,255,255,0.22)" : incidentType.color + "18" }]}>
+                <MaterialIcons name={incidentType.icon} size={22} color={active ? "#fff" : incidentType.color} />
               </View>
               <Text style={[styles.typeLabel, { color: active ? "#fff" : colors.text }]}>
-                {t.label}
+                {t.report.types[incidentType.value]}
               </Text>
             </TouchableOpacity>
           );
@@ -352,12 +353,12 @@ export default function ReportScreen() {
       </View>
 
       {/* ── Description ── */}
-      <SectionHeader title="Description" colors={colors} required />
+      <SectionHeader title={t.report.description} colors={colors} required />
       <TextInput
         style={styles.textarea}
         multiline
         numberOfLines={4}
-        placeholder="Décrivez brièvement l'incident..."
+        placeholder={t.report.descriptionPlaceholder}
         placeholderTextColor={colors.text + "55"}
         value={description}
         onChangeText={setDescription}
@@ -365,11 +366,11 @@ export default function ReportScreen() {
         maxLength={255}
       />
       <Text style={[styles.charCount, { color: remaining < 15 ? "#f0a500" : colors.text + "55" }]}>
-        {remaining} caractère{remaining !== 1 ? "s" : ""} restant{remaining !== 1 ? "s" : ""}
+        {t.report.charactersLeft(remaining)}
       </Text>
 
       {/* ── Photos ── */}
-      <SectionHeader title="Photos (optionnel)" colors={colors} />
+      <SectionHeader title={t.report.photos} colors={colors} />
       <View style={styles.photosRow}>
         {photos.map((p, i) => (
           <View key={p.uri} style={styles.photoThumb}>
@@ -385,19 +386,19 @@ export default function ReportScreen() {
         {photos.length < MAX_INCIDENT_PHOTOS && (
           <TouchableOpacity style={styles.photoAddBtn} onPress={handleAddPhoto} activeOpacity={0.7}>
             <MaterialIcons name="add-a-photo" size={22} color={colors.text + "55"} />
-            <Text style={styles.photoAddLabel}>{MAX_INCIDENT_PHOTOS - photos.length} restante{MAX_INCIDENT_PHOTOS - photos.length !== 1 ? "s" : ""}</Text>
+            <Text style={styles.photoAddLabel}>{t.report.photosLeft(MAX_INCIDENT_PHOTOS - photos.length)}</Text>
           </TouchableOpacity>
         )}
       </View>
 
       {/* ── Submit ── */}
-      <Button label="Envoyer le signalement" onPress={handleSubmit} loading={submitting} disabled={!canSubmit} />
+      <Button label={t.report.submit} onPress={handleSubmit} loading={submitting} disabled={!canSubmit} />
       {!canSubmit && (
         <Text style={styles.validationHint}>
           {!selectedType && !description.trim()
-            ? "Sélectionnez une catégorie et entrez une description"
-            : !selectedType ? "Sélectionnez une catégorie"
-            : "Entrez une description"}
+            ? t.report.needBoth
+            : !selectedType ? t.report.needCategory
+            : t.report.needDescription}
         </Text>
       )}
 
