@@ -743,6 +743,11 @@ export const UNRELEASED_CHANGES: Change[] = [
   {
     "kind": "feature",
     "scope": "app",
+    "text": "Open the menu from the right edge and soften the light theme"
+  },
+  {
+    "kind": "feature",
+    "scope": "app",
     "text": "Add a side menu for release notes, updates and settings"
   },
   {
