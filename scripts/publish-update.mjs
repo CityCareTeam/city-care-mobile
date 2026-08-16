@@ -47,6 +47,27 @@ if (!env?.EXPO_PUBLIC_API_URL) {
 }
 
 /**
+ * Windows n'a pas d'exécutable `npx` : c'est un `.cmd`, que Node ne sait lancer
+ * qu'à travers `cmd.exe`. Or avec `shell: true`, Node recolle les arguments en
+ * une seule ligne de commande **sans les protéger** — et un message de commit
+ * comme « fix(release): refresh the changelog » y explose en huit arguments,
+ * parenthèses comprises, que le shell interprète.
+ *
+ * On protège donc soi-même, et seulement quand un shell est dans la boucle :
+ * ailleurs, le tableau d'arguments est transmis tel quel au processus.
+ */
+const USE_SHELL = process.platform === "win32";
+
+function shellArgs(args) {
+  if (!USE_SHELL) return args;
+  return args.map((arg) => `"${String(arg).replace(/"/g, '""')}"`);
+}
+
+function run(command, args, options = {}) {
+  return execFileSync(command, shellArgs(args), { shell: USE_SHELL, ...options });
+}
+
+/**
  * Le sujet du dernier commit — en sautant les synchronisations du journal, qui
  * ne décrivent rien : la ligne suivante est lue avant que ce script n'en
  * produise une de plus.
@@ -71,16 +92,12 @@ const message = lastMeaningfulSubject();
 // volée n'en produit aucun, et se distingue par l'identifiant de bundle affiché
 // dans la pastille de version.
 console.log("Régénération du journal des versions…");
-execFileSync("node", ["scripts/generate-changelog.mjs", "--commit"], {
-  stdio: "inherit",
-  shell: process.platform === "win32",
-});
+run("node", ["scripts/generate-changelog.mjs", "--commit"], { stdio: "inherit" });
 
 console.log(`Publication sur « ${channel} » (profil ${profile}) — ${message}`);
 console.log(`API : ${env.EXPO_PUBLIC_API_URL}`);
 
-execFileSync("npx", ["eas", "update", "--branch", channel, "--message", message], {
+run("npx", ["eas", "update", "--branch", channel, "--message", message], {
   stdio: "inherit",
-  shell: process.platform === "win32",
   env: { ...process.env, ...env },
 });
