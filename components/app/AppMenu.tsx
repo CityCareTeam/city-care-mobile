@@ -17,6 +17,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type Panel = "notes" | "updates" | "settings";
@@ -185,38 +186,52 @@ export function AppMenu({ visible, onClose }: { visible: boolean; onClose: () =>
   );
 }
 
+/** Le geste doit partir de cette part droite de l'écran — la zone du pouce. */
+const EDGE_RATIO = 0.6;
+
 /**
- * Bande invisible collée au bord droit de l'écran : c'est elle qui reçoit le
- * glissé d'ouverture. Assez large pour être trouvée au pouce, assez étroite pour
- * ne rien voler au contenu — et elle ne réagit qu'aux gestes franchement
- * horizontaux, pour laisser le défilement tranquille.
+ * Ouvre le menu au glissé vers la gauche, depuis le bord droit.
+ *
+ * Première tentative : une bande invisible posée par-dessus l'écran, avec un
+ * `PanResponder`. Elle marchait, mais rendait ses vingt-deux pixels sourds au
+ * défilement — une bande de contenu qu'on ne pouvait plus faire glisser. Un
+ * calque qui reçoit un toucher ne le rend pas à ce qu'il y a dessous.
+ *
+ * `react-native-gesture-handler` est fait pour ça : le geste enveloppe l'écran
+ * entier, ne s'active qu'après un mouvement franchement horizontal
+ * (`activeOffsetX`), et **abandonne** dès que le doigt part à la verticale
+ * (`failOffsetY`) — le défilement reprend alors la main partout, y compris au
+ * bord.
  */
-export function MenuEdge({ onOpen }: { onOpen: () => void }) {
+export function MenuSwipeArea({
+  onOpen,
+  children,
+}: {
+  onOpen: () => void;
+  children: React.ReactNode;
+}) {
+  const width = Dimensions.get("window").width;
+  const startX = useRef(0);
+
   const pan = useMemo(
     () =>
-      PanResponder.create({
-        onMoveShouldSetPanResponder: (_, gesture) =>
-          gesture.dx < -12 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.5,
-        onPanResponderRelease: (_, gesture) => {
-          if (gesture.dx < -40 || gesture.vx < -0.4) onOpen();
-        },
-      }),
-    [onOpen],
+      Gesture.Pan()
+        // Les rappels touchent à l'état React : ils doivent rester sur le fil JS.
+        .runOnJS(true)
+        .activeOffsetX([-25, 25])
+        .failOffsetY([-14, 14])
+        .onBegin((event) => {
+          startX.current = event.absoluteX;
+        })
+        .onEnd((event) => {
+          if (startX.current < width * EDGE_RATIO) return;
+          if (event.translationX < -50 || event.velocityX < -600) onOpen();
+        }),
+    [onOpen, width],
   );
 
-  return <View {...pan.panHandlers} style={styles.edge} pointerEvents="box-only" />;
+  return <GestureDetector gesture={pan}>{children}</GestureDetector>;
 }
-
-const styles = StyleSheet.create({
-  edge: {
-    position: "absolute",
-    top: 0,
-    bottom: 0,
-    right: 0,
-    width: 22,
-    zIndex: 20,
-  },
-});
 
 function makeStyles(colors: ReturnType<typeof useAppColors>["colors"], isDark: boolean) {
   return StyleSheet.create({

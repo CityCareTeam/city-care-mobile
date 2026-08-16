@@ -9,6 +9,7 @@ import { CLUSTER_DENSITY, MAP_STATUS_COLOR, STATUS_LABEL, TYPE_LABEL } from "@/c
 import { clusterColor } from "@/utils/cluster-color";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
+import { useHasDraft } from "@/hooks/use-draft-indicator";
 import { useIncidentFilters } from "@/hooks/use-incident-filters";
 import { useIncidentPermissions } from "@/hooks/use-incident-permissions";
 import { useAutoRefresh } from "@/hooks/use-auto-refresh";
@@ -131,6 +132,7 @@ export default function SignalementsScreen() {
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(colors, insets.bottom), [colors, insets.bottom]);
   const { canReportIncident } = useIncidentPermissions(null);
+  const hasDraft = useHasDraft();
   const { filterType, setFilterType, filterStatus, setFilterStatus, filteredIncidents } = useIncidentFilters(incidents);
   const { clusters, failed: clustersFailed, currentZoom, onRegionChangeComplete, reload: reloadClusters } =
     useMapClusters(filterStatus, filterType, userRegion ?? INITIAL_REGION);
@@ -365,8 +367,11 @@ export default function SignalementsScreen() {
 
       {!selected && canReportIncident && (
         <TouchableOpacity style={styles.fab} onPress={() => router.push("/report")} activeOpacity={0.85}>
-          <MaterialIcons name="add" size={22} color="#fff" />
-          <Text style={styles.fabLabel}>Signaler</Text>
+          <MaterialIcons name={hasDraft ? "edit-note" : "add"} size={22} color="#fff" />
+          <Text style={styles.fabLabel}>{hasDraft ? "Reprendre" : "Signaler"}</Text>
+          {/* Pastille plutôt que libellé complet : le bouton flotte sur la carte,
+              il ne peut pas s'allonger sans la manger. */}
+          {hasDraft && <View style={styles.fabDot} />}
         </TouchableOpacity>
       )}
     </View>
@@ -402,5 +407,16 @@ function makeStyles(c: AppColors, bottomInset: number) {
       gap: 8,
     },
     fabLabel: { fontSize: 15, fontWeight: "700", color: "#fff" },
+    fabDot: {
+      position: "absolute",
+      top: 8,
+      right: 10,
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      backgroundColor: "#fff",
+      borderWidth: 2,
+      borderColor: c.primary,
+    },
   });
 }

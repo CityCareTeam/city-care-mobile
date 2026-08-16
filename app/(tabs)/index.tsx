@@ -10,9 +10,10 @@ import { STRINGS } from "@/constants/strings";
 import { useAuth } from "@/context/AuthContext";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
-import { AppMenu, MenuEdge } from "@/components/app/AppMenu";
+import { AppMenu, MenuSwipeArea } from "@/components/app/AppMenu";
 import { useAppRefreshControl } from "@/components/ui/AppRefreshControl";
 import { useAppUpdate } from "@/hooks/use-app-update";
+import { useHasDraft } from "@/hooks/use-draft-indicator";
 import { ErrorNotice } from "@/components/ui/ErrorNotice";
 import { Toast } from "@/components/ui/ToastMessage";
 import { useAutoRefresh } from "@/hooks/use-auto-refresh";
@@ -627,6 +628,7 @@ export default function HomeScreen() {
 
   const { active: dogActive, onTap: onLogoTap, dismiss: dismissDog } = useEasterEgg();
   const [menuOpen, setMenuOpen] = useState(false);
+  const hasDraft = useHasDraft();
   const { ready: updateReady } = useAppUpdate();
 
   // Le dernier état connu, le temps que le réseau réponde — et à la place de
@@ -738,6 +740,10 @@ export default function HomeScreen() {
 
   return (
     <>
+    {/* Le glissé vers la gauche depuis le bord droit ouvre le menu. Il enveloppe
+        l'écran entier plutôt qu'une bande posée dessus : une bande aurait rendu
+        son propre bord sourd au défilement. */}
+    <MenuSwipeArea onOpen={() => setMenuOpen(true)}>
     <ScrollView
       style={styles.scroll}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: getTabBarScrollPadding(insets.bottom) }]}
@@ -811,7 +817,16 @@ export default function HomeScreen() {
         {role === "Citizen" && (
           <TouchableOpacity style={styles.reportShortcut} onPress={() => router.push("/report")} activeOpacity={0.8}>
             <MaterialIcons name="add-circle-outline" size={16} color="#fff" />
-            <Text style={styles.reportShortcutText}>Signaler un incident</Text>
+            <Text style={styles.reportShortcutText}>
+              {hasDraft ? "Reprendre mon signalement" : "Signaler un incident"}
+            </Text>
+            {/* Le brouillon se restaure tout seul, mais rien ne le disait avant
+                d'ouvrir le formulaire : on pouvait l'avoir oublié. */}
+            {hasDraft && (
+              <View style={styles.draftPill}>
+                <Text style={styles.draftPillText}>Brouillon</Text>
+              </View>
+            )}
             <MaterialIcons name="chevron-right" size={16} color="rgba(255,255,255,0.5)" />
           </TouchableOpacity>
         )}
@@ -832,10 +847,8 @@ export default function HomeScreen() {
         <AdminView incidents={allIncidents} onPress={navigateToIncident} paging={paging} />
       )}
     </ScrollView>
+    </MenuSwipeArea>
 
-    {/* Le bord droit reste sensible même quand le menu est fermé : c'est par lui
-        qu'on le tire. */}
-    {!menuOpen && <MenuEdge onOpen={() => setMenuOpen(true)} />}
     <AppMenu visible={menuOpen} onClose={() => setMenuOpen(false)} />
     <EasterEggDog visible={dogActive} onHide={dismissDog} />
     </>
@@ -944,6 +957,19 @@ function makeStyles(c: AppColors) {
       marginTop: 12,
     },
     reportShortcutText: { fontSize: 14, fontWeight: "600", color: "#fff", flex: 1 },
+    draftPill: {
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 9,
+      backgroundColor: "rgba(255,255,255,0.9)",
+    },
+    draftPillText: {
+      fontSize: 10,
+      fontWeight: "800",
+      letterSpacing: 0.3,
+      color: c.primary,
+      textTransform: "uppercase",
+    },
     totalLabel: {
       fontSize: 13,
       color: c.text,
