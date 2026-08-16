@@ -10,7 +10,9 @@ import { STRINGS } from "@/constants/strings";
 import { useAuth } from "@/context/AuthContext";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
+import { AppMenu } from "@/components/app/AppMenu";
 import { useAppRefreshControl } from "@/components/ui/AppRefreshControl";
+import { useAppUpdate } from "@/hooks/use-app-update";
 import { ErrorNotice } from "@/components/ui/ErrorNotice";
 import { Toast } from "@/components/ui/ToastMessage";
 import { useAutoRefresh } from "@/hooks/use-auto-refresh";
@@ -624,6 +626,8 @@ export default function HomeScreen() {
   const { pending, rejected, flush, dismissRejected } = usePendingReports();
 
   const { active: dogActive, onTap: onLogoTap, dismiss: dismissDog } = useEasterEgg();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const { ready: updateReady } = useAppUpdate();
 
   // Le dernier état connu, le temps que le réseau réponde — et à la place de
   // l'écran vide s'il ne répond pas.
@@ -773,6 +777,19 @@ export default function HomeScreen() {
       <View style={styles.headerCard}>
         <View style={styles.headerRow}>
           <View style={{ flex: 1 }}>
+            <View style={styles.headerTagRow}>
+              <TouchableOpacity
+                onPress={() => setMenuOpen(true)}
+                hitSlop={12}
+                accessibilityRole="button"
+                accessibilityLabel="Ouvrir le menu de l’application"
+              >
+                <MaterialIcons name="menu" size={22} color="#fff" />
+              </TouchableOpacity>
+              {/* La pastille du menu double celle des mises à jour : la bannière
+                  ne passe qu'une fois, l'en-tête reste. */}
+              {updateReady && <View style={styles.menuDot} />}
+            </View>
             <Text style={styles.headerTag}>CityCare+</Text>
             <Text style={styles.greeting}>
               {firstName ? `Bonjour, ${firstName}` : "Bonjour"}
@@ -813,6 +830,7 @@ export default function HomeScreen() {
       )}
     </ScrollView>
 
+    <AppMenu visible={menuOpen} onClose={() => setMenuOpen(false)} />
     <EasterEggDog visible={dogActive} onHide={dismissDog} />
     </>
   );
@@ -854,6 +872,8 @@ function makeStyles(c: AppColors) {
       elevation: 6,
     },
     headerRow: { flexDirection: "row", alignItems: "flex-start", marginBottom: 12 },
+    headerTagRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 },
+    menuDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: "#fff" },
     headerTag: {
       fontSize: 11,
       fontWeight: "700",

@@ -4,7 +4,6 @@ import { Card } from "@/components/ui/Card";
 import { ChangePasswordModal } from "@/components/profile/ChangePasswordModal";
 import { EditProfileModal } from "@/components/profile/EditProfileModal";
 import { NotificationSettingsModal } from "@/components/profile/NotificationSettingsModal";
-import { ReleaseNotesModal } from "@/components/profile/ReleaseNotesModal";
 import { ROLE_COLORS, ROLE_LABELS } from "@/constants/roles";
 import { DEBUG_NETWORK } from "@/constants/config";
 import { getTabBarScrollPadding } from "@/utils/layout";
@@ -156,7 +155,6 @@ export default function ProfileScreen() {
   const [editOpen, setEditOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
-  const [notesOpen, setNotesOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
@@ -254,11 +252,10 @@ export default function ProfileScreen() {
           <SettingsRow label="Notifications" icon="notifications" color={colors.primary} last onPress={() => setNotifOpen(true)} styles={styles} colors={colors} />
         </Card>
 
-        {/* ── Application ── */}
-        <BlockHeader title="Application" styles={styles} />
-        <Card style={styles.card}>
-          <SettingsRow label="Notes de version" icon="history" color={colors.primary} last onPress={() => setNotesOpen(true)} styles={styles} colors={colors} />
-        </Card>
+        {/* Le bloc « Application » vivait ici. Il est passé dans le menu latéral
+            de l'accueil, avec les mises à jour et les réglages : le profil décrit
+            le compte, pas l'application. Dupliquer l'entrée aurait fait deux
+            portes à tenir vers la même fenêtre. */}
 
         {/* ── Session ── */}
         <BlockHeader title="Session" styles={styles} />
@@ -289,7 +286,6 @@ export default function ProfileScreen() {
       </ScrollView>
 
       <NotificationSettingsModal visible={notifOpen} onClose={() => setNotifOpen(false)} />
-      <ReleaseNotesModal visible={notesOpen} onClose={() => setNotesOpen(false)} />
       <EditProfileModal
         visible={editOpen}
         initialValues={{

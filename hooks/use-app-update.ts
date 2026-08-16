@@ -1,5 +1,6 @@
 import * as Updates from "expo-updates";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { AppState } from "react-native";
 
 /**
  * Mises à jour à la volée (OTA).
@@ -34,7 +35,59 @@ export function useAppUpdate() {
 
   const dismiss = useCallback(() => setDismissed(true), []);
 
+  useForegroundUpdateCheck();
+
   return { ready: isUpdatePending && !dismissed, applying, apply, dismiss };
+}
+
+/**
+ * Nouvelle recherche au retour au premier plan.
+ *
+ * `expo-updates` ne cherche qu'au démarrage. Qui laisse l'application ouverte en
+ * arrière-plan pendant des jours — c'est-à-dire à peu près tout le monde sur
+ * Android — ne voit donc jamais rien arriver. On avait le cas dès le premier
+ * essai : la mise à jour n'apparaissait qu'après avoir tué l'application et
+ * l'avoir rouverte.
+ *
+ * Une recherche est silencieuse et coûte une requête ; on l'espace tout de même,
+ * sinon chaque aller-retour vers une autre application en déclencherait une.
+ */
+const FOREGROUND_CHECK_INTERVAL_MS = 5 * 60 * 1000;
+
+function useForegroundUpdateCheck() {
+  const lastCheck = useRef(0);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state !== "active") return;
+      if (Date.now() - lastCheck.current < FOREGROUND_CHECK_INTERVAL_MS) return;
+      lastCheck.current = Date.now();
+      void checkAndFetchUpdate();
+    });
+    return () => subscription.remove();
+  }, []);
+}
+
+/**
+ * Cherche, et télécharge s'il y a lieu. Renvoie ce qui s'est passé, pour que
+ * l'écran des mises à jour puisse le dire — un bouton qui ne répond rien laisse
+ * croire qu'il n'a rien fait.
+ */
+export type UpdateCheckResult = "downloaded" | "up-to-date" | "unavailable" | "failed";
+
+export async function checkAndFetchUpdate(): Promise<UpdateCheckResult> {
+  // Désactivé en développement, et sur un binaire qui n'a pas été construit avec
+  // les mises à jour : demander quand même remonterait une erreur trompeuse.
+  if (!Updates.isEnabled) return "unavailable";
+
+  try {
+    const check = await Updates.checkForUpdateAsync();
+    if (!check.isAvailable) return "up-to-date";
+    await Updates.fetchUpdateAsync();
+    return "downloaded";
+  } catch {
+    return "failed";
+  }
 }
 
 /**

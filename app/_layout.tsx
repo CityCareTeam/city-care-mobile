@@ -1,6 +1,7 @@
 import { ToastMessage } from "@/components/ui/ToastMessage";
 import { UpdateBanner } from "@/components/ui/UpdateBanner";
 import { CityCareColors, CityCareColorsDark } from "@/constants/theme";
+import { PreferencesProvider } from "@/context/PreferencesContext";
 import {
     DarkTheme,
     DefaultTheme,
@@ -17,7 +18,11 @@ export const unstable_settings = {
   anchor: "login",
 };
 
-export default function RootLayout() {
+/**
+ * Le contenu est séparé de la racine parce qu'il lit la préférence de thème :
+ * un composant ne peut pas consommer un contexte qu'il fournit lui-même.
+ */
+function RootContent() {
   const colorScheme = useColorScheme();
   const c = colorScheme === "dark" ? CityCareColorsDark : CityCareColors;
 
@@ -44,5 +49,13 @@ export default function RootLayout() {
         <ToastMessage />
       </ThemeProvider>
     </GestureHandlerRootView>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <PreferencesProvider>
+      <RootContent />
+    </PreferencesProvider>
   );
 }
