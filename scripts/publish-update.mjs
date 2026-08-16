@@ -46,7 +46,35 @@ if (!env?.EXPO_PUBLIC_API_URL) {
   process.exit(1);
 }
 
-const message = execFileSync("git", ["log", "-1", "--pretty=%s"], { encoding: "utf8" }).trim();
+/**
+ * Le sujet du dernier commit — en sautant les synchronisations du journal, qui
+ * ne décrivent rien : la ligne suivante est lue avant que ce script n'en
+ * produise une de plus.
+ */
+function lastMeaningfulSubject() {
+  const subjects = execFileSync("git", ["log", "-10", "--pretty=%s"], { encoding: "utf8" })
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  return subjects.find((subject) => !subject.startsWith("chore(changelog)")) ?? "mise à jour";
+}
+
+const message = lastMeaningfulSubject();
+
+// Les notes de version sont du JavaScript généré : elles partent dans le bundle,
+// donc elles doivent décrire ce bundle. Sans cette régénération, une mise à jour
+// à la volée livrait le code du jour et les notes du dernier build — l'écran
+// « Nouveautés » taisait précisément ce qu'on venait d'envoyer.
+//
+// `--commit` sans `--prerelease` : le journal est rafraîchi et acté, mais le
+// rang de pré-version ne bouge pas. Il compte les APK ; une mise à jour à la
+// volée n'en produit aucun, et se distingue par l'identifiant de bundle affiché
+// dans la pastille de version.
+console.log("Régénération du journal des versions…");
+execFileSync("node", ["scripts/generate-changelog.mjs", "--commit"], {
+  stdio: "inherit",
+  shell: process.platform === "win32",
+});
 
 console.log(`Publication sur « ${channel} » (profil ${profile}) — ${message}`);
 console.log(`API : ${env.EXPO_PUBLIC_API_URL}`);

@@ -345,6 +345,11 @@ profil correspondant sont réinjectés à la publication — ils sont inlinés d
 bundle, un update publié depuis le mauvais environnement enverrait les appareils
 sur le mauvais back.
 
+Le journal des versions est régénéré et commité au passage : il est compilé dans
+le bundle, donc il doit décrire ce bundle. Le rang de pré-version (`beta.2`), lui,
+ne bouge pas — il compte les APK, pas les mises à jour à la volée, qui se
+distinguent par l'identifiant de bundle affiché dans la pastille de version.
+
 Toute modification native (nouvelle dépendance, permission, plugin) sort du
 périmètre de l'OTA et exige un build complet — **et l'incrémentation de
 `version` dans `constants/native-runtime.json`**, qui sert de `runtimeVersion` :

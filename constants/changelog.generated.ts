@@ -742,6 +742,11 @@ export const LAST_RELEASED_VERSION = "1.5.5";
 export const UNRELEASED_CHANGES: Change[] = [
   {
     "kind": "fix",
+    "scope": "ui",
+    "text": "Dress the pull-to-refresh in the app's colours"
+  },
+  {
+    "kind": "fix",
     "scope": "tests",
     "text": "Import the native runtime manifest by relative path"
   },
