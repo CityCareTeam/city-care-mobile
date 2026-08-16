@@ -155,15 +155,18 @@ export function IncidentDetailSheet({ incident, initialTab, onClose, onStatusUpd
     },
     header: { flexDirection: "row", alignItems: "center", marginBottom: 16, paddingHorizontal: 20, gap: 12 },
     titleBlock: { flex: 1, gap: 6 },
-    shareBtn: {
-      width: 34,
-      height: 34,
-      borderRadius: 17,
+    actionRow: { flexDirection: "row", gap: 8, marginBottom: 14 },
+    action: {
+      flex: 1,
+      flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
+      gap: 7,
+      paddingVertical: 11,
+      borderRadius: 14,
       backgroundColor: colors.chipBg,
-      marginRight: 8,
     },
+    actionLabel: { fontSize: 13.5, fontWeight: "700", color: colors.text, opacity: 0.85 },
     typeIconBubble: { width: 42, height: 42, borderRadius: 13, alignItems: "center", justifyContent: "center", flexShrink: 0 },
     type: { fontSize: 20, fontWeight: "800", color: colors.text },
     statusBadge: { alignSelf: "flex-start", borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
@@ -267,32 +270,6 @@ export function IncidentDetailSheet({ incident, initialTab, onClose, onStatusUpd
                   <Text style={s.statusBadgeText}>{STATUS_LABEL[incident.status] ?? incident.status}</Text>
                 </View>
               </View>
-              {/* Suivre : un repère personnel, gardé sur l'appareil. On ne peut
-                  sinon garder un œil que sur ses propres signalements. */}
-              <TouchableOpacity
-                style={[s.shareBtn, isFollowed && { backgroundColor: colors.primary + "26" }]}
-                onPress={() => incident && void toggleFollow(incident.id)}
-                activeOpacity={0.75}
-                accessibilityRole="button"
-                accessibilityState={{ selected: isFollowed }}
-                accessibilityLabel={isFollowed ? t.incident.unfollowA11y : t.incident.followA11y}
-              >
-                <MaterialIcons
-                  name={isFollowed ? "bookmark" : "bookmark-border"}
-                  size={17}
-                  color={isFollowed ? colors.primary : colors.text}
-                  style={!isFollowed && { opacity: 0.6 }}
-                />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={s.shareBtn}
-                onPress={handleShare}
-                activeOpacity={0.75}
-                accessibilityRole="button"
-                accessibilityLabel={t.incident.shareA11y}
-              >
-                <MaterialIcons name="share" size={16} color={colors.text} style={{ opacity: 0.6 }} />
-              </TouchableOpacity>
               <TouchableOpacity
                 style={[s.voteBtn, votes?.hasVoted && s.voteBtnActive, toggling && { opacity: 0.5 }]}
                 onPress={toggleVote}
@@ -311,6 +288,46 @@ export function IncidentDetailSheet({ incident, initialTab, onClose, onStatusUpd
               </TouchableOpacity>
               <TouchableOpacity onPress={onClose} style={[s.closeBtn, { marginLeft: 10 }]}>
                 <MaterialIcons name="close" size={16} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Suivre et partager quittent l'en-tête, où trois boutons se
+                disputaient le coin supérieur droit — le point le plus éloigné
+                du pouce sur une feuille qui monte du bas. Ici ils ont la place
+                de porter leur nom : un signet sans libellé se devine mal, et
+                celui-ci ouvre une fonctionnalité que rien d'autre n'annonce.
+
+                Le vote reste en haut : c'est un compteur qui décrit
+                l'incident, pas une action qu'on vient chercher. */}
+            <View style={s.actionRow}>
+              <TouchableOpacity
+                style={[s.action, isFollowed && { backgroundColor: colors.primary + "1F" }]}
+                onPress={() => incident && void toggleFollow(incident.id)}
+                activeOpacity={0.75}
+                accessibilityRole="button"
+                accessibilityState={{ selected: isFollowed }}
+                accessibilityLabel={isFollowed ? t.incident.unfollowA11y : t.incident.followA11y}
+              >
+                <MaterialIcons
+                  name={isFollowed ? "bookmark" : "bookmark-border"}
+                  size={17}
+                  color={isFollowed ? colors.primary : colors.text}
+                  style={!isFollowed && { opacity: 0.6 }}
+                />
+                <Text style={[s.actionLabel, isFollowed && { color: colors.primary }]}>
+                  {isFollowed ? t.incident.unfollow : t.incident.follow}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={s.action}
+                onPress={handleShare}
+                activeOpacity={0.75}
+                accessibilityRole="button"
+                accessibilityLabel={t.incident.shareA11y}
+              >
+                <MaterialIcons name="share" size={16} color={colors.text} style={{ opacity: 0.6 }} />
+                <Text style={s.actionLabel}>{t.incident.share}</Text>
               </TouchableOpacity>
             </View>
 
