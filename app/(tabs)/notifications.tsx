@@ -3,6 +3,7 @@ import { makeRowStyles, NotificationRow } from "@/components/notifications/Notif
 import { useNotificationContext } from "@/context/NotificationContext";
 import { ErrorNotice } from "@/components/ui/ErrorNotice";
 import { useAutoRefresh } from "@/hooks/use-auto-refresh";
+import { mixHex } from "@/utils/color";
 import { dayBucket, type DayBucket } from "@/utils/format-date";
 import { getTabBarScrollPadding } from "@/utils/layout";
 import type { AppColors } from "@/hooks/use-app-colors";
@@ -47,45 +48,52 @@ function makeStyles(c: AppColors, bottomInset: number) {
     },
 
     // ── Header ──
-    // Même surface, même bordure et même bulle d'icône que les lignes
-    // d'incident et les entrées du menu : l'écran cesse d'avoir sa grammaire.
+    //
+    // Le style reste celui de l'application, la **forme** s'en écarte : posé
+    // comme les lignes — surface claire, bordure fine, coins à seize, ombre
+    // portée — l'en-tête se lisait comme une notification de plus, la première
+    // de la liste.
+    //
+    // Il devient donc une bande teintée, sans ombre et sans bordure, largement
+    // arrondie et rentrée dans les marges. Rien de tout cela n'appartient à une
+    // ligne : on ne peut plus les confondre, même du coin de l'œil.
+    //
+    // La teinte est calculée et non superposée — un fond translucide laisse
+    // voir les ombres à travers sur Android, on en a déjà fait les frais.
     headerCard: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 13,
-      padding: 14,
-      borderRadius: 18,
-      backgroundColor: c.white,
-      borderWidth: 1,
-      borderColor: c.chipBorder,
-      marginBottom: 18,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.05,
-      shadowRadius: 4,
-      elevation: 2,
+      gap: 14,
+      paddingVertical: 18,
+      paddingHorizontal: 18,
+      marginHorizontal: -4,
+      borderRadius: 26,
+      backgroundColor: mixHex(c.background, c.primary, 0.16),
+      marginBottom: 20,
     },
+    // Bulle pleine, icône claire : les lignes font l'inverse — bulle pâle,
+    // icône colorée. L'accent est ici, pas dans la liste.
     headerIcon: {
-      width: 46,
-      height: 46,
-      borderRadius: 15,
+      width: 48,
+      height: 48,
+      borderRadius: 24,
       alignItems: "center",
       justifyContent: "center",
     },
     headerText: { flex: 1, gap: 2 },
-    title: { fontSize: 19, fontWeight: "800", color: c.text },
+    title: { fontSize: 21, fontWeight: "800", color: c.text, letterSpacing: -0.2 },
     summary: { fontSize: 12.5, color: c.text, opacity: 0.5 },
     actions: { flexDirection: "row", alignItems: "center", gap: 8 },
     // Deux boutons de même taille : ils font partie de la même famille de
     // gestes, l'un ne pèse pas plus lourd que l'autre.
     readAllBtn: {
       width: 36, height: 36, borderRadius: 18,
-      backgroundColor: c.primary + "18",
+      backgroundColor: c.white,
       alignItems: "center", justifyContent: "center",
     },
     clearBtn: {
       width: 36, height: 36, borderRadius: 18,
-      backgroundColor: "#e53e3e18",
+      backgroundColor: c.white,
       alignItems: "center", justifyContent: "center",
     },
     // Palier de jour : discret, il sépare sans se faire lire comme un titre.
@@ -314,11 +322,11 @@ export default function NotificationsScreen() {
               vivent dedans, alignées à droite : elles concernent la boîte, pas
               une notification en particulier. */}
           <View style={styles.headerCard}>
-            <View style={[styles.headerIcon, { backgroundColor: colors.primary + "1F" }]}>
+            <View style={[styles.headerIcon, { backgroundColor: colors.primary }]}>
               <MaterialIcons
                 name={unreadCount > 0 ? "notifications-active" : "notifications-none"}
-                size={22}
-                color={colors.primary}
+                size={24}
+                color="#fff"
               />
             </View>
 

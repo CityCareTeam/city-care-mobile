@@ -19,6 +19,7 @@ import {
   View,
 } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { runOnJS, useSharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type Panel = "notes" | "updates" | "settings";
@@ -216,7 +217,14 @@ const CANCEL_DY = 18;
  * D'où l'activation manuelle : on décide nous-mêmes, doigt posé, si ce geste
  * nous revient. Hors de la bordure droite, on **abandonne immédiatement** et la
  * carte ou la liste reçoit le toucher comme si nous n'existions pas. C'est ce
- * qui permet de l'installer partout sans rien casher.
+ * qui permet de l'installer partout sans rien casser.
+ *
+ * ⚠️ Les rappels de toucher restent des *worklets*, sur le fil UI. Une première
+ * version les avait renvoyés au fil JS (`runOnJS(true)`) pour pouvoir appeler
+ * `onOpen` directement : le geste ne s'ouvrait alors nulle part. Le gestionnaire
+ * d'état d'un geste se pilote depuis le fil UI ; `activate()` et `fail()`
+ * appelés depuis le JS arrivent trop tard pour décider de quoi que ce soit.
+ * Seule l'ouverture repasse côté JS, une fois le geste terminé.
  */
 export function MenuSwipeArea({
   onOpen,
@@ -226,34 +234,39 @@ export function MenuSwipeArea({
   children: React.ReactNode;
 }) {
   const width = Dimensions.get("window").width;
-  const origin = useRef({ x: 0, y: 0 });
+  // Des valeurs partagées et non des références : un worklet ne sait pas lire
+  // le `.current` d'un `useRef`.
+  const startX = useSharedValue(0);
+  const startY = useSharedValue(0);
 
   const pan = useMemo(
     () =>
       Gesture.Pan()
-        // Les rappels touchent à l'état React : ils doivent rester sur le fil JS.
-        .runOnJS(true)
         .manualActivation(true)
         .onTouchesDown((event, state) => {
+          "worklet";
           const touch = event.allTouches[0];
           if (!touch) return;
-          origin.current = { x: touch.absoluteX, y: touch.absoluteY };
+          startX.value = touch.absoluteX;
+          startY.value = touch.absoluteY;
           // Le doigt n'est pas au bord : ce geste ne nous regarde pas.
           if (touch.absoluteX < width - EDGE_WIDTH) state.fail();
         })
         .onTouchesMove((event, state) => {
+          "worklet";
           const touch = event.allTouches[0];
           if (!touch) return;
-          const dx = touch.absoluteX - origin.current.x;
-          const dy = touch.absoluteY - origin.current.y;
+          const dx = touch.absoluteX - startX.value;
+          const dy = touch.absoluteY - startY.value;
 
           if (Math.abs(dy) > CANCEL_DY && Math.abs(dy) > Math.abs(dx)) state.fail();
           else if (dx < -ACTIVATE_DX) state.activate();
         })
         .onEnd((event) => {
-          if (event.translationX < -40 || event.velocityX < -600) onOpen();
+          "worklet";
+          if (event.translationX < -40 || event.velocityX < -600) runOnJS(onOpen)();
         }),
-    [onOpen, width],
+    [onOpen, width, startX, startY],
   );
 
   return <GestureDetector gesture={pan}>{children}</GestureDetector>;
