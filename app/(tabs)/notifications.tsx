@@ -14,6 +14,7 @@ import { deleteAllNotifications, deleteNotification, getNotifications, markAllAs
 import { getValidToken } from "@/storage/tokens";
 import type { NotificationResponse } from "@/types/notifications";
 import { useAppRefreshControl } from "@/components/ui/AppRefreshControl";
+import { NotificationsSkeleton } from "@/components/ui/Skeleton";
 import { useStrings } from "@/hooks/use-strings";
 import { router } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -278,8 +279,8 @@ export default function NotificationsScreen() {
   // l'écran entier — en-tête compris — à chaque retour sur l'onglet.
   if (loading || (fetching && items.length === 0)) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator color={colors.primary} size="large" />
+      <View style={styles.container}>
+        <NotificationsSkeleton />
       </View>
     );
   }

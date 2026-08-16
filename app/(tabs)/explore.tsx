@@ -9,6 +9,7 @@ import { CLUSTER_DENSITY, MAP_STATUS_COLOR, STATUS_LABEL, TYPE_LABEL } from "@/c
 import { clusterColor } from "@/utils/cluster-color";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
+import { useAuth } from "@/context/AuthContext";
 import { useHasDraft } from "@/hooks/use-draft-indicator";
 import { useStrings } from "@/hooks/use-strings";
 import { useIncidentFilters } from "@/hooks/use-incident-filters";
@@ -136,6 +137,17 @@ export default function SignalementsScreen() {
   const hasDraft = useHasDraft();
   const t = useStrings();
   const { filterType, setFilterType, filterStatus, setFilterStatus, filteredIncidents } = useIncidentFilters(incidents);
+
+  // « Les miens » : un filtre sur l'auteur, que le serveur ne connaît pas — les
+  // grappes qu'il renvoie comptent tous les signalements. On force donc les
+  // épingles individuelles quand il est actif : les siens se comptent en
+  // dizaines, les afficher tous ne coûte rien.
+  const [mineOnly, setMineOnly] = useState(false);
+  const { dbUser } = useAuth();
+  const visibleIncidents = useMemo(
+    () => (mineOnly && dbUser ? filteredIncidents.filter((i) => i.authorUserId === dbUser.id) : filteredIncidents),
+    [filteredIncidents, mineOnly, dbUser],
+  );
   const { clusters, failed: clustersFailed, currentZoom, onRegionChangeComplete, reload: reloadClusters } =
     useMapClusters(filterStatus, filterType, userRegion ?? INITIAL_REGION);
 
@@ -241,7 +253,7 @@ export default function SignalementsScreen() {
   }, [incidents, selected]);
 
   // ── Markers ──
-  const isClusterMode = currentZoom < CLUSTER_ZOOM_THRESHOLD;
+  const isClusterMode = currentZoom < CLUSTER_ZOOM_THRESHOLD && !mineOnly;
 
   // Ne légender que les paliers réellement présents à l'écran : expliquer un
   // rouge que l'utilisateur n'a pas sous les yeux ne fait qu'encombrer.
@@ -253,12 +265,12 @@ export default function SignalementsScreen() {
   const notice: MapNoticeKind | null = useMemo(() => {
     if (loading) return null;
     if (isClusterMode ? clustersFailed : incidentsFailed) return "offline";
-    const nothingToShow = isClusterMode ? clusters.length === 0 : filteredIncidents.length === 0;
+    const nothingToShow = isClusterMode ? clusters.length === 0 : visibleIncidents.length === 0;
     if (!nothingToShow) return null;
     return filterStatus || filterType ? "filtered" : "empty";
   }, [
     loading, isClusterMode, clustersFailed, incidentsFailed,
-    clusters.length, filteredIncidents.length, filterStatus, filterType,
+    clusters.length, visibleIncidents.length, filterStatus, filterType,
   ]);
 
   // Le résumé carte ne renvoie pas le type des signalements. Mais une cellule
@@ -291,7 +303,7 @@ export default function SignalementsScreen() {
   );
 
   const individualMarkers = useMemo(
-    () => filteredIncidents.map((inc) => (
+    () => visibleIncidents.map((inc) => (
       <IncidentMarker
         key={inc.id}
         incident={inc}
@@ -304,7 +316,7 @@ export default function SignalementsScreen() {
         }}
       />
     )),
-    [filteredIncidents, colors.primary, selected?.id, selectIncident],
+    [visibleIncidents, colors.primary, selected?.id, selectIncident],
   );
 
   return (
@@ -327,6 +339,8 @@ export default function SignalementsScreen() {
           filterType={filterType}
           setFilterType={setFilterType}
           paddingTop={insets.top + FILTER_BAR_TOP}
+          mineOnly={mineOnly}
+          onToggleMine={dbUser ? () => setMineOnly((on) => !on) : undefined}
         />
       </View>
 

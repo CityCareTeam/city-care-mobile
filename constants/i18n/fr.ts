@@ -308,6 +308,8 @@ export const fr = {
 
   // ── Carte : détail d'un incident ──
   incident: {
+    mineOnly: "Les miens",
+    mineOnlyA11y: "N’afficher que mes signalements",
     share: "Partager",
     shareA11y: "Partager ce signalement",
     shareTitle: "Signalement CityCare+",

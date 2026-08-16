@@ -1,3 +1,4 @@
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { STATUS_COLOR, STATUS_LABEL, TYPE_LABEL } from "@/constants/incidents";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
@@ -19,6 +20,9 @@ type Props = {
   filterType: string | null;
   setFilterType: (v: string | null) => void;
   paddingTop?: number;
+  /** Absent pour un visiteur non connecté : il n'a pas de signalements à isoler. */
+  mineOnly?: boolean;
+  onToggleMine?: () => void;
 };
 
 /** Construites au rendu : « Tous » suit la langue, une constante l'aurait figé. */
@@ -60,6 +64,9 @@ function makeStyles(c: AppColors, isDark: boolean) {
       paddingVertical: 5,
       gap: 4,
     },
+    // La pastille de l'auteur porte une icône : deux éléments côte à côte, là
+    // où les catégories n'ont qu'un mot.
+    mineChip: { flexDirection: "row", alignItems: "center", gap: 5 },
     typeChip: {
       paddingHorizontal: 14,
       paddingVertical: 6,
@@ -85,6 +92,8 @@ export function IncidentFilterBar({
   filterType,
   setFilterType,
   paddingTop = 0,
+  mineOnly,
+  onToggleMine,
 }: Props) {
   const { colors, isDark } = useAppColors();
   // Nommé `strings` et non `t` : la boucle des types utilise déjà `t`.
@@ -110,6 +119,30 @@ export function IncidentFilterBar({
           contentContainerStyle={styles.typeScrollContent}
           style={styles.typeScroll}
         >
+          {/* « Les miens » ouvre la rangée : c'est un filtre sur l'auteur, pas
+              sur le type, et le mettre en tête évite qu'on le cherche au milieu
+              des catégories. Un chevron le sépare visuellement du reste. */}
+          {onToggleMine && (
+            <TouchableOpacity
+              style={[styles.typeChip, styles.mineChip, mineOnly && styles.typeChipActive]}
+              onPress={onToggleMine}
+              activeOpacity={0.75}
+              accessibilityRole="button"
+              accessibilityState={{ selected: mineOnly }}
+              accessibilityLabel={strings.incident.mineOnlyA11y}
+            >
+              <MaterialIcons
+                name="person-pin-circle"
+                size={13}
+                color={mineOnly ? "#fff" : colors.text}
+                style={!mineOnly && { opacity: 0.55 }}
+              />
+              <Text style={[styles.typeChipText, mineOnly && styles.typeChipTextActive]}>
+                {strings.incident.mineOnly}
+              </Text>
+            </TouchableOpacity>
+          )}
+
           {TYPE_OPTIONS.map((t) => {
             const active = filterType === t;
             return (

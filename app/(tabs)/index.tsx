@@ -1,6 +1,7 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { IncidentRow } from "@/components/incident-row";
 import { IncidentSearchBar, NoSearchResults } from "@/components/incident-search-bar";
+import { FeedSkeleton } from "@/components/ui/Skeleton";
 import { useIncidentSearch } from "@/hooks/use-incident-search";
 import { HeaderClock } from "@/components/ui/HeaderClock";
 import { Logo } from "@/components/ui/Logo";
@@ -782,8 +783,8 @@ export default function HomeScreen() {
   const hasContent = allIncidents.length > 0 || myIncidents.length > 0;
   if (authLoading || (incidentsLoading && !hasContent)) {
     return (
-      <View style={[styles.centered, { paddingTop: insets.top }]}>
-        <ActivityIndicator color={colors.primary} size="large" />
+      <View style={[styles.scroll, styles.content, { paddingTop: insets.top + 12 }]}>
+        <FeedSkeleton />
       </View>
     );
   }

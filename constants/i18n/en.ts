@@ -298,6 +298,8 @@ export const en: typeof fr = {
   },
 
   incident: {
+    mineOnly: "Mine",
+    mineOnlyA11y: "Show only my reports",
     share: "Share",
     shareA11y: "Share this report",
     shareTitle: "CityCare+ report",
