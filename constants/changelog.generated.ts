@@ -741,6 +741,26 @@ export const LAST_RELEASED_VERSION = "1.5.5";
 /** Changements accumulés depuis, donc embarqués par les pré-versions. */
 export const UNRELEASED_CHANGES: Change[] = [
   {
+    "kind": "feature",
+    "scope": "app",
+    "text": "Add a first-run guide, replayable from the side menu"
+  },
+  {
+    "kind": "feature",
+    "scope": "ui",
+    "text": "Filter the map to my reports, and show skeletons while loading"
+  },
+  {
+    "kind": "feature",
+    "scope": "incidents",
+    "text": "Search and sort the feed, and add haptics to key gestures"
+  },
+  {
+    "kind": "fix",
+    "scope": "i18n",
+    "text": "Translate dates and relative durations"
+  },
+  {
     "kind": "fix",
     "scope": "ui",
     "text": "Ease off the notifications title size"
