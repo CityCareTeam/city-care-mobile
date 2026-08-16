@@ -1,6 +1,6 @@
 import { en } from '@/constants/i18n/en';
 import { fr } from '@/constants/i18n/fr';
-import { dictionaryFor, resolveLanguage } from '@/constants/i18n';
+import { deviceLanguage, dictionaryFor, resolveLanguage } from '@/constants/i18n';
 import { STRINGS } from '@/constants/strings';
 
 /** Aplati un dictionnaire en chemins, pour comparer deux langues clé à clé. */
@@ -56,6 +56,26 @@ describe('résolution de la langue', () => {
 
   it('rend une langue connue pour « système »', () => {
     expect(['fr', 'en']).toContain(resolveLanguage('system'));
+  });
+
+  // Le cas qui a fait tomber la CI : la locale de la machine décidait de la
+  // langue de l'application, et le runner tourne en anglais.
+  it('lit la locale de l’appareil', () => {
+    const spy = jest
+      .spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions')
+      .mockReturnValue({ locale: 'en-US' } as Intl.ResolvedDateTimeFormatOptions);
+    expect(deviceLanguage()).toBe('en');
+    spy.mockRestore();
+  });
+
+  // Tout ce qui n'est pas anglais retombe sur le français : c'est la langue de
+  // la ville, et une locale inconnue est plus probablement francophone ici.
+  it('retombe sur le français pour une locale inconnue', () => {
+    const spy = jest
+      .spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions')
+      .mockReturnValue({ locale: 'de-DE' } as Intl.ResolvedDateTimeFormatOptions);
+    expect(deviceLanguage()).toBe('fr');
+    spy.mockRestore();
   });
 
   it('sert le bon dictionnaire', () => {
