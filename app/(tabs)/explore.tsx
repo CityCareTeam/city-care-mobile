@@ -10,7 +10,7 @@ import { clusterColor } from "@/utils/cluster-color";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
 import { useAuth } from "@/context/AuthContext";
-import { useHasDraft } from "@/hooks/use-draft-indicator";
+import { useDraftCount } from "@/hooks/use-draft-indicator";
 import { useStrings } from "@/hooks/use-strings";
 import { useIncidentFilters } from "@/hooks/use-incident-filters";
 import { useIncidentPermissions } from "@/hooks/use-incident-permissions";
@@ -134,7 +134,8 @@ export default function SignalementsScreen() {
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(colors, insets.bottom), [colors, insets.bottom]);
   const { canReportIncident } = useIncidentPermissions(null);
-  const hasDraft = useHasDraft();
+  const draftCount = useDraftCount();
+  const hasDraft = draftCount > 0;
   const t = useStrings();
   const { filterType, setFilterType, filterStatus, setFilterStatus, filteredIncidents } = useIncidentFilters(incidents);
 

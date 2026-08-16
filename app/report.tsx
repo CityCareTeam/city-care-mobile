@@ -7,19 +7,21 @@ import { STRINGS } from "@/constants/strings";
 import { isNetworkError } from "@/services/api-client";
 import { createIncident, reverseGeocode, uploadPhoto } from "@/services/incidents";
 import { enqueueReport } from "@/storage/pending-reports";
-import { clearDraft, isWorthSaving, loadDraft, saveDraft } from "@/storage/report-draft";
+import { clearDraft, isWorthSaving, latestDraft, listDrafts, saveDraft, type ReportDraft } from "@/storage/report-draft";
 import { getValidToken } from "@/storage/tokens";
 import { succeeded } from "@/utils/haptics";
 import type { IncidentType } from "@/types/incidents";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
 import { useStrings } from "@/hooks/use-strings";
+import { ModalShell } from "@/components/ui/ModalShell";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import { timeAgo } from "@/utils/format-date";
 import { useUserLocation } from "@/hooks/use-user-location";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -75,23 +77,34 @@ export default function ReportScreen() {
   const [photos, setPhotos]             = useState<PickedPhoto[]>([]);
   const [draftChecked, setDraftChecked] = useState(false);
   const [draftRestored, setDraftRestored] = useState(false);
+  // Le brouillon sur lequel on écrit. `null` tant que rien n'a été enregistré :
+  // la première écriture en crée un et retient son identifiant, sinon chaque
+  // frappe fabriquerait un brouillon de plus.
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const [drafts, setDrafts] = useState<ReportDraft[]>([]);
+  const [picking, setPicking] = useState(false);
 
   // Un formulaire à moitié rempli devant un nid-de-poule, un appel entrant, et
   // tout est à refaire : c'est le moment où l'on renonce à signaler.
+  const applyDraft = useCallback((draft: ReportDraft) => {
+    setCoords({ latitude: draft.latitude, longitude: draft.longitude });
+    setAddressQuery(draft.addressQuery);
+    setDescription(draft.description);
+    setSelectedType(draft.type);
+    setPhotos(draft.photos);
+    setDraftId(draft.id);
+    setDraftRestored(true);
+  }, [setCoords]);
+
   useEffect(() => {
     void (async () => {
-      const draft = await loadDraft();
-      if (draft) {
-        setCoords({ latitude: draft.latitude, longitude: draft.longitude });
-        setAddressQuery(draft.addressQuery);
-        setDescription(draft.description);
-        setSelectedType(draft.type);
-        setPhotos(draft.photos);
-        setDraftRestored(true);
-      }
+      const all = await listDrafts();
+      setDrafts(all);
+      const draft = await latestDraft();
+      if (draft) applyDraft(draft);
       setDraftChecked(true);
     })();
-  }, [setCoords]);
+  }, [applyDraft]);
 
   // La géolocalisation ne reprend la main que si aucun brouillon n'a été
   // restauré : sinon elle écraserait l'adresse retenue par celle d'ici, qui
@@ -117,9 +130,11 @@ export default function ReportScreen() {
       photos,
     };
     if (!isWorthSaving(draft)) return;
-    const timer = setTimeout(() => void saveDraft(draft), 500);
+    const timer = setTimeout(() => {
+      void saveDraft(draft, draftId ?? undefined).then(setDraftId);
+    }, 500);
     return () => clearTimeout(timer);
-  }, [draftChecked, coords, addressQuery, description, selectedType, photos]);
+  }, [draftChecked, coords, addressQuery, description, selectedType, photos, draftId]);
 
   /**
    * Le geste est devenu facile à atteindre — c'est ce qu'on voulait — donc aussi
@@ -135,15 +150,34 @@ export default function ReportScreen() {
         text: t.report.discardDraft,
         style: "destructive",
         onPress: () => {
-          void clearDraft();
-          setDraftRestored(false);
-          setAddressQuery("");
-          setDescription("");
-          setSelectedType(null);
-          setPhotos([]);
+          if (draftId) void clearDraft(draftId).then(() => listDrafts().then(setDrafts));
+          resetForm();
         },
       },
     ]);
+  }
+
+  /** Vide le formulaire sans toucher au stockage : à l'appelant d'en décider. */
+  function resetForm() {
+    setDraftRestored(false);
+    setDraftId(null);
+    setAddressQuery("");
+    setDescription("");
+    setSelectedType(null);
+    setPhotos([]);
+  }
+
+  /**
+   * Met le formulaire de côté et repart d'une page blanche.
+   *
+   * Le brouillon en cours est déjà enregistré — l'écriture différée s'en est
+   * chargée — il suffit donc d'oublier son identifiant pour que la suite en
+   * ouvre un autre. C'est ce qui permet de préparer trois signalements en
+   * marchant, au lieu d'en écraser deux.
+   */
+  async function startNewDraft() {
+    resetForm();
+    setDrafts(await listDrafts());
   }
 
   async function handleMapPress(coordinate: { latitude: number; longitude: number }) {
@@ -244,7 +278,7 @@ export default function ReportScreen() {
       if (uploadFailed) Toast.show({ type: "error", text1: t.alert.errorTitle, text2: t.photos.uploadError });
       succeeded();
       Toast.show({ type: "success", text1: t.toast.reportSuccessTitle, text2: t.toast.reportSuccess });
-      await clearDraft();
+      if (draftId) await clearDraft(draftId);
       router.back();
     } catch (e: unknown) {
       // La requête n'a jamais atteint le serveur : le signalement est accepté
@@ -258,7 +292,7 @@ export default function ReportScreen() {
           description: description.trim(),
           photos,
         });
-        await clearDraft();
+        if (draftId) await clearDraft(draftId);
         // Mis en file plutôt qu'envoyé, mais du point de vue de l'utilisateur
         // le geste a abouti : c'est ce que le retour doit dire.
         succeeded();
@@ -287,7 +321,20 @@ export default function ReportScreen() {
       {draftRestored && (
         <View style={styles.draftBar} testID="draft-restored">
           <MaterialIcons name="history" size={16} color={colors.primary} />
-          <Text style={styles.draftText}>{t.report.draftRestored}</Text>
+          <Text style={styles.draftText} numberOfLines={2}>{t.report.draftRestored}</Text>
+          {/* Mettre de côté plutôt qu'écraser : c'est tout l'objet des
+              brouillons multiples. */}
+          <TouchableOpacity
+            style={styles.draftNewBtn}
+            onPress={() => void startNewDraft()}
+            activeOpacity={0.75}
+            accessibilityRole="button"
+            accessibilityLabel={t.report.newDraftA11y}
+            hitSlop={6}
+          >
+            <MaterialIcons name="note-add" size={15} color={colors.primary} />
+            <Text style={styles.draftNewText}>{t.report.newDraft}</Text>
+          </TouchableOpacity>
           <TouchableOpacity
             style={styles.draftDiscardBtn}
             onPress={discardDraft}
@@ -300,6 +347,60 @@ export default function ReportScreen() {
           </TouchableOpacity>
         </View>
       )}
+
+      {/* Les autres brouillons, quand il y en a : une ligne discrète qui
+          ouvre la liste, plutôt qu'une pile de cartes au-dessus du formulaire. */}
+      {drafts.length > 1 && (
+        <TouchableOpacity
+          style={styles.draftsLink}
+          onPress={() => setPicking(true)}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+        >
+          <MaterialIcons name="layers" size={15} color={colors.text} style={{ opacity: 0.5 }} />
+          <Text style={styles.draftsLinkText}>{t.report.draftCount(drafts.length)}</Text>
+          <MaterialIcons name="chevron-right" size={16} color={colors.text} style={{ opacity: 0.35 }} />
+        </TouchableOpacity>
+      )}
+
+      <ModalShell visible={picking} title={t.report.draftsTitle} onClose={() => setPicking(false)}>
+        {drafts.map((draft) => (
+          <TouchableOpacity
+            key={draft.id}
+            style={[styles.draftRow, draft.id === draftId && styles.draftRowActive]}
+            onPress={() => {
+              applyDraft(draft);
+              setPicking(false);
+            }}
+            activeOpacity={0.75}
+            accessibilityRole="button"
+          >
+            <View style={styles.draftRowText}>
+              <Text style={styles.draftRowTitle} numberOfLines={1}>
+                {draft.description.trim() || t.report.untitledDraft}
+              </Text>
+              <Text style={styles.draftRowMeta} numberOfLines={1}>
+                {draft.type ? t.report.types[draft.type] : "—"} · {timeAgo(draft.savedAt, t)}
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => void clearDraft(draft.id).then(async () => {
+                const left = await listDrafts();
+                setDrafts(left);
+                // On vient de jeter celui qu'on éditait : le formulaire ne doit
+                // plus prétendre écrire dedans.
+                if (draft.id === draftId) resetForm();
+                if (left.length <= 1) setPicking(false);
+              })}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel={t.report.discardTitle}
+            >
+              <MaterialIcons name="delete-outline" size={19} color="#e53e3e" />
+            </TouchableOpacity>
+          </TouchableOpacity>
+        ))}
+      </ModalShell>
 
       {/* ── Localisation ── */}
       <SectionHeader title={t.report.location} colors={colors} required />
@@ -455,6 +556,43 @@ function makeStyles(c: AppColors, isDark: boolean) {
       borderColor: c.primary + "33",
     },
     draftText: { flex: 1, fontSize: 12, color: c.text, opacity: 0.75 },
+    draftNewBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 5,
+      paddingHorizontal: 10,
+      paddingVertical: 8,
+      borderRadius: 10,
+      backgroundColor: c.white,
+    },
+    draftNewText: { fontSize: 12, fontWeight: "700", color: c.primary },
+    draftsLink: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 7,
+      alignSelf: "flex-start",
+      paddingVertical: 8,
+      paddingHorizontal: 2,
+      marginTop: -8,
+      marginBottom: 12,
+    },
+    draftsLinkText: { fontSize: 12.5, color: c.text, opacity: 0.6, fontWeight: "600" },
+    draftRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      paddingVertical: 12,
+      paddingHorizontal: 12,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: c.chipBorder,
+      backgroundColor: c.white,
+      marginBottom: 8,
+    },
+    draftRowActive: { borderColor: c.primary, borderWidth: 2 },
+    draftRowText: { flex: 1, gap: 2 },
+    draftRowTitle: { fontSize: 14, fontWeight: "600", color: c.text },
+    draftRowMeta: { fontSize: 11.5, color: c.text, opacity: 0.5 },
     // Le libellé faisait douze pixels de haut : la zone touchable valait la
     // hauteur du texte. Elle atteint maintenant les quarante-quatre points
     // recommandés, rembourrage et `hitSlop` compris.

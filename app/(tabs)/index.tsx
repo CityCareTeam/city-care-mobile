@@ -17,7 +17,7 @@ import { useAppColors } from "@/hooks/use-app-colors";
 import { useAppMenu } from "@/context/AppMenuContext";
 import { useAppRefreshControl } from "@/components/ui/AppRefreshControl";
 import { useAppUpdate } from "@/hooks/use-app-update";
-import { useHasDraft } from "@/hooks/use-draft-indicator";
+import { useDraftCount } from "@/hooks/use-draft-indicator";
 import { useWeather } from "@/hooks/use-weather";
 import { formatTemperature, weatherIcon } from "@/utils/weather-code";
 import { useStrings } from "@/hooks/use-strings";
@@ -682,7 +682,8 @@ export default function HomeScreen() {
 
   const { active: dogActive, onTap: onLogoTap, dismiss: dismissDog } = useEasterEgg();
   const { open: openMenu } = useAppMenu();
-  const hasDraft = useHasDraft();
+  const draftCount = useDraftCount();
+  const hasDraft = draftCount > 0;
   const weather = useWeather();
   const t = useStrings();
   const { ready: updateReady } = useAppUpdate();
@@ -908,7 +909,9 @@ export default function HomeScreen() {
                 d'ouvrir le formulaire : on pouvait l'avoir oublié. */}
             {hasDraft && (
               <View style={styles.draftPill}>
-                <Text style={styles.draftPillText}>{t.home.draftBadge}</Text>
+                <Text style={styles.draftPillText}>
+                  {draftCount > 1 ? `${t.home.draftBadge} · ${draftCount}` : t.home.draftBadge}
+                </Text>
               </View>
             )}
             <MaterialIcons name="chevron-right" size={16} color="rgba(255,255,255,0.5)" />
