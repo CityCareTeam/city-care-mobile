@@ -2,6 +2,7 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { STATUS_COLOR, STATUS_LABEL, TYPE_COLOR, TYPE_ICON, TYPE_LABEL } from "@/constants/incidents";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
+import { useStrings } from "@/hooks/use-strings";
 import { extractCity } from "@/utils/format-address";
 import { formatDateShort } from "@/utils/format-date";
 import { memo, useMemo } from "react";
@@ -104,6 +105,7 @@ function makeStyles(c: AppColors) {
 function IncidentRowBase({ id, type, status, description, address, createdAt, onPress, isMine }: Props) {
   const { colors } = useAppColors();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const t = useStrings();
 
   const statusColor = STATUS_COLOR[status] ?? "#999";
   const typeColor   = TYPE_COLOR[type]   ?? "#78909C";
@@ -135,7 +137,7 @@ function IncidentRowBase({ id, type, status, description, address, createdAt, on
         {isMine && (
           <View style={styles.mineBadge}>
             <MaterialIcons name="person" size={10} color="#fff" />
-            <Text style={styles.mineBadgeText}>Le mien</Text>
+            <Text style={styles.mineBadgeText}>{t.incident.mine}</Text>
           </View>
         )}
         <Text style={styles.date}>{formatDateShort(createdAt)}</Text>

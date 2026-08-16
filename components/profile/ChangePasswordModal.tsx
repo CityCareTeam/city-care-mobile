@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/Input";
 import { ModalShell } from "@/components/ui/ModalShell";
 import { STRINGS } from "@/constants/strings";
 import { useAppColors } from "@/hooks/use-app-colors";
+import { useStrings } from "@/hooks/use-strings";
 import { getStrength } from "@/utils/password-strength";
 import { updateMe } from "@/services/users";
 import { getValidToken } from "@/storage/tokens";
@@ -17,6 +18,7 @@ type Props = {
 
 export function ChangePasswordModal({ visible, onClose, onSaved }: Props) {
   const { colors } = useAppColors();
+  const t = useStrings();
   const [newPwd, setNewPwd] = useState("");
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
@@ -60,9 +62,9 @@ export function ChangePasswordModal({ visible, onClose, onSaved }: Props) {
   });
 
   return (
-    <ModalShell visible={visible} title="Changer le mot de passe" onClose={onClose}>
+    <ModalShell visible={visible} title={t.profileModals.changePasswordTitle} onClose={onClose}>
       <Input
-        label="Nouveau mot de passe"
+        label={t.profileModals.newPassword}
         icon="lock"
         value={newPwd}
         onChangeText={setNewPwd}
@@ -84,16 +86,16 @@ export function ChangePasswordModal({ visible, onClose, onSaved }: Props) {
       )}
 
       <Input
-        label="Confirmer le mot de passe"
+        label={t.auth.confirmPassword}
         icon="lock-outline"
         value={confirm}
         onChangeText={setConfirm}
         secureTextEntry
-        error={confirmMismatch ? "Les mots de passe ne correspondent pas" : undefined}
+        error={confirmMismatch ? t.auth.passwordsDiffer : undefined}
       />
 
       {error && <Text style={styles.errorText}>{error}</Text>}
-      <Button label="Enregistrer" onPress={handleSave} loading={loading} disabled={confirmMismatch} />
+      <Button label={t.profileModals.save} onPress={handleSave} loading={loading} disabled={confirmMismatch} />
     </ModalShell>
   );
 }

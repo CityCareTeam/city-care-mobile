@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/Input";
 import { ModalShell } from "@/components/ui/ModalShell";
 import { STRINGS } from "@/constants/strings";
 import { useAppColors } from "@/hooks/use-app-colors";
+import { useStrings } from "@/hooks/use-strings";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { updateMe } from "@/services/users";
 import { getValidToken } from "@/storage/tokens";
@@ -28,6 +29,7 @@ const usernameRegex = /^[\p{L}\p{N}._\-]+$/u;
 
 export function EditProfileModal({ visible, initialValues, onClose, onSaved }: Props) {
   const { colors } = useAppColors();
+  const t = useStrings();
   const [firstName, setFirstName] = useState(initialValues.firstName);
   const [lastName, setLastName] = useState(initialValues.lastName);
   const [email, setEmail] = useState(initialValues.email);
@@ -91,12 +93,12 @@ export function EditProfileModal({ visible, initialValues, onClose, onSaved }: P
   });
 
   return (
-    <ModalShell visible={visible} title="Modifier mes informations" onClose={onClose}>
-      <SectionHeader title="Identité" colors={colors} />
+    <ModalShell visible={visible} title={t.profileModals.editTitle} onClose={onClose}>
+      <SectionHeader title={t.auth.identity} colors={colors} />
       <View style={styles.row}>
         <View style={styles.rowField}>
           <Input
-            label="Prénom"
+            label={t.auth.firstName}
             icon="person"
             value={firstName}
             onChangeText={setFirstName}
@@ -106,7 +108,7 @@ export function EditProfileModal({ visible, initialValues, onClose, onSaved }: P
         </View>
         <View style={styles.rowField}>
           <Input
-            label="Nom"
+            label={t.auth.lastName}
             value={lastName}
             onChangeText={setLastName}
             autoCapitalize="words"
@@ -115,9 +117,9 @@ export function EditProfileModal({ visible, initialValues, onClose, onSaved }: P
         </View>
       </View>
 
-      <SectionHeader title="Compte" colors={colors} />
+      <SectionHeader title={t.auth.account} colors={colors} />
       <Input
-        label="Nom d'utilisateur"
+        label={t.auth.username}
         icon="alternate-email"
         value={username}
         onChangeText={setUsername}
@@ -125,7 +127,7 @@ export function EditProfileModal({ visible, initialValues, onClose, onSaved }: P
         autoCorrect={false}
       />
       <Input
-        label="Email"
+        label={t.auth.email}
         icon="email"
         value={email}
         onChangeText={setEmail}
@@ -135,7 +137,7 @@ export function EditProfileModal({ visible, initialValues, onClose, onSaved }: P
       />
 
       {error && <Text style={styles.errorText}>{error}</Text>}
-      <Button label="Enregistrer" onPress={handleSave} loading={loading} />
+      <Button label={t.profileModals.save} onPress={handleSave} loading={loading} />
     </ModalShell>
   );
 }

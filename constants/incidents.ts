@@ -1,3 +1,4 @@
+import { getStrings, type Dictionary } from "@/constants/i18n";
 import type MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 export const MAX_INCIDENT_PHOTOS = 3;
@@ -49,30 +50,30 @@ export const MAP_STATUS_COLOR: Record<string, string> = {
   resolved: "#86c08c",
 };
 
-export const STATUS_LABEL: Record<string, string> = {
-  reported: "Déclaré",
-  in_progress: "En cours",
-  resolved: "Résolu",
-};
+// Les libellés vivent dans `constants/i18n/` et sont relus à chaque accès :
+// figés à l'import, ils seraient restés en français quelle que soit la langue
+// choisie ensuite. Le relais garde l'interface d'un objet, que la vingtaine
+// d'appelants utilise déjà.
+export const STATUS_LABEL: Record<string, string> = new Proxy(
+  {},
+  { get: (_target, key: string) => getStrings().status[key as keyof Dictionary["status"]] },
+);
 
-export const TYPE_LABEL: Record<string, string> = {
-  Road: "Voirie",
-  Lighting: "Éclairage",
-  Waste: "Déchets",
-  Graffiti: "Graffiti",
-  Safety: "Sécurité",
-  Other: "Autre",
-};
+export const TYPE_LABEL: Record<string, string> = new Proxy(
+  {},
+  { get: (_target, key: string) => getStrings().incidentTypes[key as keyof Dictionary["incidentTypes"]] },
+);
 
 // snake_case — valeurs attendues par le back (notification-settings)
-export const TYPE_LABEL_SNAKE: Record<string, string> = {
-  road: "Voirie",
-  lighting: "Éclairage",
-  waste: "Déchets",
-  graffiti: "Graffiti",
-  safety: "Sécurité",
-  other: "Autre",
-};
+export const TYPE_LABEL_SNAKE: Record<string, string> = new Proxy(
+  {},
+  {
+    get: (_target, key: string) => {
+      const pascal = key.charAt(0).toUpperCase() + key.slice(1);
+      return getStrings().incidentTypes[pascal as keyof Dictionary["incidentTypes"]];
+    },
+  },
+);
 
 /** Transitions de statut valides côté client (le back re-valide). */
 export const NEXT_STATUSES: Record<string, string[]> = {

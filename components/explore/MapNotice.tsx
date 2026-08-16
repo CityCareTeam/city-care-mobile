@@ -1,31 +1,30 @@
 import { GlassSurface } from "@/components/ui/GlassSurface";
 import { useAppColors } from "@/hooks/use-app-colors";
+import { useStrings } from "@/hooks/use-strings";
+import type { Dictionary } from "@/constants/i18n";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useMemo } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export type MapNoticeKind = "offline" | "empty" | "filtered";
 
-const NOTICE = {
-  offline: {
-    icon: "cloud-off",
-    title: "Données indisponibles",
-    detail: "Impossible de joindre le serveur.",
-  },
-  empty: {
-    icon: "explore",
-    title: "Aucun signalement",
-    detail: "Personne n'a encore signalé quoi que ce soit ici.",
-  },
-  filtered: {
-    icon: "filter-alt-off",
-    title: "Aucun résultat",
-    detail: "Aucun signalement ne correspond à ces filtres.",
-  },
-} as const satisfies Record<
-  MapNoticeKind,
-  { icon: React.ComponentProps<typeof MaterialIcons>["name"]; title: string; detail: string }
->;
+const ICONS: Record<MapNoticeKind, React.ComponentProps<typeof MaterialIcons>["name"]> = {
+  offline: "cloud-off",
+  empty: "explore",
+  filtered: "filter-alt-off",
+};
+
+/**
+ * Construit au rendu : cette table était une constante de module, donc figée à
+ * l'import — elle serait restée en français quelle que soit la langue choisie.
+ */
+function notices(t: Dictionary): Record<MapNoticeKind, { title: string; detail: string }> {
+  return {
+    offline: { title: t.mapNotice.unavailableTitle, detail: t.mapNotice.unavailableDetail },
+    empty: { title: t.mapNotice.emptyTitle, detail: t.mapNotice.emptyDetail },
+    filtered: { title: t.mapNotice.noResultsTitle, detail: t.mapNotice.noResultsDetail },
+  };
+}
 
 type Props = {
   kind: MapNoticeKind;
@@ -42,13 +41,14 @@ type Props = {
  */
 export function MapNotice({ kind, top, onRetry }: Props) {
   const { colors, isDark } = useAppColors();
+  const t = useStrings();
   const styles = useMemo(() => makeStyles(isDark), [isDark]);
-  const notice = NOTICE[kind];
+  const notice = notices(t)[kind];
 
   return (
     <GlassSurface style={[styles.surface, { top }]}>
       <MaterialIcons
-        name={notice.icon}
+        name={ICONS[kind]}
         size={20}
         color={kind === "offline" ? colors.primary : styles.title.color}
       />
@@ -62,9 +62,9 @@ export function MapNotice({ kind, top, onRetry }: Props) {
           onPress={onRetry}
           activeOpacity={0.8}
           accessibilityRole="button"
-          accessibilityLabel="Réessayer le chargement"
+          accessibilityLabel={t.mapNotice.retryA11y}
         >
-          <Text style={styles.retryLabel}>Réessayer</Text>
+          <Text style={styles.retryLabel}>{t.mapNotice.retry}</Text>
         </TouchableOpacity>
       )}
     </GlassSurface>

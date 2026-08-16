@@ -60,6 +60,7 @@ export const fr = {
     deleteAccountConfirm: "Supprimer définitivement",
     passwordChangedTitle: "Succès",
     passwordChangedMsg: "Votre mot de passe a bien été modifié.",
+    loadFailedTitle: "Chargement impossible",
     cancel: "Annuler",
   },
   emptyState: {
@@ -248,6 +249,87 @@ export const fr = {
     passwordsDiffer: "Les mots de passe ne correspondent pas",
     signUpAction: "S'inscrire",
     invalidFields: "Champs invalides",
+  },
+
+
+  // ── Vocabulaire métier ──
+  status: {
+    reported: "Déclaré",
+    in_progress: "En cours",
+    resolved: "Résolu",
+  },
+  incidentTypes: {
+    Road: "Voirie",
+    Lighting: "Éclairage",
+    Waste: "Déchets",
+    Graffiti: "Graffiti",
+    Safety: "Sécurité",
+    Other: "Autre",
+  },
+  roles: {
+    Admin: "Administrateur",
+    Agent: "Agent municipal",
+    Citizen: "Citoyen",
+  },
+
+  // ── Carte : détail d'un incident ──
+  incident: {
+    details: "Détails",
+    chat: "Discussion",
+    photos: "Photos",
+    noPhotos: "Aucune photo jointe",
+    changeStatus: "Changer le statut",
+    mine: "Le mien",
+    delete: "Supprimer",
+    error: "Erreur",
+    reports: "Signalements",
+    allFilter: "Tous",
+    noMessages: "Aucun message pour l’instant.",
+    beFirst: "Soyez le premier à commenter.",
+    messagePlaceholder: "Votre message…",
+    offline: "Hors ligne",
+  },
+
+  // ── Bandeaux de la carte ──
+  mapNotice: {
+    unavailableTitle: "Données indisponibles",
+    unavailableDetail: "Impossible de joindre le serveur.",
+    emptyDetail: "Personne n'a encore signalé quoi que ce soit ici.",
+    emptyTitle: "Aucun signalement",
+    noResultsTitle: "Aucun résultat",
+    noResultsDetail: "Aucun signalement ne correspond à ces filtres.",
+    retry: "Réessayer",
+    retryA11y: "Réessayer le chargement",
+  },
+
+  // ── Préférences de notification ──
+  notifSettings: {
+    title: "Notifications",
+    inApp: "In-app",
+    push: "Push",
+    email: "Email",
+    reports: "Signalements",
+    reportsDetail: "Nouveaux et changements de statut",
+    messages: "Messages",
+    messagesDetail: "Nouvelles discussions",
+    emailNotifications: "Notifications par email",
+    soon: "Bientôt",
+    followedTypes: "Types d'incidents suivis",
+  },
+
+  // ── Fenêtres du profil ──
+  profileModals: {
+    editTitle: "Modifier mes informations",
+    changePasswordTitle: "Changer le mot de passe",
+    newPassword: "Nouveau mot de passe",
+    save: "Enregistrer",
+  },
+
+  // ── Notes de version ──
+  releaseNotes: {
+    title: "Notes de version",
+    yourVersion: "Votre version",
+    upcoming: "à venir",
   },
 
   // ── Réglages ──

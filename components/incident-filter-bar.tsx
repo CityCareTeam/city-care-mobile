@@ -1,6 +1,7 @@
 import { STATUS_COLOR, STATUS_LABEL, TYPE_LABEL } from "@/constants/incidents";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
+import { useStrings } from "@/hooks/use-strings";
 import { GlassPillSelector, PillOption } from "@/components/ui/GlassPillSelector";
 import { GlassSurface } from "@/components/ui/GlassSurface";
 import { useMemo } from "react";
@@ -20,12 +21,15 @@ type Props = {
   paddingTop?: number;
 };
 
-const STATUS_OPTIONS: PillOption<string | null>[] = [
-  { label: "Tous", value: null },
-  { label: STATUS_LABEL.reported,    value: "reported",    dotColor: STATUS_COLOR.reported },
-  { label: STATUS_LABEL.in_progress, value: "in_progress", dotColor: STATUS_COLOR.in_progress },
-  { label: STATUS_LABEL.resolved,    value: "resolved",    dotColor: STATUS_COLOR.resolved },
-];
+/** Construites au rendu : « Tous » suit la langue, une constante l'aurait figé. */
+function statusOptions(all: string): PillOption<string | null>[] {
+  return [
+    { label: all, value: null },
+    { label: STATUS_LABEL.reported,    value: "reported",    dotColor: STATUS_COLOR.reported },
+    { label: STATUS_LABEL.in_progress, value: "in_progress", dotColor: STATUS_COLOR.in_progress },
+    { label: STATUS_LABEL.resolved,    value: "resolved",    dotColor: STATUS_COLOR.resolved },
+  ];
+}
 
 const TYPE_OPTIONS: (string | null)[] = [null, ...Object.keys(TYPE_LABEL)];
 
@@ -83,6 +87,8 @@ export function IncidentFilterBar({
   paddingTop = 0,
 }: Props) {
   const { colors, isDark } = useAppColors();
+  // Nommé `strings` et non `t` : la boucle des types utilise déjà `t`.
+  const strings = useStrings();
   const styles = useMemo(() => makeStyles(colors, isDark), [colors, isDark]);
 
   return (
@@ -90,7 +96,7 @@ export function IncidentFilterBar({
       {/* Statuts — pill selector animé */}
       <View style={styles.statusRow}>
         <GlassPillSelector
-          options={STATUS_OPTIONS}
+          options={statusOptions(strings.incident.allFilter)}
           activeValue={filterStatus}
           onSelect={setFilterStatus}
         />
@@ -114,7 +120,7 @@ export function IncidentFilterBar({
                 activeOpacity={0.75}
               >
                 <Text style={[styles.typeChipText, active && styles.typeChipTextActive]}>
-                  {t ? (TYPE_LABEL[t] ?? t) : "Tous"}
+                  {t ? (TYPE_LABEL[t] ?? t) : strings.incident.allFilter}
                 </Text>
               </TouchableOpacity>
             );

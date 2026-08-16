@@ -1,4 +1,5 @@
 import { useAppColors } from "@/hooks/use-app-colors";
+import { useStrings } from "@/hooks/use-strings";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useMemo } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -22,20 +23,20 @@ type Props = {
  * ressemblent trait pour trait, et que sans bouton l'utilisateur n'a d'autre
  * recours que de quitter l'écran.
  */
-export function ErrorNotice({
-  title = "Chargement impossible",
-  detail,
-  onRetry,
-  actionLabel = "Réessayer",
-}: Props) {
+export function ErrorNotice({ title, detail, onRetry, actionLabel }: Props) {
   const { colors } = useAppColors();
+  const t = useStrings();
+  // Les défauts sont résolus ici et non dans la signature : une valeur par
+  // défaut est évaluée à l'appel, mais elle doit venir de la langue active.
+  const heading = title ?? t.alert.loadFailedTitle;
+  const action = actionLabel ?? t.mapNotice.retry;
   const styles = useMemo(() => makeStyles(colors.text), [colors.text]);
 
   return (
     <View style={styles.card}>
       <MaterialIcons name="cloud-off" size={22} color={DANGER} />
       <View style={styles.text}>
-        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.title}>{heading}</Text>
         <Text style={styles.detail}>{detail}</Text>
       </View>
       {onRetry && (
@@ -44,9 +45,9 @@ export function ErrorNotice({
           onPress={onRetry}
           activeOpacity={0.8}
           accessibilityRole="button"
-          accessibilityLabel={actionLabel}
+          accessibilityLabel={action}
         >
-          <Text style={styles.retryLabel}>{actionLabel}</Text>
+          <Text style={styles.retryLabel}>{action}</Text>
         </TouchableOpacity>
       )}
     </View>

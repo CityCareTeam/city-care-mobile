@@ -5,6 +5,7 @@ import { TYPE_LABEL_SNAKE } from "@/constants/incidents";
 import { STRINGS } from "@/constants/strings";
 import { useAuth } from "@/context/AuthContext";
 import { useAppColors } from "@/hooks/use-app-colors";
+import { useStrings } from "@/hooks/use-strings";
 import { useNotificationSettings } from "@/hooks/use-notification-settings";
 import { useMemo } from "react";
 import { ActivityIndicator, StyleSheet, Switch, Text, View } from "react-native";
@@ -16,6 +17,7 @@ type Props = {
 
 export function NotificationSettingsModal({ visible, onClose }: Props) {
   const { colors, isDark } = useAppColors();
+  const t = useStrings();
   const { keycloakUser } = useAuth();
   const { settings, loadError, toggle, toggleType } = useNotificationSettings(visible);
 
@@ -70,7 +72,7 @@ export function NotificationSettingsModal({ visible, onClose }: Props) {
   );
 
   return (
-    <ModalShell visible={visible} title="Notifications" onClose={onClose}>
+    <ModalShell visible={visible} title={t.notifSettings.title} onClose={onClose}>
       {!settings && !loadError && (
         <View style={{ paddingVertical: 24, alignItems: "center" }}>
           <ActivityIndicator color={colors.primary} />
@@ -79,7 +81,7 @@ export function NotificationSettingsModal({ visible, onClose }: Props) {
       {loadError && <Text style={s.errorText}>{STRINGS.api.notifSettingsLoadError}</Text>}
       {settings && (
         <>
-          <SectionHeader label="In-app" />
+          <SectionHeader label={t.notifSettings.inApp} />
           <View style={s.group}>
             <View style={s.row}>
               <View style={[s.iconBubble, { backgroundColor: "#f6aa5422" }]}>
@@ -114,7 +116,7 @@ export function NotificationSettingsModal({ visible, onClose }: Props) {
             </View>
           </View>
 
-          <SectionHeader label="Push" />
+          <SectionHeader label={t.notifSettings.push} />
           <View style={s.group}>
             <View style={s.row}>
               <View style={[s.iconBubble, { backgroundColor: "#AF52DE22" }]}>
@@ -149,24 +151,24 @@ export function NotificationSettingsModal({ visible, onClose }: Props) {
             </View>
           </View>
 
-          <SectionHeader label="Email" dim />
+          <SectionHeader label={t.notifSettings.email} dim />
           <View style={[s.group, { opacity: 0.45 }]}>
             <View style={s.row}>
               <View style={[s.iconBubble, { backgroundColor: "#1D9BF022" }]}>
                 <MaterialIcons name="mail-outline" size={20} color="#1D9BF0" />
               </View>
               <View style={s.rowText}>
-                <Text style={s.rowLabel}>Notifications par email</Text>
+                <Text style={s.rowLabel}>{t.notifSettings.emailNotifications}</Text>
               </View>
               <View style={s.comingSoonBadge}>
-                <Text style={s.comingSoonText}>Bientôt</Text>
+                <Text style={s.comingSoonText}>{t.notifSettings.soon}</Text>
               </View>
             </View>
           </View>
 
           {isCitizen && (
             <>
-              <SectionHeader label="Types d'incidents suivis" />
+              <SectionHeader label={t.notifSettings.followedTypes} />
               <MultiPillSelector
                 options={Object.entries(TYPE_LABEL_SNAKE).map(([value, label]) => ({ value, label }))}
                 selectedValues={settings.followed_incident_types}

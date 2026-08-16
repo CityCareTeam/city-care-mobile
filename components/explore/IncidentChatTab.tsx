@@ -1,6 +1,7 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { ROLE_COLORS } from "@/constants/roles";
 import { useAppColors } from "@/hooks/use-app-colors";
+import { useStrings } from "@/hooks/use-strings";
 import { timeAgo } from "@/utils/format-date";
 import type { MessageResponse } from "@/types/messages";
 import { useEffect, useRef, useState } from "react";
@@ -26,6 +27,7 @@ type Props = {
 
 export function IncidentChatTab({ messages, loading, connected, sending, dbUserId, onSend }: Props) {
   const { colors } = useAppColors();
+  const t = useStrings();
   const { bottom: bottomInset } = useSafeAreaInsets();
   const [inputText, setInputText] = useState("");
   const listRef = useRef<FlatList<MessageResponse>>(null);
@@ -109,8 +111,8 @@ export function IncidentChatTab({ messages, loading, connected, sending, dbUserI
       ) : messages.length === 0 ? (
         <View style={s.empty}>
           <MaterialIcons name="chat-bubble-outline" size={48} color={colors.text} style={{ opacity: 0.15, marginBottom: 4 }} />
-          <Text style={s.emptyText}>Aucun message pour l&apos;instant.</Text>
-          <Text style={s.emptySubtext}>Soyez le premier à commenter.</Text>
+          <Text style={s.emptyText}>{t.incident.noMessages}</Text>
+          <Text style={s.emptySubtext}>{t.incident.beFirst}</Text>
         </View>
       ) : (
         <FlatList
@@ -125,7 +127,7 @@ export function IncidentChatTab({ messages, loading, connected, sending, dbUserI
             const role = msg.author_role;
             const isStaff = role === "Agent" || role === "Admin";
             const roleColor = role === "Agent" ? ROLE_COLORS.Agent : role === "Admin" ? ROLE_COLORS.Admin : colors.text + "55";
-            const displayName = msg.author_name ?? (role === "Agent" ? "Agent" : role === "Admin" ? "Admin" : "Citoyen");
+            const displayName = msg.author_name ?? (role === "Agent" ? "Agent" : role === "Admin" ? "Admin" : t.roles.Citizen);
 
             return (
               <View style={[s.msgRow, isMe && s.msgRowMe]}>
@@ -164,7 +166,7 @@ export function IncidentChatTab({ messages, loading, connected, sending, dbUserI
           style={s.input}
           value={inputText}
           onChangeText={setInputText}
-          placeholder={connected ? "Votre message…" : "Hors ligne"}
+          placeholder={connected ? t.incident.messagePlaceholder : t.incident.offline}
           placeholderTextColor={colors.text + "55"}
           editable={connected && !sending}
           maxLength={2000}

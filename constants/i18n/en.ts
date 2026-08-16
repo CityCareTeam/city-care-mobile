@@ -63,6 +63,7 @@ export const en: typeof fr = {
     deleteAccountConfirm: "Delete permanently",
     passwordChangedTitle: "Done",
     passwordChangedMsg: "Your password has been changed.",
+    loadFailedTitle: "Couldn’t load",
     cancel: "Cancel",
   },
   emptyState: {
@@ -240,6 +241,81 @@ export const en: typeof fr = {
     passwordsDiffer: "Passwords don’t match",
     signUpAction: "Sign up",
     invalidFields: "Invalid fields",
+  },
+
+
+  status: {
+    reported: "Reported",
+    in_progress: "In progress",
+    resolved: "Resolved",
+  },
+  incidentTypes: {
+    Road: "Roads",
+    Lighting: "Lighting",
+    Waste: "Waste",
+    Graffiti: "Graffiti",
+    Safety: "Safety",
+    Other: "Other",
+  },
+  roles: {
+    Admin: "Administrator",
+    Agent: "City officer",
+    Citizen: "Citizen",
+  },
+
+  incident: {
+    details: "Details",
+    chat: "Discussion",
+    photos: "Photos",
+    noPhotos: "No photos attached",
+    changeStatus: "Change status",
+    mine: "Mine",
+    delete: "Delete",
+    error: "Error",
+    reports: "Reports",
+    allFilter: "All",
+    noMessages: "No messages yet.",
+    beFirst: "Be the first to comment.",
+    messagePlaceholder: "Your message…",
+    offline: "Offline",
+  },
+
+  mapNotice: {
+    unavailableTitle: "Data unavailable",
+    unavailableDetail: "Can’t reach the server.",
+    emptyDetail: "Nobody has reported anything here yet.",
+    emptyTitle: "No reports",
+    noResultsTitle: "No results",
+    noResultsDetail: "No report matches these filters.",
+    retry: "Retry",
+    retryA11y: "Retry loading",
+  },
+
+  notifSettings: {
+    title: "Notifications",
+    inApp: "In-app",
+    push: "Push",
+    email: "Email",
+    reports: "Reports",
+    reportsDetail: "New ones and status changes",
+    messages: "Messages",
+    messagesDetail: "New discussions",
+    emailNotifications: "Email notifications",
+    soon: "Soon",
+    followedTypes: "Incident types you follow",
+  },
+
+  profileModals: {
+    editTitle: "Edit my details",
+    changePasswordTitle: "Change password",
+    newPassword: "New password",
+    save: "Save",
+  },
+
+  releaseNotes: {
+    title: "Release notes",
+    yourVersion: "Your version",
+    upcoming: "upcoming",
   },
 
   settings: {

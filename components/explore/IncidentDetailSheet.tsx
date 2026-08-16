@@ -11,6 +11,7 @@ import {
 import { STRINGS } from "@/constants/strings";
 import { useAuth } from "@/context/AuthContext";
 import { useAppColors } from "@/hooks/use-app-colors";
+import { useStrings } from "@/hooks/use-strings";
 import { useIncidentChat } from "@/hooks/use-incident-chat";
 import { useIncidentPermissions } from "@/hooks/use-incident-permissions";
 import { useIncidentPhotos } from "@/hooks/use-incident-photos";
@@ -47,6 +48,7 @@ type Props = {
 
 export function IncidentDetailSheet({ incident, initialTab, onClose, onStatusUpdated, onDeleted }: Props) {
   const { colors } = useAppColors();
+  const t = useStrings();
   const { dbUser } = useAuth();
   const [activeTab, setActiveTab] = useState<"details" | "chat">("details");
   const [zoomedPhoto, setZoomedPhoto] = useState<string | null>(null);
@@ -82,9 +84,9 @@ export function IncidentDetailSheet({ incident, initialTab, onClose, onStatusUpd
   const handleDelete = () => {
     if (!incident) return;
     Alert.alert(STRINGS.alert.deleteIncidentTitle, STRINGS.alert.deleteIncidentMsg, [
-      { text: "Annuler", style: "cancel" },
+      { text: t.alert.cancel, style: "cancel" },
       {
-        text: "Supprimer",
+        text: t.incident.delete,
         style: "destructive",
         onPress: async () => {
           try {
@@ -94,7 +96,7 @@ export function IncidentDetailSheet({ incident, initialTab, onClose, onStatusUpd
             await deleteIncident(incident.id, token);
             onDeleted();
           } catch (e) {
-            Alert.alert("Erreur", e instanceof Error ? e.message : STRINGS.api.unknownError);
+            Alert.alert(t.incident.error, e instanceof Error ? e.message : STRINGS.api.unknownError);
           }
         },
       },
@@ -258,8 +260,8 @@ export function IncidentDetailSheet({ incident, initialTab, onClose, onStatusUpd
             {canAccessChat && (
               <GlassPillSelector
                 options={[
-                  { label: "Détails",    value: "details" as const },
-                  { label: "Discussion", value: "chat"    as const, dotColor: connected ? "#4caf50" : "#e53e3e" },
+                  { label: t.incident.details,    value: "details" as const },
+                  { label: t.incident.chat, value: "chat"    as const, dotColor: connected ? "#4caf50" : "#e53e3e" },
                 ]}
                 activeValue={activeTab}
                 onSelect={(v) => setActiveTab(v)}
@@ -318,13 +320,13 @@ export function IncidentDetailSheet({ incident, initialTab, onClose, onStatusUpd
 
                 {/* Photos */}
                 <View style={s.photosSection}>
-                  <Text style={s.sectionLabel}>Photos</Text>
+                  <Text style={s.sectionLabel}>{t.incident.photos}</Text>
                   {photosLoading ? (
                     <ActivityIndicator size="small" color={colors.primary} />
                   ) : photosError ? (
                     <Text style={s.photosEmpty}>{STRINGS.photos.loadError}</Text>
                   ) : photos.length === 0 ? (
-                    <Text style={s.photosEmpty}>Aucune photo jointe</Text>
+                    <Text style={s.photosEmpty}>{t.incident.noPhotos}</Text>
                   ) : (
                     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                       {photos.map((p) => (
@@ -346,7 +348,7 @@ export function IncidentDetailSheet({ incident, initialTab, onClose, onStatusUpd
                 {/* Boutons statut */}
                 {canChangeStatus && NEXT_STATUSES[incident.status]?.length > 0 && (
                   <View style={s.statusActions}>
-                    <Text style={s.sectionLabel}>Changer le statut</Text>
+                    <Text style={s.sectionLabel}>{t.incident.changeStatus}</Text>
                     <View style={s.statusActionsRow}>
                       {NEXT_STATUSES[incident.status].map((nextStatus) => (
                         <TouchableOpacity

@@ -11,6 +11,7 @@ import {
 } from "@/utils/changelog";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
+import { useStrings } from "@/hooks/use-strings";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useMemo, useState } from "react";
 import {
@@ -74,6 +75,7 @@ function Release({ note, current, tag, styles, colors }: {
   styles: Styles;
   colors: AppColors;
 }) {
+  const t = useStrings();
   const isCurrent = note.version === current;
   const released = isReleased(note.version);
 
@@ -98,13 +100,13 @@ function Release({ note, current, tag, styles, colors }: {
           {!released && (
             <View style={[styles.pill, { backgroundColor: colors.primary + "1F" }]}>
               <Text style={[styles.pillText, { color: colors.primary }]}>
-                {tag ? `${tag.toUpperCase()} · à venir` : "à venir"}
+                {tag ? `${tag.toUpperCase()} · ${t.releaseNotes.upcoming}` : t.releaseNotes.upcoming}
               </Text>
             </View>
           )}
           {isCurrent && (
             <View style={[styles.pill, styles.pillNeutral]}>
-              <Text style={styles.pillNeutralText}>Votre version</Text>
+              <Text style={styles.pillNeutralText}>{t.releaseNotes.yourVersion}</Text>
             </View>
           )}
 
@@ -241,6 +243,7 @@ function Milestone({ group, current, tag, expanded, onToggle, styles, colors }: 
 export function ReleaseNotesModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const { colors, isDark } = useAppColors();
   const styles = useMemo(() => makeStyles(colors, isDark), [colors, isDark]);
+  const t = useStrings();
 
   const current = baseVersion();
   const tag = releaseTag();
@@ -256,7 +259,7 @@ export function ReleaseNotesModal({ visible, onClose }: { visible: boolean; onCl
   };
 
   return (
-    <ModalShell visible={visible} title="Notes de version" onClose={onClose}>
+    <ModalShell visible={visible} title={t.releaseNotes.title} onClose={onClose}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {tag && (
           <View style={[styles.banner, { backgroundColor: colors.primary + "14" }]}>

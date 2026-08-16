@@ -1,6 +1,7 @@
 import { GlassSurface } from "@/components/ui/GlassSurface";
 import type { CLUSTER_DENSITY } from "@/constants/incidents";
 import { useAppColors } from "@/hooks/use-app-colors";
+import { useStrings } from "@/hooks/use-strings";
 import { useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
@@ -20,6 +21,7 @@ type Props = {
  */
 export function ClusterLegend({ tiers, bottom }: Props) {
   const { isDark } = useAppColors();
+  const t = useStrings();
   const styles = useMemo(() => makeStyles(isDark), [isDark]);
 
   // Du moins dense au plus dense — l'ordre de lecture, pas celui de la constante
@@ -28,7 +30,7 @@ export function ClusterLegend({ tiers, bottom }: Props) {
 
   return (
     <GlassSurface style={[styles.surface, { bottom }]} transparentToTouch>
-      <Text style={styles.title}>Signalements</Text>
+      <Text style={styles.title}>{t.incident.reports}</Text>
       {ordered.map((tier) => (
         <View key={tier.min} style={styles.row}>
           <View style={[styles.dot, { backgroundColor: tier.color }]} />
