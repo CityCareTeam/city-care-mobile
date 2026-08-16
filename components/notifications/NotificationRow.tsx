@@ -1,6 +1,7 @@
 import { STATUS_COLOR, STATUS_LABEL } from "@/constants/incidents";
 import type { AppColors } from "@/hooks/use-app-colors";
 import type { NotificationResponse } from "@/types/notifications";
+import { mixHex } from "@/utils/color";
 import { timeAgo } from "@/utils/format-date";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { memo } from "react";
@@ -139,9 +140,13 @@ export function makeRowStyles(c: AppColors) {
     // Une non-lue doit se voir sans qu'on la cherche : le filet de couleur seul
     // demandait de balayer la marge gauche ligne à ligne. La teinte se lit d'un
     // coup d'œil, et le relief la fait avancer sur les autres.
+    //
+    // Teinte *calculée* et non superposée : sur Android, une élévation posée sur
+    // un fond translucide laisse voir son ombre à travers, et `c.primary + "0F"`
+    // faisait apparaître une dalle grise sous la carte.
     itemUnread: {
-      backgroundColor: c.primary + "0F",
-      borderColor: c.primary + "33",
+      backgroundColor: mixHex(c.white, c.primary, 0.09),
+      borderColor: mixHex(c.chipBorder, c.primary, 0.35),
       shadowOpacity: 0.1,
       elevation: 3,
     },

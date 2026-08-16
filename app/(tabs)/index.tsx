@@ -788,59 +788,68 @@ export default function HomeScreen() {
         />
       )}
 
-      {/* Header card */}
+      {/* En-tête ─────────────────────────────────────────────────────────
+          Trois étages, du service à l'identité puis au contexte : la rangée
+          d'outils (heure, menu) que l'œil traverse, la salutation qui porte le
+          bloc, et la météo posée dessous comme une donnée et non comme une
+          phrase. Le nom de la marque a disparu du texte : le logo le dit déjà,
+          à dix pixels de là. */}
       <View style={styles.headerCard}>
+        <View style={styles.utilityRow}>
+          <HeaderClock />
+          <View style={{ flex: 1 }} />
+          <TouchableOpacity
+            style={styles.menuBtn}
+            onPress={() => setMenuOpen(true)}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel={t.menu.open}
+          >
+            <MaterialIcons name="menu" size={19} color="#fff" />
+            {/* La bannière de mise à jour ne passe qu'une fois ; cette
+                pastille, elle, reste jusqu'à ce qu'on s'en occupe. */}
+            {updateReady && <View style={styles.menuDot} />}
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.headerRow}>
-          <View style={{ flex: 1 }}>
-            {/* L'horloge fait face au logo, de l'autre côté de l'en-tête. */}
-            <View style={styles.headerTagRow}>
-              <Text style={styles.headerTag}>CityCare+</Text>
-              <HeaderClock />
-            </View>
-            <Text style={styles.greeting}>
+          <View style={styles.identity}>
+            <Text style={styles.greeting} numberOfLines={1}>
               {firstName ? t.home.greetingNamed(firstName) : t.home.greeting}
             </Text>
-            <Text style={styles.headerDate}>{TODAY}</Text>
-            {/* La météo n'apparaît que lorsqu'elle a quelque chose à dire :
-                une ligne d'en-tête qui clignote entre un chargement, une erreur
-                et une température vaut moins que pas de météo du tout. */}
-            {weather && (
-              <View style={styles.weatherRow}>
-                <MaterialIcons
-                  name={weatherIcon(weather.condition, weather.isDay)}
-                  size={14}
-                  color="rgba(255,255,255,0.9)"
-                />
-                <Text style={styles.weatherTemp}>{formatTemperature(weather.temperature)}</Text>
-                <Text style={styles.weatherLabel}>{t.weather[weather.condition]}</Text>
-              </View>
-            )}
+            <View style={styles.metaRow}>
+              <Text style={styles.headerDate}>{TODAY}</Text>
+              {role && (
+                <View style={styles.rolePill}>
+                  <Text style={styles.rolePillText}>{ROLE_LABELS[role] ?? role}</Text>
+                </View>
+              )}
+            </View>
           </View>
-          {/* Le bouton du menu est à droite parce que le panneau vient de la
-              droite : ouvrir à gauche ce qui entre par la droite se sent. */}
-          <View style={styles.headerRight}>
-            <TouchableOpacity
-              style={styles.menuBtn}
-              onPress={() => setMenuOpen(true)}
-              hitSlop={10}
-              accessibilityRole="button"
-              accessibilityLabel={t.menu.open}
-            >
-              <MaterialIcons name="menu" size={19} color="#fff" />
-              {/* La bannière de mise à jour ne passe qu'une fois ; cette
-                  pastille, elle, reste jusqu'à ce qu'on s'en occupe. */}
-              {updateReady && <View style={styles.menuDot} />}
-            </TouchableOpacity>
-            <TouchableOpacity onPress={onLogoTap} activeOpacity={1}>
-              <Logo size={78} />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity onPress={onLogoTap} activeOpacity={1}>
+            <Logo size={72} />
+          </TouchableOpacity>
         </View>
-        {role && (
-          <View style={styles.rolePill}>
-            <Text style={styles.rolePillText}>{ROLE_LABELS[role] ?? role}</Text>
+
+        {/* La météo n'apparaît que lorsqu'elle a quelque chose à dire : une
+            ligne qui clignote entre un chargement, une erreur et une
+            température vaut moins que pas de météo du tout. */}
+        {weather && (
+          <View style={styles.weatherChip}>
+            <MaterialIcons
+              name={weatherIcon(weather.condition, weather.isDay)}
+              size={15}
+              color="#fff"
+            />
+            <Text style={styles.weatherTemp}>{formatTemperature(weather.temperature)}</Text>
+            <Text style={styles.weatherLabel} numberOfLines={1}>
+              {weather.city
+                ? `${t.weather[weather.condition]} · ${weather.city}`
+                : t.weather[weather.condition]}
+            </Text>
           </View>
         )}
+
         {role === "Citizen" && (
           <TouchableOpacity style={styles.reportShortcut} onPress={() => router.push("/report")} activeOpacity={0.8}>
             <MaterialIcons name="add-circle-outline" size={16} color="#fff" />
@@ -917,19 +926,30 @@ function makeStyles(c: AppColors) {
       shadowRadius: 12,
       elevation: 6,
     },
-    headerRow: { flexDirection: "row", alignItems: "flex-start", marginBottom: 12 },
-    headerTagRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 6 },
-    // Sous la date, dans la même famille que le reste de l'en-tête : rien de
-    // plus qu'une icône, une température et un mot.
-    weatherRow: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 6 },
+    utilityRow: { flexDirection: "row", alignItems: "center", marginBottom: 14 },
+    headerRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+    identity: { flex: 1, gap: 7 },
+    metaRow: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
+    // La météo reprend la pastille de l'horloge : les deux encadrent le bloc et
+    // se lisent comme des données, pas comme des phrases.
+    weatherChip: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 7,
+      alignSelf: "flex-start",
+      marginTop: 14,
+      paddingHorizontal: 11,
+      paddingVertical: 6,
+      borderRadius: 12,
+      backgroundColor: "rgba(255,255,255,0.16)",
+    },
     weatherTemp: {
-      fontSize: 13,
-      fontWeight: "700",
+      fontSize: 14,
+      fontWeight: "800",
       color: "#fff",
       fontVariant: ["tabular-nums"],
     },
-    weatherLabel: { fontSize: 12, color: "rgba(255,255,255,0.7)" },
-    headerRight: { alignItems: "flex-end", gap: 6 },
+    weatherLabel: { fontSize: 12.5, color: "rgba(255,255,255,0.8)", flexShrink: 1 },
     menuBtn: {
       width: 34,
       height: 34,
@@ -949,24 +969,17 @@ function makeStyles(c: AppColors) {
       borderWidth: 1.5,
       borderColor: c.primary,
     },
-    headerTag: {
-      fontSize: 11,
-      fontWeight: "700",
-      color: "rgba(255,255,255,0.65)",
-      textTransform: "uppercase",
-      letterSpacing: 1.2,
-      marginBottom: 4,
-    },
-    greeting: { fontSize: 24, fontWeight: "800", color: "#fff", marginBottom: 2 },
+    greeting: { fontSize: 25, fontWeight: "800", color: "#fff", letterSpacing: -0.3 },
     headerDate: { fontSize: 13, color: "rgba(255,255,255,0.6)" },
+    // Le rôle rejoint la date sur la même ligne : posé seul, il ouvrait un
+    // quatrième étage dans un bloc qui en comptait déjà trois.
     rolePill: {
-      alignSelf: "flex-start",
       backgroundColor: "rgba(255,255,255,0.22)",
       borderRadius: 20,
-      paddingHorizontal: 12,
-      paddingVertical: 5,
+      paddingHorizontal: 10,
+      paddingVertical: 3,
     },
-    rolePillText: { fontSize: 12, fontWeight: "700", color: "#fff" },
+    rolePillText: { fontSize: 11, fontWeight: "700", color: "#fff" },
     statRow: { flexDirection: "row", gap: 10, marginBottom: 24 },
     statCard: { flex: 1, borderRadius: 12, borderTopWidth: 3, padding: 14, alignItems: "center" },
     statIconBubble: {

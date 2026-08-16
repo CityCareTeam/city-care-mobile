@@ -1,4 +1,5 @@
 import { DEFAULT_LOCATION } from "@/constants/config";
+import { reverseGeocode } from "@/services/incidents";
 import { getCurrentWeather, type Weather } from "@/services/weather";
 import { readJson, writeJson } from "@/storage/local-store";
 import * as Location from "expo-location";
@@ -33,6 +34,28 @@ async function weatherLocation(): Promise<{ latitude: number; longitude: number 
   }
 }
 
+export type HeaderWeather = Weather & {
+  /** Nom de la commune, quand le back a su la nommer. */
+  city: string | null;
+};
+
+/**
+ * Nom de la commune pour ces coordonnées.
+ *
+ * Passe par le back plutôt que par un service tiers : il expose déjà
+ * `/geocode/reverse`, le formulaire de signalement s'en sert, et une seconde
+ * source donnerait deux orthographes pour la même ville. Un échec n'est pas une
+ * erreur — on affiche alors la météo sans son nom.
+ */
+async function cityFor(latitude: number, longitude: number): Promise<string | null> {
+  try {
+    const place = await reverseGeocode(latitude, longitude);
+    return place?.city?.trim() || null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Météo de l'en-tête.
  *
@@ -43,14 +66,14 @@ async function weatherLocation(): Promise<{ latitude: number; longitude: number 
  * Le dernier relevé est gardé sur l'appareil — comme le fil, comme le brouillon.
  * Il s'affiche pendant que le réseau répond, et à sa place s'il ne répond pas.
  */
-export function useWeather(): Weather | null {
-  const [weather, setWeather] = useState<Weather | null>(null);
+export function useWeather(): HeaderWeather | null {
+  const [weather, setWeather] = useState<HeaderWeather | null>(null);
 
   useEffect(() => {
     let alive = true;
 
     void (async () => {
-      const cached = await readJson<Weather>(KEY);
+      const cached = await readJson<HeaderWeather>(KEY);
       const age = cached ? Date.now() - new Date(cached.fetchedAt).getTime() : Infinity;
 
       if (cached && age < MAX_AGE_MS) {
@@ -62,8 +85,14 @@ export function useWeather(): Weather | null {
 
       try {
         const { latitude, longitude } = await weatherLocation();
-        const fresh = await getCurrentWeather(latitude, longitude);
+        // La ville en parallèle : elle ne doit pas retarder la température, qui
+        // est ce qu'on est venu lire.
+        const [current, city] = await Promise.all([
+          getCurrentWeather(latitude, longitude),
+          cityFor(latitude, longitude),
+        ]);
         if (!alive) return;
+        const fresh = { ...current, city };
         setWeather(fresh);
         void writeJson(KEY, fresh);
       } catch {
