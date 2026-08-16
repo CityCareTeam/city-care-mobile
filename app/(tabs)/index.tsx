@@ -1,5 +1,6 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { IncidentRow } from "@/components/incident-row";
+import { HeaderClock } from "@/components/ui/HeaderClock";
 import { Logo } from "@/components/ui/Logo";
 import { STATUS_COLOR, STATUS_LABEL, TYPE_LABEL } from "@/constants/incidents";
 import { ROLE_LABELS } from "@/constants/roles";
@@ -788,7 +789,11 @@ export default function HomeScreen() {
       <View style={styles.headerCard}>
         <View style={styles.headerRow}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.headerTag}>CityCare+</Text>
+            {/* L'horloge fait face au logo, de l'autre côté de l'en-tête. */}
+            <View style={styles.headerTagRow}>
+              <Text style={styles.headerTag}>CityCare+</Text>
+              <HeaderClock />
+            </View>
             <Text style={styles.greeting}>
               {firstName ? t.home.greetingNamed(firstName) : t.home.greeting}
             </Text>
@@ -896,6 +901,7 @@ function makeStyles(c: AppColors) {
       elevation: 6,
     },
     headerRow: { flexDirection: "row", alignItems: "flex-start", marginBottom: 12 },
+    headerTagRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 6 },
     headerRight: { alignItems: "flex-end", gap: 6 },
     menuBtn: {
       width: 34,
