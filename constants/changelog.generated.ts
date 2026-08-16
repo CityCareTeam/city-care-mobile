@@ -742,6 +742,11 @@ export const LAST_RELEASED_VERSION = "1.5.5";
 export const UNRELEASED_CHANGES: Change[] = [
   {
     "kind": "feature",
+    "scope": "incidents",
+    "text": "Share a report through the system share sheet"
+  },
+  {
+    "kind": "feature",
     "scope": "ui",
     "text": "Group notifications by day and simplify the language choice"
   },
