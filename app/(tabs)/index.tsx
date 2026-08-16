@@ -14,6 +14,7 @@ import { AppMenu, MenuSwipeArea } from "@/components/app/AppMenu";
 import { useAppRefreshControl } from "@/components/ui/AppRefreshControl";
 import { useAppUpdate } from "@/hooks/use-app-update";
 import { useHasDraft } from "@/hooks/use-draft-indicator";
+import { useStrings } from "@/hooks/use-strings";
 import { ErrorNotice } from "@/components/ui/ErrorNotice";
 import { Toast } from "@/components/ui/ToastMessage";
 import { useAutoRefresh } from "@/hooks/use-auto-refresh";
@@ -43,18 +44,22 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const STATUS_OPTIONS_4: PillOption<string | null>[] = [
-  { label: "Tous",                    value: null },
-  { label: STATUS_LABEL.reported,     value: "reported",    dotColor: STATUS_COLOR.reported },
-  { label: STATUS_LABEL.in_progress,  value: "in_progress", dotColor: STATUS_COLOR.in_progress },
-  { label: STATUS_LABEL.resolved,     value: "resolved",    dotColor: STATUS_COLOR.resolved },
-];
-
-const STATUS_OPTIONS_3: PillOption<string | null>[] = [
-  { label: "Tous",                    value: null },
-  { label: STATUS_LABEL.reported,     value: "reported",    dotColor: STATUS_COLOR.reported },
-  { label: STATUS_LABEL.in_progress,  value: "in_progress", dotColor: STATUS_COLOR.in_progress },
-];
+/**
+ * Construites au rendu et non au chargement du module : le libellé « Tous » suit
+ * la langue, et une constante de module l'aurait figé à l'import — donc au
+ * français, quoi que choisisse l'utilisateur ensuite.
+ */
+function statusOptions(all: string, withResolved: boolean): PillOption<string | null>[] {
+  const options: PillOption<string | null>[] = [
+    { label: all,                       value: null },
+    { label: STATUS_LABEL.reported,     value: "reported",    dotColor: STATUS_COLOR.reported },
+    { label: STATUS_LABEL.in_progress,  value: "in_progress", dotColor: STATUS_COLOR.in_progress },
+  ];
+  if (withResolved) {
+    options.push({ label: STATUS_LABEL.resolved, value: "resolved", dotColor: STATUS_COLOR.resolved });
+  }
+  return options;
+}
 
 const TODAY = (() => {
   const s = new Date().toLocaleDateString("fr-FR", {
@@ -110,6 +115,7 @@ function StatCard({
  */
 function LoadMore({ paging }: { paging: Paging }) {
   const { colors, isDark } = useAppColors();
+  const t = useStrings();
   const styles = isDark ? darkStyles : lightStyles;
   if (!paging.hasMore) return null;
 
@@ -121,12 +127,12 @@ function LoadMore({ paging }: { paging: Paging }) {
         disabled={paging.loadingMore}
         activeOpacity={0.75}
         accessibilityRole="button"
-        accessibilityLabel="Charger davantage de signalements"
+        accessibilityLabel={t.home.loadMoreA11y}
       >
         {paging.loadingMore ? (
           <ActivityIndicator size="small" color={colors.primary} />
         ) : (
-          <Text style={styles.showMoreText}>Charger la suite</Text>
+          <Text style={styles.showMoreText}>{t.home.loadMore}</Text>
         )}
       </TouchableOpacity>
     </View>
@@ -197,6 +203,7 @@ function IncidentList({
 }) {
   const { isDark, colors } = useAppColors();
   const styles = isDark ? darkStyles : lightStyles;
+  const t = useStrings();
   const [visibleCount, setVisibleCount] = useState(pageSize);
   const visible = incidents.slice(0, visibleCount);
   const remaining = incidents.length - visibleCount;
@@ -231,15 +238,15 @@ function IncidentList({
             disabled={loadingMore}
             activeOpacity={0.75}
             accessibilityRole="button"
-            accessibilityLabel="Afficher davantage de signalements"
+            accessibilityLabel={t.home.showMoreA11y}
           >
             {loadingMore ? (
               <ActivityIndicator size="small" color={colors.primary} />
             ) : (
               <Text style={styles.showMoreText}>
                 {remaining > 0
-                  ? `Afficher ${Math.min(remaining, pageSize)} de plus`
-                  : "Charger la suite"}
+                  ? t.home.showMore(Math.min(remaining, pageSize))
+                  : t.home.loadMore}
               </Text>
             )}
           </TouchableOpacity>
@@ -265,6 +272,7 @@ function CitizenView({
 }) {
   const { isDark } = useAppColors();
   const styles = isDark ? darkStyles : lightStyles;
+  const t = useStrings();
 
   const [activeTab, setActiveTab] = useState<"mine" | "all">("mine");
 
@@ -311,20 +319,20 @@ function CitizenView({
 
   return (
     <>
-      <SectionHeader title={isMineTab ? "Mes stats" : "Stats communauté"} />
+      <SectionHeader title={isMineTab ? t.home.myStats : t.home.communityStats} />
       <View style={styles.statRow}>
-        <StatCard label="Déclarés" value={reported}   color="#2196f3" icon="flag" />
-        <StatCard label="En cours" value={inProgress} color="#f0a500" icon="autorenew" />
-        <StatCard label="Résolus"  value={resolved}   color="#4caf50" icon="check-circle" />
+        <StatCard label={t.home.reported} value={reported}   color="#2196f3" icon="flag" />
+        <StatCard label={t.home.inProgress} value={inProgress} color="#f0a500" icon="autorenew" />
+        <StatCard label={t.home.resolved}  value={resolved}   color="#4caf50" icon="check-circle" />
       </View>
 
       {/* ── Onglets ── */}
       <GlassPillSelector
         options={[
-          { label: "Les miens",   value: "mine" as const, badge: incidents.length   || undefined },
+          { label: t.home.tabMine,      value: "mine" as const, badge: incidents.length   || undefined },
           // Le total du serveur, pas la taille de ce qu'on a chargé : l'onglet
           // annonce la communauté, pas la pagination.
-          { label: "Communauté",  value: "all"  as const, badge: paging.totalCount || undefined },
+          { label: t.home.tabCommunity, value: "all"  as const, badge: paging.totalCount || undefined },
         ]}
         activeValue={activeTab}
         onSelect={(v) => setActiveTab(v)}
@@ -352,7 +360,7 @@ function CitizenView({
       )}
 
       <GlassPillSelector
-        options={STATUS_OPTIONS_4}
+        options={statusOptions(t.home.allFilter, true)}
         activeValue={filterStatus}
         onSelect={setFilterStatus}
         style={{ marginBottom: 16 }}
@@ -405,6 +413,7 @@ function AgentView({
 }) {
   const { isDark } = useAppColors();
   const styles = isDark ? darkStyles : lightStyles;
+  const t = useStrings();
   // Sans mémoïsation, ce tableau était recréé à chaque rendu — et comme
   // `typeCount` en dépend, son `useMemo` ne servait à rien : il recalculait à
   // tous les coups.
@@ -429,11 +438,11 @@ function AgentView({
   return (
     <>
       <View style={styles.statRow}>
-        <StatCard label="À traiter" value={reportedCount}   color="#2196f3" icon="pending-actions" />
-        <StatCard label="En cours"  value={inProgressCount} color="#f0a500" icon="autorenew" />
+        <StatCard label={t.home.toHandle} value={reportedCount}   color="#2196f3" icon="pending-actions" />
+        <StatCard label={t.home.inProgress}  value={inProgressCount} color="#f0a500" icon="autorenew" />
       </View>
 
-      <SectionHeader title="Par catégorie" />
+      <SectionHeader title={t.home.byCategory} />
       <View style={styles.typeRow}>
         {Object.entries(typeCount).map(([type, count]) => {
           const active = filterType === type;
@@ -456,14 +465,14 @@ function AgentView({
       </View>
 
       <GlassPillSelector
-        options={STATUS_OPTIONS_3}
+        options={statusOptions(t.home.allFilter, false)}
         activeValue={filterStatus}
         onSelect={setFilterStatus}
         style={{ marginBottom: 16 }}
       />
 
       <SectionHeader
-        title="Incidents à traiter"
+        title={t.home.incidentsToHandle}
         count={filteredToHandle.length}
       />
       {filteredToHandle.length === 0 ? (
@@ -509,6 +518,7 @@ function AdminView({
 }) {
   const { isDark } = useAppColors();
   const styles = isDark ? darkStyles : lightStyles;
+  const t = useStrings();
   const { reported, inProgress, resolved } = useMemo(() => countByStatus(incidents), [incidents]);
 
   const { filterType, setFilterType, filterStatus, setFilterStatus, filteredIncidents } =
@@ -523,18 +533,15 @@ function AdminView({
   return (
     <>
       <View style={styles.statRow}>
-        <StatCard label="Déclarés" value={reported}    color="#2196f3" icon="flag" />
-        <StatCard label="En cours" value={inProgress}  color="#f0a500" icon="autorenew" />
-        <StatCard label="Résolus"  value={resolved}    color="#4caf50" icon="check-circle" />
+        <StatCard label={t.home.reported} value={reported}    color="#2196f3" icon="flag" />
+        <StatCard label={t.home.inProgress} value={inProgress}  color="#f0a500" icon="autorenew" />
+        <StatCard label={t.home.resolved}  value={resolved}    color="#4caf50" icon="check-circle" />
       </View>
       {/* « au total » veut dire au total : c'est le compte du serveur, pas
           celui des pages ouvertes — qui annonçait 50 quoi qu'il arrive. */}
-      <Text style={styles.totalLabel}>
-        {paging.totalCount} signalement{paging.totalCount !== 1 ? "s" : ""} au
-        total
-      </Text>
+      <Text style={styles.totalLabel}>{t.home.totalReports(paging.totalCount)}</Text>
 
-      <SectionHeader title="Par catégorie" />
+      <SectionHeader title={t.home.byCategory} />
       <View style={styles.typeRow}>
         {Object.entries(typeCount).map(([type, count]) => {
           const active = filterType === type;
@@ -567,13 +574,13 @@ function AdminView({
       </View>
 
       <GlassPillSelector
-        options={STATUS_OPTIONS_4}
+        options={statusOptions(t.home.allFilter, true)}
         activeValue={filterStatus}
         onSelect={setFilterStatus}
         style={{ marginBottom: 16 }}
       />
 
-      <SectionHeader title="Signalements" count={filteredIncidents.length} />
+      <SectionHeader title={t.home.reports} count={filteredIncidents.length} />
       {filteredIncidents.length === 0 ? (
         <>
           <EmptyState
@@ -629,6 +636,7 @@ export default function HomeScreen() {
   const { active: dogActive, onTap: onLogoTap, dismiss: dismissDog } = useEasterEgg();
   const [menuOpen, setMenuOpen] = useState(false);
   const hasDraft = useHasDraft();
+  const t = useStrings();
   const { ready: updateReady } = useAppUpdate();
 
   // Le dernier état connu, le temps que le réseau réponde — et à la place de
@@ -680,8 +688,8 @@ export default function HomeScreen() {
         if (sent === 0) return;
         Toast.show({
           type: "success",
-          text1: `${sent} signalement${sent > 1 ? "s" : ""} envoyé${sent > 1 ? "s" : ""}`,
-          text2: "Ce qui attendait le réseau est parti.",
+          text1: t.home.sentReports(sent),
+          text2: t.home.sentReportsDetail,
         });
       });
     } catch {
@@ -692,7 +700,7 @@ export default function HomeScreen() {
         setRefreshing(false);
       }
     }
-  }, [role, receiveFirstPage, flush]);
+  }, [role, receiveFirstPage, flush, t.home]);
 
   const paging = useMemo<Paging>(
     () => ({
@@ -753,8 +761,8 @@ export default function HomeScreen() {
         <ErrorNotice
           detail={
             cachedAt
-              ? `Dernières données connues, ${timeAgo(cachedAt)}.`
-              : "Les signalements affichés peuvent être obsolètes."
+              ? t.home.cachedData(timeAgo(cachedAt))
+              : t.home.staleData
           }
           onRetry={() => void load(true)}
         />
@@ -763,19 +771,16 @@ export default function HomeScreen() {
       {pending.length > 0 && (
         <View style={styles.pendingNotice} testID="pending-notice">
           <MaterialIcons name="cloud-upload" size={18} color={colors.primary} />
-          <Text style={styles.pendingText}>
-            {pending.length} signalement{pending.length !== 1 ? "s" : ""} en attente d’envoi —
-            {" "}il{pending.length !== 1 ? "s partiront" : " partira"} au retour du réseau.
-          </Text>
+          <Text style={styles.pendingText}>{t.home.pendingReports(pending.length)}</Text>
         </View>
       )}
 
       {rejected.length > 0 && (
         <ErrorNotice
-          title={`${rejected.length} signalement${rejected.length !== 1 ? "s" : ""} refusé${rejected.length !== 1 ? "s" : ""}`}
+          title={t.home.rejectedReports(rejected.length)}
           detail={rejected[0].reason}
           onRetry={() => void dismissRejected()}
-          actionLabel="J’ai compris"
+          actionLabel={t.home.acknowledge}
         />
       )}
 
@@ -785,7 +790,7 @@ export default function HomeScreen() {
           <View style={{ flex: 1 }}>
             <Text style={styles.headerTag}>CityCare+</Text>
             <Text style={styles.greeting}>
-              {firstName ? `Bonjour, ${firstName}` : "Bonjour"}
+              {firstName ? t.home.greetingNamed(firstName) : t.home.greeting}
             </Text>
             <Text style={styles.headerDate}>{TODAY}</Text>
           </View>
@@ -797,7 +802,7 @@ export default function HomeScreen() {
               onPress={() => setMenuOpen(true)}
               hitSlop={10}
               accessibilityRole="button"
-              accessibilityLabel="Ouvrir le menu de l’application"
+              accessibilityLabel={t.menu.open}
             >
               <MaterialIcons name="menu" size={19} color="#fff" />
               {/* La bannière de mise à jour ne passe qu'une fois ; cette
@@ -818,13 +823,13 @@ export default function HomeScreen() {
           <TouchableOpacity style={styles.reportShortcut} onPress={() => router.push("/report")} activeOpacity={0.8}>
             <MaterialIcons name="add-circle-outline" size={16} color="#fff" />
             <Text style={styles.reportShortcutText}>
-              {hasDraft ? "Reprendre mon signalement" : "Signaler un incident"}
+              {hasDraft ? t.home.resumeReport : t.home.reportIncident}
             </Text>
             {/* Le brouillon se restaure tout seul, mais rien ne le disait avant
                 d'ouvrir le formulaire : on pouvait l'avoir oublié. */}
             {hasDraft && (
               <View style={styles.draftPill}>
-                <Text style={styles.draftPillText}>Brouillon</Text>
+                <Text style={styles.draftPillText}>{t.home.draftBadge}</Text>
               </View>
             )}
             <MaterialIcons name="chevron-right" size={16} color="rgba(255,255,255,0.5)" />

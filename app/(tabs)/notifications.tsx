@@ -12,6 +12,7 @@ import { deleteAllNotifications, deleteNotification, getNotifications, markAllAs
 import { getValidToken } from "@/storage/tokens";
 import type { NotificationResponse } from "@/types/notifications";
 import { useAppRefreshControl } from "@/components/ui/AppRefreshControl";
+import { useStrings } from "@/hooks/use-strings";
 import { router } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -107,6 +108,7 @@ export default function NotificationsScreen() {
   const styles = useMemo(() => makeStyles(colors, bottomInset), [colors, bottomInset]);
   const rowStyles = useMemo(() => makeRowStyles(colors), [colors]);
   const { refreshCount } = useNotificationContext();
+  const t = useStrings();
 
   const [items, setItems] = useState<NotificationResponse[]>([]);
   const [fetching, setFetching] = useState(false);
@@ -169,10 +171,10 @@ export default function NotificationsScreen() {
 
   const handleClearAll = () => {
     if (clearingAll || items.length === 0) return;
-    Alert.alert("Vider les notifications", "Supprimer toutes vos notifications ?", [
-      { text: "Annuler", style: "cancel" },
+    Alert.alert(t.notifications.clearTitle, t.notifications.clearMessage, [
+      { text: t.alert.cancel, style: "cancel" },
       {
-        text: "Supprimer",
+        text: t.notifications.delete,
         style: "destructive",
         onPress: async () => {
           setClearingAll(true);
@@ -264,7 +266,7 @@ export default function NotificationsScreen() {
         <>
           <View style={styles.header}>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <Text style={styles.title}>Notifications</Text>
+              <Text style={styles.title}>{t.notifications.title}</Text>
               {unreadCount > 0 && (
                 <View style={styles.unreadBadge}>
                   <Text style={styles.unreadBadgeText}>{unreadCount}</Text>
@@ -282,7 +284,7 @@ export default function NotificationsScreen() {
                   >
                     {markingAll
                       ? <ActivityIndicator size="small" color={colors.primary} />
-                      : <Text style={styles.readAllText}>Tout lire</Text>
+                      : <Text style={styles.readAllText}>{t.notifications.readAll}</Text>
                     }
                   </TouchableOpacity>
                 )}
@@ -292,7 +294,7 @@ export default function NotificationsScreen() {
                   disabled={clearingAll}
                   activeOpacity={0.7}
                   accessibilityRole="button"
-                  accessibilityLabel="Vider toutes les notifications"
+                  accessibilityLabel={t.notifications.clearAllA11y}
                 >
                   {clearingAll
                     ? <ActivityIndicator size="small" color="#e53e3e" />
@@ -312,7 +314,7 @@ export default function NotificationsScreen() {
             <View style={styles.emptyIcon}>
               <MaterialIcons name="notifications-none" size={32} color={colors.text + "40"} />
             </View>
-            <Text style={styles.emptyTitle}>Aucune notification</Text>
+            <Text style={styles.emptyTitle}>{t.notifications.empty}</Text>
             <Text style={styles.emptySub}>
               Vous serez notifié des mises à jour{"\n"}de vos signalements ici.
             </Text>

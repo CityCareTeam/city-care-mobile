@@ -10,6 +10,7 @@ import { clusterColor } from "@/utils/cluster-color";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
 import { useHasDraft } from "@/hooks/use-draft-indicator";
+import { useStrings } from "@/hooks/use-strings";
 import { useIncidentFilters } from "@/hooks/use-incident-filters";
 import { useIncidentPermissions } from "@/hooks/use-incident-permissions";
 import { useAutoRefresh } from "@/hooks/use-auto-refresh";
@@ -133,6 +134,7 @@ export default function SignalementsScreen() {
   const styles = useMemo(() => makeStyles(colors, insets.bottom), [colors, insets.bottom]);
   const { canReportIncident } = useIncidentPermissions(null);
   const hasDraft = useHasDraft();
+  const t = useStrings();
   const { filterType, setFilterType, filterStatus, setFilterStatus, filteredIncidents } = useIncidentFilters(incidents);
   const { clusters, failed: clustersFailed, currentZoom, onRegionChangeComplete, reload: reloadClusters } =
     useMapClusters(filterStatus, filterType, userRegion ?? INITIAL_REGION);
@@ -368,7 +370,7 @@ export default function SignalementsScreen() {
       {!selected && canReportIncident && (
         <TouchableOpacity style={styles.fab} onPress={() => router.push("/report")} activeOpacity={0.85}>
           <MaterialIcons name={hasDraft ? "edit-note" : "add"} size={22} color="#fff" />
-          <Text style={styles.fabLabel}>{hasDraft ? "Reprendre" : "Signaler"}</Text>
+          <Text style={styles.fabLabel}>{hasDraft ? t.map.resume : t.map.report}</Text>
           {/* Pastille plutôt que libellé complet : le bouton flotte sur la carte,
               il ne peut pas s'allonger sans la manger. */}
           {hasDraft && <View style={styles.fabDot} />}

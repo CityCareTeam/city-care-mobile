@@ -18,14 +18,26 @@ describe('dictionnaires', () => {
     expect(paths(en).sort()).toEqual(paths(fr).sort());
   });
 
+  // Certaines entrées sont des fonctions : les pluriels et les textes qui
+  // portent une valeur. On les appelle pour vérifier qu'elles rendent bien
+  // quelque chose — une chaîne vide passerait sinon inaperçue.
   it('ne laissent aucune chaîne vide', () => {
     for (const dictionary of [fr, en]) {
       for (const path of paths(dictionary)) {
-        const value = path.split('.').reduce<any>((node, key) => node[key], dictionary);
+        const entry = path.split('.').reduce<any>((node, key) => node[key], dictionary);
+        const value = typeof entry === 'function' ? entry(2) : entry;
         expect(typeof value).toBe('string');
         expect(value.trim().length).toBeGreaterThan(0);
       }
     }
+  });
+
+  // Un pluriel qui ignore son argument est un pluriel raté.
+  it('accordent les pluriels', () => {
+    expect(fr.home.totalReports(1)).toContain('1 signalement au total');
+    expect(fr.home.totalReports(3)).toContain('3 signalements');
+    expect(en.home.totalReports(1)).toContain('1 report in total');
+    expect(en.home.totalReports(3)).toContain('3 reports');
   });
 
   // Une traduction oubliée se voit ici : la valeur anglaise serait le français.

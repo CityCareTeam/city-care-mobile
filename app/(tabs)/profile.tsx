@@ -10,6 +10,7 @@ import { getTabBarScrollPadding } from "@/utils/layout";
 import { useAuth } from "@/context/AuthContext";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
+import { useStrings } from "@/hooks/use-strings";
 import { STRINGS } from "@/constants/strings";
 import { deleteAccount } from "@/services/users";
 import { getValidToken } from "@/storage/tokens";
@@ -149,6 +150,7 @@ function makeStyles(c: AppColors, bottomInset: number) {
 export default function ProfileScreen() {
   const { keycloakUser, dbUser, loading, logout, isAuthenticated, authError, refreshUser } = useAuth();
   const { colors } = useAppColors();
+  const t = useStrings();
   const { bottom: bottomInset } = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(colors, bottomInset), [colors, bottomInset]);
 
@@ -185,7 +187,7 @@ export default function ProfileScreen() {
       STRINGS.alert.deleteAccountTitle,
       STRINGS.alert.deleteAccountMsg,
       [
-        { text: "Annuler", style: "cancel" },
+        { text: t.alert.cancel, style: "cancel" },
         { text: STRINGS.alert.deleteAccountConfirm, style: "destructive", onPress: confirmDelete },
       ],
     );
@@ -233,23 +235,23 @@ export default function ProfileScreen() {
         </View>
 
         {/* ── Informations ── */}
-        <BlockHeader title="Informations" styles={styles} />
+        <BlockHeader title={t.profile.information} styles={styles} />
         <Card style={styles.card}>
-          <InfoRow icon="person" label="Prénom" value={keycloakUser?.firstName} styles={styles} colors={colors} />
-          <InfoRow icon="badge" label="Nom" value={keycloakUser?.lastName} styles={styles} colors={colors} />
-          <InfoRow icon="alternate-email" label="Nom d'utilisateur" value={keycloakUser?.username} styles={styles} colors={colors} />
-          <InfoRow icon="email" label="Email" value={keycloakUser?.email} styles={styles} colors={colors} />
+          <InfoRow icon="person" label={t.profile.firstName} value={keycloakUser?.firstName} styles={styles} colors={colors} />
+          <InfoRow icon="badge" label={t.profile.lastName} value={keycloakUser?.lastName} styles={styles} colors={colors} />
+          <InfoRow icon="alternate-email" label={t.profile.username} value={keycloakUser?.username} styles={styles} colors={colors} />
+          <InfoRow icon="email" label={t.profile.email} value={keycloakUser?.email} styles={styles} colors={colors} />
           {memberSince && (
-            <InfoRow icon="event" label="Membre depuis" value={memberSince} last styles={styles} colors={colors} />
+            <InfoRow icon="event" label={t.profile.memberSince} value={memberSince} last styles={styles} colors={colors} />
           )}
         </Card>
 
         {/* ── Mon compte ── */}
-        <BlockHeader title="Mon compte" styles={styles} />
+        <BlockHeader title={t.profile.myAccount} styles={styles} />
         <Card style={styles.card}>
-          <SettingsRow label="Modifier mes informations" icon="edit" color={colors.primary} onPress={() => setEditOpen(true)} styles={styles} colors={colors} />
-          <SettingsRow label="Changer le mot de passe" icon="lock" color={colors.primary} onPress={() => setPasswordOpen(true)} styles={styles} colors={colors} />
-          <SettingsRow label="Notifications" icon="notifications" color={colors.primary} last onPress={() => setNotifOpen(true)} styles={styles} colors={colors} />
+          <SettingsRow label={t.profile.editDetails} icon="edit" color={colors.primary} onPress={() => setEditOpen(true)} styles={styles} colors={colors} />
+          <SettingsRow label={t.profile.changePassword} icon="lock" color={colors.primary} onPress={() => setPasswordOpen(true)} styles={styles} colors={colors} />
+          <SettingsRow label={t.profile.notifications} icon="notifications" color={colors.primary} last onPress={() => setNotifOpen(true)} styles={styles} colors={colors} />
         </Card>
 
         {/* Le bloc « Application » vivait ici. Il est passé dans le menu latéral
@@ -258,16 +260,16 @@ export default function ProfileScreen() {
             portes à tenir vers la même fenêtre. */}
 
         {/* ── Session ── */}
-        <BlockHeader title="Session" styles={styles} />
+        <BlockHeader title={t.profile.session} styles={styles} />
         <Card style={styles.card}>
-          <SettingsRow label="Se déconnecter" icon="logout" color={colors.primary} showChevron={false} last onPress={logout} styles={styles} colors={colors} />
+          <SettingsRow label={t.profile.signOut} icon="logout" color={colors.primary} showChevron={false} last onPress={logout} styles={styles} colors={colors} />
         </Card>
 
         {/* ── Zone danger ── */}
-        <BlockHeader title="Zone dangereuse" styles={styles} />
+        <BlockHeader title={t.profile.dangerZone} styles={styles} />
         <Card style={styles.card}>
           <SettingsRow
-            label="Supprimer mon compte"
+            label={t.profile.deleteAccount}
             icon="delete-forever"
             color="#e53e3e"
             showChevron={false}

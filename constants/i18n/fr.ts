@@ -116,6 +116,79 @@ export const fr = {
     bannerDismiss: "Ignorer la mise à jour",
   },
 
+
+  // ── Accueil ──
+  home: {
+    greeting: "Bonjour",
+    greetingNamed: (name: string) => `Bonjour, ${name}`,
+    myStats: "Mes stats",
+    communityStats: "Stats communauté",
+    reported: "Déclarés",
+    inProgress: "En cours",
+    resolved: "Résolus",
+    toHandle: "À traiter",
+    tabMine: "Les miens",
+    tabCommunity: "Communauté",
+    byCategory: "Par catégorie",
+    incidentsToHandle: "Incidents à traiter",
+    reports: "Signalements",
+    allFilter: "Tous",
+    showMore: (count: number) => `Afficher ${count} de plus`,
+    loadMore: "Charger la suite",
+    loadMoreA11y: "Charger davantage de signalements",
+    showMoreA11y: "Afficher davantage de signalements",
+    totalReports: (count: number) => `${count} signalement${count !== 1 ? "s" : ""} au total`,
+    reportIncident: "Signaler un incident",
+    resumeReport: "Reprendre mon signalement",
+    draftBadge: "Brouillon",
+    staleData: "Les signalements affichés peuvent être obsolètes.",
+    cachedData: (ago: string) => `Dernières données connues, ${ago}.`,
+    pendingReports: (count: number) =>
+      count > 1
+        ? `${count} signalements en attente d’envoi — ils partiront au retour du réseau.`
+        : "1 signalement en attente d’envoi — il partira au retour du réseau.",
+    rejectedReports: (count: number) =>
+      `${count} signalement${count !== 1 ? "s" : ""} refusé${count !== 1 ? "s" : ""}`,
+    acknowledge: "J’ai compris",
+    sentReports: (count: number) => `${count} signalement${count > 1 ? "s" : ""} envoyé${count > 1 ? "s" : ""}`,
+    sentReportsDetail: "Ce qui attendait le réseau est parti.",
+  },
+
+  // ── Carte ──
+  map: {
+    report: "Signaler",
+    resume: "Reprendre",
+  },
+
+  // ── Notifications ──
+  notifications: {
+    title: "Notifications",
+    readAll: "Tout lire",
+    clearAllA11y: "Vider toutes les notifications",
+    empty: "Aucune notification",
+    clearTitle: "Vider les notifications",
+    clearMessage: "Supprimer toutes vos notifications ?",
+    delete: "Supprimer",
+  },
+
+  // ── Profil ──
+  profile: {
+    information: "Informations",
+    firstName: "Prénom",
+    lastName: "Nom",
+    username: "Nom d'utilisateur",
+    email: "Email",
+    memberSince: "Membre depuis",
+    myAccount: "Mon compte",
+    editDetails: "Modifier mes informations",
+    changePassword: "Changer le mot de passe",
+    notifications: "Notifications",
+    session: "Session",
+    signOut: "Se déconnecter",
+    dangerZone: "Zone dangereuse",
+    deleteAccount: "Supprimer mon compte",
+  },
+
   // ── Réglages ──
   settings: {
     title: "Réglages",

@@ -116,6 +116,73 @@ export const en: typeof fr = {
     bannerDismiss: "Dismiss the update",
   },
 
+  home: {
+    greeting: "Hello",
+    greetingNamed: (name: string) => `Hello, ${name}`,
+    myStats: "My stats",
+    communityStats: "Community stats",
+    reported: "Reported",
+    inProgress: "In progress",
+    resolved: "Resolved",
+    toHandle: "To handle",
+    tabMine: "Mine",
+    tabCommunity: "Community",
+    byCategory: "By category",
+    incidentsToHandle: "Reports to handle",
+    reports: "Reports",
+    allFilter: "All",
+    showMore: (count: number) => `Show ${count} more`,
+    loadMore: "Load more",
+    loadMoreA11y: "Load more reports",
+    showMoreA11y: "Show more reports",
+    totalReports: (count: number) => `${count} report${count !== 1 ? "s" : ""} in total`,
+    reportIncident: "Report an incident",
+    resumeReport: "Resume my report",
+    draftBadge: "Draft",
+    staleData: "The reports shown may be out of date.",
+    cachedData: (ago: string) => `Last known data, ${ago}.`,
+    pendingReports: (count: number) =>
+      count > 1
+        ? `${count} reports waiting to be sent — they’ll go out when you’re back online.`
+        : "1 report waiting to be sent — it’ll go out when you’re back online.",
+    rejectedReports: (count: number) => `${count} report${count !== 1 ? "s" : ""} rejected`,
+    acknowledge: "Got it",
+    sentReports: (count: number) => `${count} report${count > 1 ? "s" : ""} sent`,
+    sentReportsDetail: "What was waiting for the network has gone out.",
+  },
+
+  map: {
+    report: "Report",
+    resume: "Resume",
+  },
+
+  notifications: {
+    title: "Notifications",
+    readAll: "Mark all read",
+    clearAllA11y: "Clear all notifications",
+    empty: "No notifications",
+    clearTitle: "Clear notifications",
+    clearMessage: "Delete all your notifications?",
+    delete: "Delete",
+  },
+
+  profile: {
+    information: "Details",
+    firstName: "First name",
+    lastName: "Last name",
+    username: "Username",
+    email: "Email",
+    memberSince: "Member since",
+    myAccount: "My account",
+    editDetails: "Edit my details",
+    changePassword: "Change password",
+    notifications: "Notifications",
+    session: "Session",
+    signOut: "Sign out",
+    dangerZone: "Danger zone",
+    deleteAccount: "Delete my account",
+  },
+
   settings: {
     title: "Settings",
     theme: "Theme",
