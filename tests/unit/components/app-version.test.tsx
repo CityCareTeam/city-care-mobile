@@ -1,5 +1,5 @@
 import { AppVersion } from '@/components/ui/AppVersion';
-import { render } from '@testing-library/react-native';
+import { render, within } from '@testing-library/react-native';
 
 const expoConfig: { version: string; extra: Record<string, unknown> } = {
   version: '1.5.5-beta',
@@ -43,17 +43,34 @@ describe('AppVersion', () => {
   // Deux beta successives portent le même numéro de version : leur rang est la
   // seule chose qui les distingue. Le croisillon le donne à lire comme tel —
   // « 3 » posé seul à côté du badge ne veut rien dire.
-  it('affiche le rang de la pré-version à côté du badge', () => {
+  it('affiche le rang de la pré-version', () => {
     const { getByText } = renderVersion('1.5.5-beta.3', { releaseTag: 'beta' });
     expect(getByText('v1.5.5')).toBeTruthy();
     expect(getByText('BETA')).toBeTruthy();
     expect(getByText('#3')).toBeTruthy();
   });
 
+  // Le rang vit *dans* la pastille, derrière un filet. Posé à côté, il flottait
+  // entre deux blancs et se lisait comme une note de bas de page.
+  it('loge le rang dans la pastille du canal', () => {
+    const { getByTestId } = renderVersion('1.5.5-beta.3', { releaseTag: 'beta' });
+    const badge = within(getByTestId('release-badge'));
+    expect(badge.getByText('BETA')).toBeTruthy();
+    expect(badge.getByText('#3')).toBeTruthy();
+  });
+
   // Un repère nommé se suffit à lui-même : pas de croisillon devant.
   it('accepte un repère nommé', () => {
     const { getByText } = renderVersion('1.5.5-beta.fix-clusters', { releaseTag: 'beta' });
     expect(getByText('fix-clusters')).toBeTruthy();
+  });
+
+  // Sans rang, pas de segment : la pastille reste une pastille simple.
+  it('n’ajoute pas de filet quand il n’y a pas de rang', () => {
+    const { getByTestId } = renderVersion('1.5.5-beta', { releaseTag: 'beta' });
+    const badge = getByTestId('release-badge');
+    // Le point de couleur et le libellé, rien de plus.
+    expect(badge.children).toHaveLength(2);
   });
 
   it('n’affiche pas de repère quand il n’y en a pas', () => {
