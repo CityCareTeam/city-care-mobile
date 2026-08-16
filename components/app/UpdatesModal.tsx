@@ -36,8 +36,37 @@ export function UpdatesModal({ visible, onClose }: { visible: boolean; onClose: 
     setStatus(await checkAndFetchUpdate());
   }
 
+  const pending = ready || status === "downloaded";
+
   return (
     <ModalShell visible={visible} title="Mises à jour" onClose={onClose}>
+      {/* L'état d'abord, en gros : c'est la seule question qu'on se pose en
+          ouvrant cet écran. Le détail vient après, pour qui le cherche. */}
+      <View style={styles.hero}>
+        <View
+          style={[
+            styles.heroIcon,
+            { backgroundColor: pending ? colors.primary : colors.primary + "1F" },
+          ]}
+        >
+          <MaterialIcons
+            name={pending ? "system-update" : "check"}
+            size={26}
+            color={pending ? "#fff" : colors.primary}
+          />
+        </View>
+        <Text style={styles.heroTitle}>
+          {pending ? "Mise à jour prête" : "Application à jour"}
+        </Text>
+        <Text style={styles.heroDetail}>
+          {status !== "idle" && status !== "checking"
+            ? MESSAGES[status]
+            : pending
+              ? "Relancez pour l’appliquer."
+              : "Aucune mise à jour en attente sur cet appareil."}
+        </Text>
+      </View>
+
       <View style={styles.rows}>
         <Row label="Version installée" value={appVersion()} styles={styles} />
         <Row
@@ -50,18 +79,7 @@ export function UpdatesModal({ visible, onClose }: { visible: boolean; onClose: 
         <Row label="Canal" value={Updates.channel ?? "aucun"} styles={styles} last />
       </View>
 
-      {status !== "idle" && status !== "checking" && (
-        <View style={styles.notice}>
-          <MaterialIcons
-            name={status === "downloaded" ? "system-update" : status === "up-to-date" ? "check-circle" : "info"}
-            size={16}
-            color={colors.primary}
-          />
-          <Text style={styles.noticeText}>{MESSAGES[status]}</Text>
-        </View>
-      )}
-
-      {ready || status === "downloaded" ? (
+      {pending ? (
         <TouchableOpacity
           style={[styles.action, { backgroundColor: colors.primary }]}
           onPress={() => void apply()}
@@ -115,6 +133,24 @@ function Row({
 
 function makeStyles(colors: ReturnType<typeof useAppColors>["colors"], isDark: boolean) {
   return StyleSheet.create({
+    hero: { alignItems: "center", gap: 8, paddingBottom: 22 },
+    heroIcon: {
+      width: 56,
+      height: 56,
+      borderRadius: 20,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: 2,
+    },
+    heroTitle: { fontSize: 16, fontWeight: "700", color: colors.text },
+    heroDetail: {
+      fontSize: 12.5,
+      color: colors.text,
+      opacity: 0.55,
+      textAlign: "center",
+      lineHeight: 18,
+      paddingHorizontal: 8,
+    },
     rows: {
       borderRadius: 14,
       borderWidth: 1,
@@ -141,16 +177,6 @@ function makeStyles(colors: ReturnType<typeof useAppColors>["colors"], isDark: b
       flexShrink: 1,
       fontVariant: ["tabular-nums"],
     },
-    notice: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 8,
-      padding: 12,
-      borderRadius: 12,
-      backgroundColor: colors.primary + "14",
-      marginBottom: 16,
-    },
-    noticeText: { flex: 1, fontSize: 12, color: colors.text, opacity: 0.8 },
     action: {
       borderRadius: 14,
       paddingVertical: 13,

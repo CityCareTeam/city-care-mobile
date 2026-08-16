@@ -10,6 +10,7 @@ import {
   Animated,
   Dimensions,
   Modal,
+  PanResponder,
   Pressable,
   StyleSheet,
   Text,
@@ -20,7 +21,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type Panel = "notes" | "updates" | "settings";
 
-const WIDTH = Math.min(320, Dimensions.get("window").width * 0.82);
+const WIDTH = Math.min(330, Dimensions.get("window").width * 0.84);
+
+/** Au-delà, on considère que le geste voulait fermer et non hésiter. */
+const CLOSE_THRESHOLD = WIDTH * 0.35;
 
 const ENTRIES: {
   key: Panel;
@@ -39,6 +43,10 @@ const ENTRIES: {
  * Il rassemble ce qui parle de l'application elle-même, quand la barre du bas
  * parle de ce qu'on y fait — et le profil, qui décrit le compte, y reste.
  *
+ * Il s'ouvre **par la droite** : c'est le côté du pouce, et la gauche est déjà
+ * celle du retour arrière sur Android. Le glissé depuis le bord est géré par
+ * `MenuEdge`, posé sur l'écran d'accueil.
+ *
  * C'est un panneau et non un `Drawer` de navigation : les trois entrées ouvrent
  * des fenêtres, aucune n'est une destination. Passer par un vrai tiroir aurait
  * imposé de déplacer `(tabs)` sous un nouveau groupe de routes, donc de reprendre
@@ -52,16 +60,38 @@ export function AppMenu({ visible, onClose }: { visible: boolean; onClose: () =>
   const [panel, setPanel] = useState<Panel | null>(null);
   const { ready: updateReady } = useAppUpdate();
 
-  // Le panneau reste monté le temps de sa sortie : le démonter à l'ouverture du
-  // volet donnerait une disparition sèche.
-  const slide = useRef(new Animated.Value(0)).current;
+  // `0` panneau ouvert, `WIDTH` panneau sorti de l'écran par la droite. Le geste
+  // écrit directement dans cette valeur, l'animation aussi : une seule source.
+  const offset = useRef(new Animated.Value(WIDTH)).current;
+
   useEffect(() => {
-    Animated.timing(slide, {
-      toValue: visible ? 1 : 0,
-      duration: visible ? 220 : 180,
+    Animated.spring(offset, {
+      toValue: visible ? 0 : WIDTH,
       useNativeDriver: true,
+      // Un panneau ne rebondit pas : il glisse et s'arrête.
+      bounciness: 0,
+      speed: 14,
     }).start();
-  }, [visible, slide]);
+  }, [visible, offset]);
+
+  // Glissé vers la droite pour refermer. Le panneau suit le doigt, et ne se
+  // referme que si le geste est allé assez loin ou assez vite — sinon il revient,
+  // ce qui rend l'hésitation gratuite.
+  const pan = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_, gesture) =>
+          Math.abs(gesture.dx) > 8 && Math.abs(gesture.dx) > Math.abs(gesture.dy),
+        onPanResponderMove: (_, gesture) => {
+          if (gesture.dx > 0) offset.setValue(gesture.dx);
+        },
+        onPanResponderRelease: (_, gesture) => {
+          if (gesture.dx > CLOSE_THRESHOLD || gesture.vx > 0.5) onClose();
+          else Animated.spring(offset, { toValue: 0, useNativeDriver: true, bounciness: 0, speed: 14 }).start();
+        },
+      }),
+    [offset, onClose],
+  );
 
   function open(next: Panel) {
     // On referme d'abord : deux fenêtres superposées se gênent sur Android.
@@ -69,10 +99,16 @@ export function AppMenu({ visible, onClose }: { visible: boolean; onClose: () =>
     setPanel(next);
   }
 
+  const fade = offset.interpolate({
+    inputRange: [0, WIDTH],
+    outputRange: [1, 0],
+    extrapolate: "clamp",
+  });
+
   return (
     <>
-      <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
-        <Animated.View style={[styles.backdrop, { opacity: slide }]}>
+      <Modal visible={visible} transparent animationType="none" onRequestClose={onClose} statusBarTranslucent>
+        <Animated.View style={[styles.backdrop, { opacity: fade }]}>
           <Pressable
             style={StyleSheet.absoluteFill}
             onPress={onClose}
@@ -82,26 +118,32 @@ export function AppMenu({ visible, onClose }: { visible: boolean; onClose: () =>
         </Animated.View>
 
         <Animated.View
+          {...pan.panHandlers}
           style={[
             styles.panel,
             {
-              paddingTop: insets.top + 20,
-              paddingBottom: insets.bottom + 16,
-              transform: [
-                { translateX: slide.interpolate({ inputRange: [0, 1], outputRange: [-WIDTH, 0] }) },
-              ],
+              paddingTop: insets.top + 18,
+              paddingBottom: insets.bottom + 14,
+              transform: [{ translateX: offset }],
             },
           ]}
         >
+          {/* La poignée dit que ça se tire, sans avoir à l'écrire. */}
+          <View style={styles.grip} />
+
           <View style={styles.header}>
-            <Text style={styles.title}>City Care +</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.eyebrow}>Application</Text>
+              <Text style={styles.title}>City Care +</Text>
+            </View>
             <TouchableOpacity
+              style={styles.closeBtn}
               onPress={onClose}
               hitSlop={10}
               accessibilityRole="button"
               accessibilityLabel="Fermer le menu"
             >
-              <MaterialIcons name="close" size={20} color={colors.text} />
+              <MaterialIcons name="close" size={18} color={colors.text} />
             </TouchableOpacity>
           </View>
 
@@ -125,7 +167,7 @@ export function AppMenu({ visible, onClose }: { visible: boolean; onClose: () =>
                 {/* Une mise à jour prête se signale ici aussi : la bannière ne
                     passe qu'une fois, le menu, lui, reste. */}
                 {entry.key === "updates" && updateReady && <View style={styles.dot} />}
-                <Text style={styles.chevron}>›</Text>
+                <MaterialIcons name="chevron-right" size={20} color={colors.text + "40"} />
               </TouchableOpacity>
             ))}
           </View>
@@ -143,6 +185,39 @@ export function AppMenu({ visible, onClose }: { visible: boolean; onClose: () =>
   );
 }
 
+/**
+ * Bande invisible collée au bord droit de l'écran : c'est elle qui reçoit le
+ * glissé d'ouverture. Assez large pour être trouvée au pouce, assez étroite pour
+ * ne rien voler au contenu — et elle ne réagit qu'aux gestes franchement
+ * horizontaux, pour laisser le défilement tranquille.
+ */
+export function MenuEdge({ onOpen }: { onOpen: () => void }) {
+  const pan = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_, gesture) =>
+          gesture.dx < -12 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.5,
+        onPanResponderRelease: (_, gesture) => {
+          if (gesture.dx < -40 || gesture.vx < -0.4) onOpen();
+        },
+      }),
+    [onOpen],
+  );
+
+  return <View {...pan.panHandlers} style={styles.edge} pointerEvents="box-only" />;
+}
+
+const styles = StyleSheet.create({
+  edge: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    right: 0,
+    width: 22,
+    zIndex: 20,
+  },
+});
+
 function makeStyles(colors: ReturnType<typeof useAppColors>["colors"], isDark: boolean) {
   return StyleSheet.create({
     backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.45)" },
@@ -150,48 +225,73 @@ function makeStyles(colors: ReturnType<typeof useAppColors>["colors"], isDark: b
       position: "absolute",
       top: 0,
       bottom: 0,
-      left: 0,
+      right: 0,
       width: WIDTH,
       backgroundColor: colors.background,
       paddingHorizontal: 18,
-      borderTopRightRadius: 22,
-      borderBottomRightRadius: 22,
+      borderTopLeftRadius: 24,
+      borderBottomLeftRadius: 24,
       shadowColor: "#000",
-      shadowOffset: { width: 4, height: 0 },
+      shadowOffset: { width: -4, height: 0 },
       shadowOpacity: isDark ? 0.5 : 0.15,
       shadowRadius: 18,
       elevation: 16,
     },
+    grip: {
+      position: "absolute",
+      left: 7,
+      top: "50%",
+      width: 4,
+      height: 44,
+      borderRadius: 2,
+      backgroundColor: colors.text,
+      opacity: 0.12,
+    },
     header: {
       flexDirection: "row",
       alignItems: "center",
-      justifyContent: "space-between",
-      marginBottom: 22,
+      marginBottom: 20,
+      paddingLeft: 6,
     },
-    title: { fontSize: 19, fontWeight: "800", color: colors.text },
-    entries: { gap: 8 },
+    eyebrow: {
+      fontSize: 10,
+      fontWeight: "700",
+      letterSpacing: 1,
+      textTransform: "uppercase",
+      color: colors.primary,
+      marginBottom: 2,
+    },
+    title: { fontSize: 20, fontWeight: "800", color: colors.text },
+    closeBtn: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)",
+    },
+    entries: { gap: 10, paddingLeft: 6 },
     entry: {
       flexDirection: "row",
       alignItems: "center",
       gap: 12,
-      padding: 12,
-      borderRadius: 14,
+      padding: 13,
+      borderRadius: 16,
       backgroundColor: colors.white,
       borderWidth: 1,
       borderColor: colors.chipBorder,
     },
     entryIcon: {
-      width: 36,
-      height: 36,
-      borderRadius: 12,
+      width: 38,
+      height: 38,
+      borderRadius: 13,
       alignItems: "center",
       justifyContent: "center",
     },
     entryText: { flex: 1 },
-    entryLabel: { fontSize: 14, fontWeight: "600", color: colors.text },
-    entryDetail: { fontSize: 11, color: colors.text, opacity: 0.45, marginTop: 1 },
+    entryLabel: { fontSize: 14.5, fontWeight: "600", color: colors.text },
+    entryDetail: { fontSize: 11, color: colors.text, opacity: 0.45, marginTop: 2 },
     dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary },
-    chevron: { fontSize: 20, color: colors.text, opacity: 0.25 },
-    footer: { marginTop: "auto" },
+    footer: { marginTop: "auto", paddingLeft: 6 },
   });
 }

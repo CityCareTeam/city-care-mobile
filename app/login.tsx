@@ -135,7 +135,7 @@ export default function LoginScreen() {
 
           <Input
             label="Email ou nom d'utilisateur"
-            placeholder="jean.dupont ou jean@mail.com"
+            placeholder="Email ou nom d'utilisateur"
             autoCapitalize="none"
             autoCorrect={false}
             icon="person"

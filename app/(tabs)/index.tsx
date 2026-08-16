@@ -10,7 +10,7 @@ import { STRINGS } from "@/constants/strings";
 import { useAuth } from "@/context/AuthContext";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
-import { AppMenu } from "@/components/app/AppMenu";
+import { AppMenu, MenuEdge } from "@/components/app/AppMenu";
 import { useAppRefreshControl } from "@/components/ui/AppRefreshControl";
 import { useAppUpdate } from "@/hooks/use-app-update";
 import { ErrorNotice } from "@/components/ui/ErrorNotice";
@@ -777,28 +777,31 @@ export default function HomeScreen() {
       <View style={styles.headerCard}>
         <View style={styles.headerRow}>
           <View style={{ flex: 1 }}>
-            <View style={styles.headerTagRow}>
-              <TouchableOpacity
-                onPress={() => setMenuOpen(true)}
-                hitSlop={12}
-                accessibilityRole="button"
-                accessibilityLabel="Ouvrir le menu de l’application"
-              >
-                <MaterialIcons name="menu" size={22} color="#fff" />
-              </TouchableOpacity>
-              {/* La pastille du menu double celle des mises à jour : la bannière
-                  ne passe qu'une fois, l'en-tête reste. */}
-              {updateReady && <View style={styles.menuDot} />}
-            </View>
             <Text style={styles.headerTag}>CityCare+</Text>
             <Text style={styles.greeting}>
               {firstName ? `Bonjour, ${firstName}` : "Bonjour"}
             </Text>
             <Text style={styles.headerDate}>{TODAY}</Text>
           </View>
-          <TouchableOpacity onPress={onLogoTap} activeOpacity={1}>
-            <Logo size={78} />
-          </TouchableOpacity>
+          {/* Le bouton du menu est à droite parce que le panneau vient de la
+              droite : ouvrir à gauche ce qui entre par la droite se sent. */}
+          <View style={styles.headerRight}>
+            <TouchableOpacity
+              style={styles.menuBtn}
+              onPress={() => setMenuOpen(true)}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel="Ouvrir le menu de l’application"
+            >
+              <MaterialIcons name="menu" size={19} color="#fff" />
+              {/* La bannière de mise à jour ne passe qu'une fois ; cette
+                  pastille, elle, reste jusqu'à ce qu'on s'en occupe. */}
+              {updateReady && <View style={styles.menuDot} />}
+            </TouchableOpacity>
+            <TouchableOpacity onPress={onLogoTap} activeOpacity={1}>
+              <Logo size={78} />
+            </TouchableOpacity>
+          </View>
         </View>
         {role && (
           <View style={styles.rolePill}>
@@ -830,6 +833,9 @@ export default function HomeScreen() {
       )}
     </ScrollView>
 
+    {/* Le bord droit reste sensible même quand le menu est fermé : c'est par lui
+        qu'on le tire. */}
+    {!menuOpen && <MenuEdge onOpen={() => setMenuOpen(true)} />}
     <AppMenu visible={menuOpen} onClose={() => setMenuOpen(false)} />
     <EasterEggDog visible={dogActive} onHide={dismissDog} />
     </>
@@ -872,8 +878,26 @@ function makeStyles(c: AppColors) {
       elevation: 6,
     },
     headerRow: { flexDirection: "row", alignItems: "flex-start", marginBottom: 12 },
-    headerTagRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 },
-    menuDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: "#fff" },
+    headerRight: { alignItems: "flex-end", gap: 6 },
+    menuBtn: {
+      width: 34,
+      height: 34,
+      borderRadius: 17,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: "rgba(255,255,255,0.18)",
+    },
+    menuDot: {
+      position: "absolute",
+      top: 6,
+      right: 6,
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: "#fff",
+      borderWidth: 1.5,
+      borderColor: c.primary,
+    },
     headerTag: {
       fontSize: 11,
       fontWeight: "700",
