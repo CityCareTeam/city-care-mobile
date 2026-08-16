@@ -47,21 +47,47 @@ function makeStyles(c: AppColors, bottomInset: number) {
     },
 
     // ── Header ──
-    // Deux étages : ce qu'on regarde, puis ce qu'on peut faire. Sur une seule
-    // ligne, le compteur se faisait pousser hors du cadre dès que les deux
-    // boutons apparaissaient.
-    header: { marginBottom: 20, paddingHorizontal: 4, gap: 14 },
-    actionRow: {
+    // Même surface, même bordure et même bulle d'icône que les lignes
+    // d'incident et les entrées du menu : l'écran cesse d'avoir sa grammaire.
+    headerCard: {
       flexDirection: "row",
       alignItems: "center",
-      justifyContent: "space-between",
-      gap: 12,
+      gap: 13,
+      padding: 14,
+      borderRadius: 18,
+      backgroundColor: c.white,
+      borderWidth: 1,
+      borderColor: c.chipBorder,
+      marginBottom: 18,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 4,
+      elevation: 2,
     },
+    headerIcon: {
+      width: 46,
+      height: 46,
+      borderRadius: 15,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    headerText: { flex: 1, gap: 2 },
+    title: { fontSize: 19, fontWeight: "800", color: c.text },
+    summary: { fontSize: 12.5, color: c.text, opacity: 0.5 },
     actions: { flexDirection: "row", alignItems: "center", gap: 8 },
-    summary: { fontSize: 13, color: c.text, opacity: 0.5, flexShrink: 1 },
-    titleRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-    titleAccent: { width: 4, height: 26, borderRadius: 2, backgroundColor: c.primary },
-    title: { fontSize: 28, fontWeight: "800", color: c.text },
+    // Deux boutons de même taille : ils font partie de la même famille de
+    // gestes, l'un ne pèse pas plus lourd que l'autre.
+    readAllBtn: {
+      width: 36, height: 36, borderRadius: 18,
+      backgroundColor: c.primary + "18",
+      alignItems: "center", justifyContent: "center",
+    },
+    clearBtn: {
+      width: 36, height: 36, borderRadius: 18,
+      backgroundColor: "#e53e3e18",
+      alignItems: "center", justifyContent: "center",
+    },
     // Palier de jour : discret, il sépare sans se faire lire comme un titre.
     groupLabel: {
       fontSize: 11,
@@ -73,29 +99,6 @@ function makeStyles(c: AppColors, bottomInset: number) {
       marginTop: 8,
       marginBottom: 8,
       marginLeft: 4,
-    },
-    unreadBadge: {
-      backgroundColor: c.primary,
-      borderRadius: 12,
-      paddingHorizontal: 9,
-      paddingVertical: 3,
-      marginLeft: 8,
-    },
-    unreadBadgeText: { fontSize: 12, fontWeight: "700", color: "#fff" },
-    readAllBtn: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 6,
-      paddingHorizontal: 13,
-      paddingVertical: 7,
-      borderRadius: 20,
-      backgroundColor: c.primary + "18",
-    },
-    readAllText: { fontSize: 13, fontWeight: "600", color: c.primary },
-    clearBtn: {
-      width: 34, height: 34, borderRadius: 17,
-      backgroundColor: "#e53e3e18",
-      alignItems: "center", justifyContent: "center",
     },
 
     separator: { height: 8 },
@@ -304,61 +307,64 @@ export default function NotificationsScreen() {
       refreshControl={refreshControl}
       ListHeaderComponent={
         <>
-          {/* Deux étages : ce qu'on regarde, puis ce qu'on peut faire.
-              Titre et actions se partageaient une seule ligne, et dès que les
-              deux boutons apparaissaient, le compteur se faisait pousser hors
-              du cadre. */}
-          <View style={styles.header}>
-            <View style={styles.titleRow}>
-              <View style={styles.titleAccent} />
+          {/* Une carte plutôt qu'un titre posé sur le fond.
+              L'écran reprend le vocabulaire du reste de l'application — la
+              bulle d'icône du menu latéral, la surface et la bordure des lignes
+              d'incident — au lieu d'inventer une grammaire à lui. Les actions y
+              vivent dedans, alignées à droite : elles concernent la boîte, pas
+              une notification en particulier. */}
+          <View style={styles.headerCard}>
+            <View style={[styles.headerIcon, { backgroundColor: colors.primary + "1F" }]}>
+              <MaterialIcons
+                name={unreadCount > 0 ? "notifications-active" : "notifications-none"}
+                size={22}
+                color={colors.primary}
+              />
+            </View>
+
+            <View style={styles.headerText}>
               <Text style={styles.title}>{t.notifications.title}</Text>
-              {unreadCount > 0 && (
-                <View style={styles.unreadBadge}>
-                  <Text style={styles.unreadBadgeText}>{unreadCount}</Text>
-                </View>
-              )}
+              {/* L'état en toutes lettres : le compteur dit combien, cette
+                  ligne dit s'il reste quelque chose à faire. */}
+              <Text style={styles.summary}>
+                {items.length === 0
+                  ? t.notifications.empty
+                  : unreadCount > 0
+                    ? t.notifications.unreadSummary(unreadCount)
+                    : t.notifications.allRead}
+              </Text>
             </View>
 
             {items.length > 0 && (
-              <View style={styles.actionRow}>
-                {/* L'état en toutes lettres : le compteur dit combien, cette
-                    ligne dit quoi en faire — ou qu'il n'y a rien à faire. */}
-                <Text style={styles.summary}>
-                  {unreadCount > 0 ? t.notifications.unreadSummary(unreadCount) : t.notifications.allRead}
-                </Text>
-                <View style={styles.actions}>
-                  {unreadCount > 0 && (
-                    <TouchableOpacity
-                      style={styles.readAllBtn}
-                      onPress={handleMarkAllAsRead}
-                      disabled={markingAll}
-                      activeOpacity={0.7}
-                      accessibilityRole="button"
-                      accessibilityLabel={t.notifications.readAll}
-                    >
-                      {markingAll
-                        ? <ActivityIndicator size="small" color={colors.primary} />
-                        : <>
-                            <MaterialIcons name="done-all" size={15} color={colors.primary} />
-                            <Text style={styles.readAllText}>{t.notifications.readAll}</Text>
-                          </>
-                      }
-                    </TouchableOpacity>
-                  )}
+              <View style={styles.actions}>
+                {unreadCount > 0 && (
                   <TouchableOpacity
-                    style={styles.clearBtn}
-                    onPress={handleClearAll}
-                    disabled={clearingAll}
+                    style={styles.readAllBtn}
+                    onPress={handleMarkAllAsRead}
+                    disabled={markingAll}
                     activeOpacity={0.7}
                     accessibilityRole="button"
-                    accessibilityLabel={t.notifications.clearAllA11y}
+                    accessibilityLabel={t.notifications.readAll}
                   >
-                    {clearingAll
-                      ? <ActivityIndicator size="small" color="#e53e3e" />
-                      : <MaterialIcons name="delete-outline" size={18} color="#e53e3e" />
+                    {markingAll
+                      ? <ActivityIndicator size="small" color={colors.primary} />
+                      : <MaterialIcons name="done-all" size={19} color={colors.primary} />
                     }
                   </TouchableOpacity>
-                </View>
+                )}
+                <TouchableOpacity
+                  style={styles.clearBtn}
+                  onPress={handleClearAll}
+                  disabled={clearingAll}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel={t.notifications.clearAllA11y}
+                >
+                  {clearingAll
+                    ? <ActivityIndicator size="small" color="#e53e3e" />
+                    : <MaterialIcons name="delete-outline" size={19} color="#e53e3e" />
+                  }
+                </TouchableOpacity>
               </View>
             )}
           </View>

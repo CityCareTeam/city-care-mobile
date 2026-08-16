@@ -189,22 +189,34 @@ export function AppMenu({ visible, onClose }: { visible: boolean; onClose: () =>
   );
 }
 
-/** Le geste doit partir de cette part droite de l'écran — la zone du pouce. */
-const EDGE_RATIO = 0.6;
+/** Largeur de la bordure sensible, en points. Celle d'un tiroir Android. */
+const EDGE_WIDTH = 30;
+
+/** Course horizontale à franchir avant que le geste prenne la main. */
+const ACTIVATE_DX = 18;
+
+/** Écart vertical au-delà duquel on rend la main au défilement. */
+const CANCEL_DY = 18;
 
 /**
- * Ouvre le menu au glissé vers la gauche, depuis le bord droit.
+ * Ouvre le menu au glissé vers la gauche, depuis le bord droit — sur tous les
+ * écrans à onglets.
  *
- * Première tentative : une bande invisible posée par-dessus l'écran, avec un
- * `PanResponder`. Elle marchait, mais rendait ses vingt-deux pixels sourds au
- * défilement — une bande de contenu qu'on ne pouvait plus faire glisser. Un
- * calque qui reçoit un toucher ne le rend pas à ce qu'il y a dessous.
+ * Deux tentatives avant celle-ci, et chacune a appris quelque chose :
  *
- * `react-native-gesture-handler` est fait pour ça : le geste enveloppe l'écran
- * entier, ne s'active qu'après un mouvement franchement horizontal
- * (`activeOffsetX`), et **abandonne** dès que le doigt part à la verticale
- * (`failOffsetY`) — le défilement reprend alors la main partout, y compris au
- * bord.
+ *   1. Une bande invisible posée par-dessus l'écran (`PanResponder`) : elle
+ *      ouvrait bien le menu, mais rendait ses vingt-deux pixels sourds au
+ *      défilement. Un calque qui reçoit un toucher ne le rend pas à ce qu'il y a
+ *      dessous.
+ *   2. Un geste `react-native-gesture-handler` couvrant l'écran, activé sur tout
+ *      mouvement franchement horizontal. Parfait sur une liste — mais posé sur
+ *      la carte, il aurait volé le déplacement horizontal, c'est-à-dire le geste
+ *      principal de l'écran.
+ *
+ * D'où l'activation manuelle : on décide nous-mêmes, doigt posé, si ce geste
+ * nous revient. Hors de la bordure droite, on **abandonne immédiatement** et la
+ * carte ou la liste reçoit le toucher comme si nous n'existions pas. C'est ce
+ * qui permet de l'installer partout sans rien casher.
  */
 export function MenuSwipeArea({
   onOpen,
@@ -214,21 +226,32 @@ export function MenuSwipeArea({
   children: React.ReactNode;
 }) {
   const width = Dimensions.get("window").width;
-  const startX = useRef(0);
+  const origin = useRef({ x: 0, y: 0 });
 
   const pan = useMemo(
     () =>
       Gesture.Pan()
         // Les rappels touchent à l'état React : ils doivent rester sur le fil JS.
         .runOnJS(true)
-        .activeOffsetX([-25, 25])
-        .failOffsetY([-14, 14])
-        .onBegin((event) => {
-          startX.current = event.absoluteX;
+        .manualActivation(true)
+        .onTouchesDown((event, state) => {
+          const touch = event.allTouches[0];
+          if (!touch) return;
+          origin.current = { x: touch.absoluteX, y: touch.absoluteY };
+          // Le doigt n'est pas au bord : ce geste ne nous regarde pas.
+          if (touch.absoluteX < width - EDGE_WIDTH) state.fail();
+        })
+        .onTouchesMove((event, state) => {
+          const touch = event.allTouches[0];
+          if (!touch) return;
+          const dx = touch.absoluteX - origin.current.x;
+          const dy = touch.absoluteY - origin.current.y;
+
+          if (Math.abs(dy) > CANCEL_DY && Math.abs(dy) > Math.abs(dx)) state.fail();
+          else if (dx < -ACTIVATE_DX) state.activate();
         })
         .onEnd((event) => {
-          if (startX.current < width * EDGE_RATIO) return;
-          if (event.translationX < -50 || event.velocityX < -600) onOpen();
+          if (event.translationX < -40 || event.velocityX < -600) onOpen();
         }),
     [onOpen, width],
   );

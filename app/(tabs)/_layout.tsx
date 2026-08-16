@@ -1,3 +1,4 @@
+import { AppMenuProvider } from "@/context/AppMenuContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { useStrings } from "@/hooks/use-strings";
 import { NotificationProvider, useNotificationContext } from "@/context/NotificationContext";
@@ -210,6 +211,9 @@ export default function TabLayout() {
   return (
     <AuthProvider>
       <NotificationProvider>
+      {/* Le menu enveloppe les onglets : le glissé depuis le bord vaut sur les
+          quatre écrans, et le panneau leur survit. */}
+      <AppMenuProvider>
       <Tabs
         screenOptions={{ headerShown: false }}
         tabBar={(props) => <LiquidTabBar {...props} />}
@@ -222,6 +226,7 @@ export default function TabLayout() {
           />
         ))}
       </Tabs>
+      </AppMenuProvider>
       </NotificationProvider>
     </AuthProvider>
   );

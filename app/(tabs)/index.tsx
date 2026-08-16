@@ -11,7 +11,7 @@ import { STRINGS } from "@/constants/strings";
 import { useAuth } from "@/context/AuthContext";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
-import { AppMenu, MenuSwipeArea } from "@/components/app/AppMenu";
+import { useAppMenu } from "@/context/AppMenuContext";
 import { useAppRefreshControl } from "@/components/ui/AppRefreshControl";
 import { useAppUpdate } from "@/hooks/use-app-update";
 import { useHasDraft } from "@/hooks/use-draft-indicator";
@@ -637,7 +637,7 @@ export default function HomeScreen() {
   const { pending, rejected, flush, dismissRejected } = usePendingReports();
 
   const { active: dogActive, onTap: onLogoTap, dismiss: dismissDog } = useEasterEgg();
-  const [menuOpen, setMenuOpen] = useState(false);
+  const { open: openMenu } = useAppMenu();
   const hasDraft = useHasDraft();
   const weather = useWeather();
   const t = useStrings();
@@ -752,10 +752,6 @@ export default function HomeScreen() {
 
   return (
     <>
-    {/* Le glissé vers la gauche depuis le bord droit ouvre le menu. Il enveloppe
-        l'écran entier plutôt qu'une bande posée dessus : une bande aurait rendu
-        son propre bord sourd au défilement. */}
-    <MenuSwipeArea onOpen={() => setMenuOpen(true)}>
     <ScrollView
       style={styles.scroll}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: getTabBarScrollPadding(insets.bottom) }]}
@@ -800,7 +796,7 @@ export default function HomeScreen() {
           <View style={{ flex: 1 }} />
           <TouchableOpacity
             style={styles.menuBtn}
-            onPress={() => setMenuOpen(true)}
+            onPress={openMenu}
             hitSlop={10}
             accessibilityRole="button"
             accessibilityLabel={t.menu.open}
@@ -891,9 +887,7 @@ export default function HomeScreen() {
         <AdminView incidents={allIncidents} onPress={navigateToIncident} paging={paging} />
       )}
     </ScrollView>
-    </MenuSwipeArea>
 
-    <AppMenu visible={menuOpen} onClose={() => setMenuOpen(false)} />
     <EasterEggDog visible={dogActive} onHide={dismissDog} />
     </>
   );
