@@ -37,27 +37,35 @@ export function ModalShell({ visible, title, onClose, children }: Props) {
       shadowRadius: 24,
       elevation: 8,
     },
-    // Un liseré, pas une bande : la barre était soulignée de `secondary`, qui
-    // vaut un jaune franc en clair. Il tranchait sur toute la largeur de chaque
-    // fenêtre de l'application, pour ne séparer que deux zones de même couleur.
-    // Une teinte de bordure neutre suffit à poser la limite.
+    // L'en-tête était un titre posé sur du vide, souligné d'un trait — et ce
+    // trait valait `secondary`, un jaune franc en clair, sur toute la largeur de
+    // chaque fenêtre de l'application.
+    //
+    // C'est désormais une bande teintée, qui sépare par sa couleur au lieu d'un
+    // filet, et le titre y reprend la barre d'accent des sections de l'accueil et
+    // du profil : les fenêtres cessent d'être une famille à part.
     header: {
       flexDirection: "row",
       alignItems: "center",
-      justifyContent: "space-between",
       gap: 12,
-      paddingHorizontal: 20,
-      paddingTop: 18,
-      paddingBottom: 14,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: colors.chipBorder,
+      paddingHorizontal: 18,
+      paddingVertical: 15,
+      backgroundColor: colors.primary + (isDark ? "1A" : "14"),
+    },
+    accent: {
+      width: 3,
+      height: 20,
+      borderRadius: 2,
+      backgroundColor: colors.primary,
     },
     title: { fontSize: 17, fontWeight: "800", color: colors.text, letterSpacing: 0.2, flex: 1 },
+    // Sur la surface de la carte, pas sur la bande : le bouton s'en détache au
+    // lieu de s'y fondre.
     closeBtn: {
       width: 32,
       height: 32,
       borderRadius: 16,
-      backgroundColor: isDark ? "rgba(255,255,255,0.09)" : colors.chipBg,
+      backgroundColor: colors.white,
       alignItems: "center",
       justifyContent: "center",
     },
@@ -70,9 +78,17 @@ export function ModalShell({ visible, title, onClose, children }: Props) {
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={s.kav}>
           <View style={s.card}>
             <View style={s.header}>
-              <Text style={s.title}>{title}</Text>
-              <TouchableOpacity style={s.closeBtn} onPress={onClose} activeOpacity={0.7}>
-                <MaterialIcons name="close" size={16} color={colors.text} />
+              <View style={s.accent} />
+              <Text style={s.title} numberOfLines={1}>{title}</Text>
+              <TouchableOpacity
+                style={s.closeBtn}
+                onPress={onClose}
+                activeOpacity={0.7}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel="Fermer"
+              >
+                <MaterialIcons name="close" size={17} color={colors.text} />
               </TouchableOpacity>
             </View>
             <ScrollView contentContainerStyle={s.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
