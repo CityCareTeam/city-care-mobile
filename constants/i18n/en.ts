@@ -152,6 +152,17 @@ export const en: typeof fr = {
     sentReportsDetail: "What was waiting for the network has gone out.",
   },
 
+  weather: {
+    clear: "Clear sky",
+    partlyCloudy: "Partly cloudy",
+    cloudy: "Overcast",
+    fog: "Fog",
+    drizzle: "Drizzle",
+    rain: "Rain",
+    snow: "Snow",
+    thunderstorm: "Thunderstorm",
+  },
+
   map: {
     report: "Report",
     resume: "Resume",

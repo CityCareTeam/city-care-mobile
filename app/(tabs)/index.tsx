@@ -15,6 +15,8 @@ import { AppMenu, MenuSwipeArea } from "@/components/app/AppMenu";
 import { useAppRefreshControl } from "@/components/ui/AppRefreshControl";
 import { useAppUpdate } from "@/hooks/use-app-update";
 import { useHasDraft } from "@/hooks/use-draft-indicator";
+import { useWeather } from "@/hooks/use-weather";
+import { formatTemperature, weatherIcon } from "@/utils/weather-code";
 import { useStrings } from "@/hooks/use-strings";
 import { ErrorNotice } from "@/components/ui/ErrorNotice";
 import { Toast } from "@/components/ui/ToastMessage";
@@ -637,6 +639,7 @@ export default function HomeScreen() {
   const { active: dogActive, onTap: onLogoTap, dismiss: dismissDog } = useEasterEgg();
   const [menuOpen, setMenuOpen] = useState(false);
   const hasDraft = useHasDraft();
+  const weather = useWeather();
   const t = useStrings();
   const { ready: updateReady } = useAppUpdate();
 
@@ -798,6 +801,20 @@ export default function HomeScreen() {
               {firstName ? t.home.greetingNamed(firstName) : t.home.greeting}
             </Text>
             <Text style={styles.headerDate}>{TODAY}</Text>
+            {/* La météo n'apparaît que lorsqu'elle a quelque chose à dire :
+                une ligne d'en-tête qui clignote entre un chargement, une erreur
+                et une température vaut moins que pas de météo du tout. */}
+            {weather && (
+              <View style={styles.weatherRow}>
+                <MaterialIcons
+                  name={weatherIcon(weather.condition, weather.isDay)}
+                  size={14}
+                  color="rgba(255,255,255,0.9)"
+                />
+                <Text style={styles.weatherTemp}>{formatTemperature(weather.temperature)}</Text>
+                <Text style={styles.weatherLabel}>{t.weather[weather.condition]}</Text>
+              </View>
+            )}
           </View>
           {/* Le bouton du menu est à droite parce que le panneau vient de la
               droite : ouvrir à gauche ce qui entre par la droite se sent. */}
@@ -902,6 +919,16 @@ function makeStyles(c: AppColors) {
     },
     headerRow: { flexDirection: "row", alignItems: "flex-start", marginBottom: 12 },
     headerTagRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 6 },
+    // Sous la date, dans la même famille que le reste de l'en-tête : rien de
+    // plus qu'une icône, une température et un mot.
+    weatherRow: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 6 },
+    weatherTemp: {
+      fontSize: 13,
+      fontWeight: "700",
+      color: "#fff",
+      fontVariant: ["tabular-nums"],
+    },
+    weatherLabel: { fontSize: 12, color: "rgba(255,255,255,0.7)" },
     headerRight: { alignItems: "flex-end", gap: 6 },
     menuBtn: {
       width: 34,

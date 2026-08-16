@@ -155,6 +155,17 @@ export const fr = {
     sentReportsDetail: "Ce qui attendait le réseau est parti.",
   },
 
+  weather: {
+    clear: "Ciel dégagé",
+    partlyCloudy: "Partiellement nuageux",
+    cloudy: "Couvert",
+    fog: "Brouillard",
+    drizzle: "Bruine",
+    rain: "Pluie",
+    snow: "Neige",
+    thunderstorm: "Orage",
+  },
+
   // ── Carte ──
   map: {
     report: "Signaler",
