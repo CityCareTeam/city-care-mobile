@@ -19,6 +19,12 @@ type Props = {
   isMine?: boolean;
   /** Suivi localement : le signet doit se voir dans la liste, pas seulement dans la fiche. */
   isFollowed?: boolean;
+  /**
+   * Fourni, le signet devient un bouton : retirer un suivi ne demande plus
+   * d'ouvrir la fiche. C'est le geste que l'on refait le plus dans une liste de
+   * favoris — le rendre indirect la rendait pénible à tenir.
+   */
+  onToggleFollow?: (id: string) => void;
 };
 
 
@@ -104,7 +110,7 @@ function makeStyles(c: AppColors) {
   });
 }
 
-function IncidentRowBase({ id, type, status, description, address, createdAt, onPress, isMine, isFollowed }: Props) {
+function IncidentRowBase({ id, type, status, description, address, createdAt, onPress, isMine, isFollowed, onToggleFollow }: Props) {
   const { colors } = useAppColors();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const t = useStrings();
@@ -146,7 +152,18 @@ function IncidentRowBase({ id, type, status, description, address, createdAt, on
             signalement pour savoir qu'on le suivait. Une icône suffit ici — la
             liste n'a pas la place d'un libellé de plus. */}
         {isFollowed && (
-          <MaterialIcons name="bookmark" size={13} color={colors.primary} />
+          onToggleFollow ? (
+            <TouchableOpacity
+              onPress={() => onToggleFollow(id)}
+              hitSlop={12}
+              accessibilityRole="button"
+              accessibilityLabel={t.incident.unfollowA11y}
+            >
+              <MaterialIcons name="bookmark" size={16} color={colors.primary} />
+            </TouchableOpacity>
+          ) : (
+            <MaterialIcons name="bookmark" size={13} color={colors.primary} />
+          )
         )}
         <Text style={styles.date}>{formatDateShort(createdAt)}</Text>
       </View>

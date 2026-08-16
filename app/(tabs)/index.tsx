@@ -203,6 +203,7 @@ function IncidentList({
   isMine = false,
   myIds,
   followedIds,
+  onToggleFollow,
   onLoadMore,
   loadingMore = false,
 }: {
@@ -219,6 +220,8 @@ function IncidentList({
   isMine?: boolean;
   myIds?: Set<string>;
   followedIds?: Set<string>;
+  /** Passé, chaque signet devient un bouton : c'est la gestion des favoris. */
+  onToggleFollow?: (id: string) => void;
   onLoadMore?: () => void;
   loadingMore?: boolean;
 }) {
@@ -245,6 +248,7 @@ function IncidentList({
             onPress={onPress}
             isMine={myIds?.has(inc.id)}
             isFollowed={followedIds?.has(inc.id)}
+            onToggleFollow={onToggleFollow}
           />
         </View>
       ))}
@@ -296,9 +300,10 @@ function CitizenView({
   const styles = isDark ? darkStyles : lightStyles;
   const t = useStrings();
 
-  const [activeTab, setActiveTab] = useState<"mine" | "all">("mine");
+  const [activeTab, setActiveTab] = useState<"mine" | "all" | "followed">("mine");
 
   const isMineTab = activeTab === "mine";
+  const isFollowedTab = activeTab === "followed";
 
   // Une passe par jeu plutôt que trois, et seulement quand les données bougent.
   const mineCounts = useMemo(() => countByStatus(incidents), [incidents]);
@@ -341,7 +346,17 @@ function CitizenView({
   );
 
   const myIdsSet = useMemo(() => new Set(incidents.map((i) => i.id)), [incidents]);
-  const { followed } = useFollowedIncidents();
+  const { followed, toggle: toggleFollow } = useFollowedIncidents();
+
+  // Les suivis se cherchent dans le fil déjà chargé : aucun endpoint ne permet
+  // de demander une liste d'incidents par identifiants. Ceux qui manquent sont
+  // annoncés plutôt que passés sous silence — la page suivante les ramènera.
+  const followedIncidents = useMemo(
+    () => allIncidents.filter((incident) => followed.has(incident.id)),
+    [allIncidents, followed],
+  );
+  const missingFollowed = followed.size - followedIncidents.length;
+  const followedSearch = useIncidentSearch(followedIncidents);
   // Le fil est relu toutes les quinze secondes : c'est là qu'un changement se
   // remarque, sans rien demander au serveur.
   useFollowedAlerts(allIncidents, followed);
@@ -363,6 +378,7 @@ function CitizenView({
   const filterStatus  = isMineTab ? mineStatus  : allStatus;
   const setFilterStatus = isMineTab ? setMineStatus : setAllStatus;
   const typeCount    = isMineTab ? mineTypeCount : allTypeCount;
+  const activeSearch = isFollowedTab ? followedSearch : isMineTab ? mineSearch : search;
 
   return (
     <>
@@ -397,6 +413,7 @@ function CitizenView({
           // Le total du serveur, pas la taille de ce qu'on a chargé : l'onglet
           // annonce la communauté, pas la pagination.
           { label: t.home.tabCommunity, value: "all"  as const, badge: paging.totalCount || undefined },
+          { label: t.home.tabFollowed,  value: "followed" as const, badge: followed.size || undefined },
         ]}
         activeValue={activeTab}
         onSelect={(v) => setActiveTab(v)}
@@ -431,14 +448,54 @@ function CitizenView({
       />
 
       <IncidentSearchBar
-        query={isMineTab ? mineSearch.query : search.query}
-        onQueryChange={isMineTab ? mineSearch.setQuery : search.setQuery}
-        sort={isMineTab ? mineSearch.sort : search.sort}
-        onSortChange={(next) => void (isMineTab ? mineSearch.setSort(next) : search.setSort(next))}
+        query={activeSearch.query}
+        onQueryChange={activeSearch.setQuery}
+        sort={activeSearch.sort}
+        onSortChange={(next) => void activeSearch.setSort(next)}
       />
 
       {/* ── Contenu de l'onglet actif ── */}
-      {isMineTab ? (
+      {isFollowedTab ? (
+        followedSearch.results.length === 0 ? (
+          <>
+            {followedSearch.query.trim() ? (
+              <NoSearchResults query={followedSearch.query} />
+            ) : (
+              <>
+                <EmptyState text={followed.size === 0 ? t.home.noFollowed : t.emptyState.noFilterResults} />
+                {followed.size === 0 && <Text style={styles.followedHint}>{t.home.followedHint}</Text>}
+              </>
+            )}
+            {missingFollowed > 0 && (
+              <>
+                <Text style={styles.followedHint}>{t.home.followedMissing(missingFollowed)}</Text>
+                <LoadMore paging={paging} />
+              </>
+            )}
+          </>
+        ) : (
+          <>
+            <IncidentList
+              followedIds={followed}
+              myIds={myIdsSet}
+              onToggleFollow={(id) => void toggleFollow(id)}
+              incidents={followedSearch.results.map((i) => ({
+                id: i.id, type: i.type, status: i.status, description: i.description,
+                address: i.addressLabel, createdAt: i.createdAt,
+              }))}
+              onPress={onPress}
+            />
+            {/* Un suivi peut vivre plus bas dans le fil : on le dit, plutôt que
+                de laisser croire qu'il a disparu. */}
+            {missingFollowed > 0 && (
+              <>
+                <Text style={styles.followedHint}>{t.home.followedMissing(missingFollowed)}</Text>
+                <LoadMore paging={paging} />
+              </>
+            )}
+          </>
+        )
+      ) : isMineTab ? (
         mineSearch.results.length === 0 ? (
           mineSearch.query.trim()
             ? <NoSearchResults query={mineSearch.query} />
@@ -1161,6 +1218,14 @@ function makeStyles(c: AppColors) {
     tabBadge: { borderRadius: 10, paddingHorizontal: 7, paddingVertical: 2, minWidth: 22, alignItems: "center" },
     tabBadgeText: { fontSize: 11, fontWeight: "700" },
     typeRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 },
+    followedHint: {
+      fontSize: 12.5,
+      color: c.text,
+      opacity: 0.5,
+      textAlign: "center",
+      marginBottom: 12,
+      paddingHorizontal: 20,
+    },
     typeChip: {
       borderRadius: 20,
       paddingHorizontal: 12,
