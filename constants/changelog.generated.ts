@@ -741,6 +741,21 @@ export const LAST_RELEASED_VERSION = "1.5.5";
 /** Changements accumulés depuis, donc embarqués par les pré-versions. */
 export const UNRELEASED_CHANGES: Change[] = [
   {
+    "kind": "improvement",
+    "scope": "news",
+    "text": "Keep the chevron, and lift the share block out of the flow"
+  },
+  {
+    "kind": "improvement",
+    "scope": "news",
+    "text": "Put the share in a block at the top-right corner"
+  },
+  {
+    "kind": "improvement",
+    "scope": "news",
+    "text": "Move the share button out of the right edge"
+  },
+  {
     "kind": "feature",
     "text": "Show status comments, let location be switched off, recentre the map"
   },
