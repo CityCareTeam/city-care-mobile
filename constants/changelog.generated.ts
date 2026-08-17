@@ -741,6 +741,11 @@ export const LAST_RELEASED_VERSION = "1.5.5";
 /** Changements accumulés depuis, donc embarqués par les pré-versions. */
 export const UNRELEASED_CHANGES: Change[] = [
   {
+    "kind": "feature",
+    "scope": "admin",
+    "text": "Afficher la dernière venue de chaque compte"
+  },
+  {
     "kind": "improvement",
     "scope": "settings",
     "text": "L'export des données passe au profil"
