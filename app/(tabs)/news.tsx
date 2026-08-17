@@ -297,20 +297,6 @@ const NewsCard = memo(function NewsCard({
             </View>
           ) : null}
 
-          {/* Le partage en bout de cette ligne, et non dans la colonne de
-              droite : il y voisinait le chevron, et deux cibles empilées au
-              même bord ne disent plus laquelle l'appui va toucher. Ici il
-              coiffe l'entrée comme l'action d'un en-tête, à distance du geste
-              qui l'ouvre. */}
-          <TouchableOpacity
-            onPress={onShare}
-            hitSlop={12}
-            style={styles.shareBtn}
-            accessibilityRole="button"
-            accessibilityLabel={shareLabel}
-          >
-            <MaterialIcons name="share" size={15} color={styles.place.color} />
-          </TouchableOpacity>
         </View>
         <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
         {/* Deux lignes de résumé, et non trois comme avant : c'est ce qui fait
@@ -327,16 +313,22 @@ const NewsCard = memo(function NewsCard({
         ) : null}
       </View>
 
-      {/* Le chevron reste seul à ce bord : il ne fait rien de son côté, il
-          annonce l'appui sur la rangée entière. */}
-      {open && (
-        <MaterialIcons
-          name="chevron-right"
-          size={20}
-          color={styles.place.color}
-          style={styles.chevron}
-        />
-      )}
+      {/* Un bloc dans le coin, et le chevron s'en va.
+          Il n'était pas une cible — il annonçait l'appui sur la rangée, ce que
+          le retour au toucher de la carte dit déjà. Le garder à côté d'un vrai
+          bouton en faisait un faux bouton, et deux cibles au même bord ne
+          disent plus laquelle l'appui va toucher. Le partage est donc seul à
+          droite, détaché du texte, dans son propre carré. */}
+      <TouchableOpacity
+        style={styles.shareCorner}
+        onPress={onShare}
+        hitSlop={10}
+        activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel={shareLabel}
+      >
+        <MaterialIcons name="share" size={15} color={styles.place.color} />
+      </TouchableOpacity>
     </Pressable>
   );
 });
@@ -452,16 +444,22 @@ function makeStyles(c: AppColors, bottomInset: number) {
     },
     thumb: { width: 76, height: 76, borderRadius: 12, backgroundColor: c.chipBg, flexShrink: 0 },
     thumbEmpty: { alignItems: "center", justifyContent: "center" },
-    // La rangée s'aligne en haut — le texte est plus haut que la vignette — mais
-    // le chevron désigne la rangée entière, pas sa première ligne.
-    // Poussé au bout de la ligne de date, et une cible d'appui élargie par
-    //  : quinze points d'icône ne se visent pas au pouce.
-    // Poussé au bout de la ligne de date. La cible d'appui est élargie par
-    // `hitSlop` plutôt que par du remplissage : quinze points d'icône ne se
-    // visent pas au pouce, mais l'élargir visuellement l'aurait fait peser
-    // autant que la date.
-    shareBtn: { marginLeft: "auto", paddingLeft: 8 },
-    chevron: { alignSelf: "center" },
+    // Le bloc du coin, aligné en haut de la rangée comme la vignette l'est de
+    // l'autre côté. Le carré teinté le détache du texte : posé nu sur le fond
+    // blanc, il aurait flotté sans qu'on sache s'il appartenait au titre ou à
+    // la date. La cible d'appui est élargie par `hitSlop`, sans grossir le
+    // carré — quinze points d'icône ne se visent pas au pouce.
+    shareCorner: {
+      width: 30,
+      height: 30,
+      borderRadius: 10,
+      backgroundColor: c.chipBg,
+      borderWidth: 1,
+      borderColor: c.chipBorder,
+      alignItems: "center",
+      justifyContent: "center",
+      flexShrink: 0,
+    },
     body: { flex: 1, minWidth: 0, gap: 4 },
     whenRow: { flexDirection: "row", alignItems: "center", gap: 7, flexWrap: "wrap" },
     // La date en petites majuscules colorées, le délai en pastille pleine : le
