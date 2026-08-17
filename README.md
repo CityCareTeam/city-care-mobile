@@ -23,9 +23,13 @@ CityCare+ connecte les citoyens à leur mairie. Les signalements remontent en te
 
 | Rôle        | Accès                                                                                                        |
 | ----------- | ------------------------------------------------------------------------------------------------------------ |
-| **Citoyen** | Déclare des incidents avec photos, consulte ses signalements (avec stats), vote pour soutenir un incident, chat en temps réel |
-| **Agent**   | Voit sa file de travail (déclarés + en cours), filtre par catégorie et statut, change les statuts, chat      |
-| **Admin**   | Vue globale — statistiques, filtres type & statut, suppression d'incidents et de photos, chat                |
+| **Citoyen** | Déclare des incidents avec photos, consulte ses signalements (avec stats), vote pour soutenir un incident, chat en temps réel, **signale un contenu** à la modération |
+| **Agent**   | Voit sa file de travail (déclarés + en cours), filtre par catégorie et statut, change les statuts, chat, **file de modération** — masque ou garde un contenu signalé |
+| **Admin**   | Tout ce qui précède, plus la **suppression définitive** d'un contenu masqué et la **gestion des comptes** (rôles, activation) |
+
+> Le personnel ne signale pas et ne vote pas : il tranche. Un agent qui repère
+> lui-même un contenu le masque directement, avec motif — se signaler à
+> soi-même n'apporterait rien.
 
 ---
 
@@ -41,6 +45,11 @@ CityCare+ connecte les citoyens à leur mairie. Les signalements remontent en te
 - **Envoi différé** : un signalement rédigé sans réseau est accepté localement et
   part au retour de la connexion. Un refus du serveur, lui, ne boucle pas — il
   est remonté à l'utilisateur sur l'accueil
+- **Recherche d'adresse** pour poser le point sans se déplacer sur la carte
+- **Détection de doublon** : un signalement du même type déjà déclaré à
+  proximité est montré avant l'envoi — on choisit alors de le soutenir plutôt
+  que d'en créer un second
+- Guide en plusieurs étapes, franchissables au glissé
 
 ### Carte interactive (`explore.tsx`)
 - **Clustering serveur** via `GET /incidents/map-summary` — marqueurs regroupés par viewport avec debounce 300 ms
@@ -56,28 +65,87 @@ CityCare+ connecte les citoyens à leur mairie. Les signalements remontent en te
   - Changement de statut (agents / admins)
   - Suppression d'incident (admin uniquement)
   - **Vote / Soutien** (citoyens) — compteur en temps réel
-  - **Chat temps réel** (SignalR) — fil de discussion lié à l'incident
+  - **Signaler** le contenu, ou le **masquer** pour un agent, à gauche du vote
+  - **Chat temps réel** (SignalR) — fil de discussion lié à l'incident, chaque
+    message signalable
+  - **Itinéraire** ouvert dans l'application de cartes du téléphone
+  - Distance depuis sa position, en orange
+- **Cache hors ligne** : la dernière carte connue s'affiche sans réseau, avec la
+  date de sa dernière mise à jour
+- **Alertes de proximité** quand un signalement paraît près de soi (rayon
+  réglable, éteintes par défaut)
 
 ### Liste des signalements (`index.tsx`)
 - Vue adaptée au rôle (Citoyen / Agent / Admin)
-- **Citoyen** : section "Mes stats" (Déclarés / En cours / Résolus) + onglets "Les miens" / "Communauté"
-  - Badge **"Le mien"** sur les incidents de l'utilisateur dans la vue Communauté
-- Chaque ligne affiche : type (gras), début de description (30 chars), ville extraite de l'adresse, date, badge statut
-- Barre colorée latérale par statut, chevron de navigation
-- En-têtes de section avec barre d'accent et compteur
+- **Citoyen** : section "Mes stats" (Déclarés / En cours / Résolus) + onglets
+  "Les miens" / "Communauté" / "Suivis"
+  - Badge **"Le mien"** sur ses propres signalements
+  - Un signalement **masqué par la modération** reste dans sa liste, en rouge
+- **Agents et admins** voient aussi les contenus masqués, en rouge : c'est leur
+  file de travail
+- Recherche plein texte et tri — récents, anciens, proches — avec la distance
+  affichée dès que la position est connue
+- Chaque ligne affiche : description en titre, catégorie et ville, distance,
+  date, badge de statut ; barre colorée latérale
+- Pagination et chargement progressif
 
 ### Notifications (`notifications.tsx`)
 - Écran dédié avec liste de toutes les notifications
 - Badge non-lus en temps réel sur l'onglet de navigation (polling 30 s + listener temps réel)
 - **Swipe gauche** pour supprimer une notification
 - Marquer comme lu au tap, tout lire, tout supprimer
-- Tap → navigation directe vers l'incident concerné
-- Types gérés : nouveau signalement, changement de statut, nouveau message
+- Tap → navigation vers l'incident concerné, sur le bon onglet (fiche ou fil)
+- Types gérés : nouveau signalement, changement de statut, nouveau message,
+  **contenu signalé** (modérateurs) et **contenu modéré** (auteur)
 - **Push notifications** sur Android via Expo + Firebase FCM V1 (token enregistré après login, vidé au logout)
+- Son court optionnel en complément de la vibration
 
-### Préférences de notifications (`profile.tsx`)
-- Toggles email / push
-- Sélection des types d'incidents suivis (Voirie, Éclairage, Déchets, Graffiti, Sécurité, Autre)
+### Actus (`news.tsx`)
+- Agenda des événements de la ville, groupé par période (aujourd'hui, cette
+  semaine, ce mois, plus tard)
+- Ville choisie dans une liste déroulante, ou déduite de la position à
+  l'ouverture — avec un message distinct selon qu'il n'y a rien à afficher ou
+  qu'on n'est pas connecté
+- Sources multiples par ville, agrégées et dédupliquées ; une source en panne
+  n'emporte pas les autres
+- Partage d'un événement, décompte avant sa tenue
+
+### Modération
+- **Signaler** un signalement ou un message, avec l'un des six motifs repris des
+  conditions d'utilisation. Le contenu disparaît de l'appareil aussitôt, même si
+  les modérateurs sont injoignables — et l'écran dit lequel des deux s'est
+  produit
+- **File de modération** (agents / admins), ouverte depuis le profil avec une
+  pastille de compteur. Agrégée par contenu et non par signalement, extrait à
+  l'appui, ouvrable sur la fiche concernée
+- Deux décisions de même poids : masquer, ou garder et clore
+- **Onglet « Masqués »** — qui a tranché, quand, avec quel motif ; on rend
+  visible, ou l'on supprime définitivement (admin)
+- **Masquage automatique** au-delà de dix signalements sur un même contenu :
+  mesure conservatoire, la décision reste à prendre
+- L'auteur est prévenu du retrait **et du motif**, puis du rétablissement. Son
+  signalement reste dans sa liste, en rouge
+
+### Gestion des comptes (admins)
+- Ouverte depuis le menu latéral, section « Administration »
+- Recherche côté serveur, filtres par rôle avec effectifs, pagination
+- Changement de rôle et activation / désactivation d'un compte — jamais sur le
+  sien, et confirmation pour nommer un administrateur
+
+### Réglages (menu latéral)
+- Thème, langue, **taille du texte**
+- Retours haptiques et sonores, essayés à l'activation
+- Usage de la position, avec ce que le couper retire écrit noir sur blanc
+- Ordre par défaut du fil, **mode économie** (sondages espacés)
+- Revoir le guide, réinitialiser les réglages, effacer les données locales
+
+### Compte et données personnelles (`profile.tsx`)
+- Préférences de notifications : email / push, types d'incidents suivis,
+  alertes de proximité et leur rayon
+- **Export de ses données** — un fichier JSON de ses signalements, messages,
+  votes et préférences, envoyé où l'on veut
+- Politique de confidentialité et conditions d'utilisation consultables à tout
+  moment depuis le menu, acceptation explicite à l'inscription
 
 ---
 
@@ -98,8 +166,14 @@ CityCare+ connecte les citoyens à leur mairie. Les signalements remontent en te
 | expo-notifications          | ~0.32.17    | Push notifications                         |
 | expo-secure-store           | ~15.0.8     | Stockage sécurisé des tokens JWT           |
 | expo-updates                | ~29.0.19    | Mises à jour du bundle JS à la volée (OTA) |
-| async-storage               | 2.2.0       | Brouillon, cache du fil, file d'envoi      |
-| Jest / jest-expo            | ~29.7 / ~54 | Tests unitaires (478 tests)                |
+| expo-audio                  | ~1.1.1      | Sons courts de l'interface                 |
+| expo-file-system            | ~19.0.24    | Écriture du fichier d'export               |
+| expo-sharing                | ~14.0.8     | Remise de l'export à une autre application |
+| expo-blur                   | ~15.0.8     | Surfaces flottantes (iOS)                  |
+| expo-haptics                | ~15.0.8     | Retours haptiques                          |
+| react-native-reanimated     | ~4.1.1      | Barre d'onglets, gestes                    |
+| async-storage               | 2.2.0       | Brouillon, cache du fil, file d'envoi, réglages |
+| Jest / jest-expo            | ~29.7 / ~54 | Tests unitaires (829 tests, 91 suites)     |
 
 ---
 
@@ -132,72 +206,90 @@ app/
     index.tsx          # Dashboard rôle-adaptatif (Citoyen / Agent / Admin)
     explore.tsx        # Carte plein écran + clustering serveur + bottom sheet détail + chat
     notifications.tsx  # Centre de notifications (liste, swipe, push)
-    profile.tsx        # Profil utilisateur, préférences notifs & déconnexion
+    news.tsx           # Agenda des événements de la ville
+    profile.tsx        # Profil, préférences notifs, file de modération, export, déconnexion
   login.tsx            # Authentification (Keycloak)
-  register.tsx         # Création de compte
+  register.tsx         # Création de compte + acceptation des conditions
   report.tsx           # Formulaire de signalement + capture photo
 
 components/
   incident-filter-bar.tsx  # Barre de filtres chips (overlay carte)
-  incident-row.tsx         # Ligne d'incident (stripe couleur, type, description, ville, statut, badge "Le mien")
-  ui/                      # Button, Card, Input, Logo, Toast, GlassPillSelector, MapPin…
+  incident-row.tsx         # Ligne d'incident (stripe couleur, distance, badges « Le mien » / « Masqué »)
+  admin/                   # AccountsModal — rôles, activation, recherche, pagination
+  app/                     # AppMenu (menu latéral), SettingsModal, GuideModal, LegalModal,
+                           # LocationConsentModal, UpdatesModal, ErrorBoundary
+  explore/                 # IncidentDetailSheet, IncidentChatTab, AddressSearch, ClusterLegend…
+  moderation/              # FlagContentModal (signaler / masquer), ModerationQueueModal
+  ui/                      # AppText (échelle de texte), Button, Card, Input, Toast,
+                           # GlassPillSelector, ModalShell, MapPin, Skeleton…
 
 constants/
-  api.ts          # API_BASE_URL + tous les endpoints
-  config.ts       # Valeurs centralisées : DEFAULT_LOCATION, MAP_DELTAS, CLUSTER_ZOOM_THRESHOLD, INCIDENTS_PAGE_SIZE
-  incidents.ts    # STATUS_COLOR, STATUS_LABEL, TYPE_LABEL, NEXT_STATUSES, MAX_INCIDENT_PHOTOS
-  strings.ts      # Toutes les chaînes UI
-  theme.ts        # CityCareColors
+  api.ts             # API_BASE_URL + tous les endpoints
+  config.ts          # DEFAULT_LOCATION, MAP_DELTAS, CLUSTER_ZOOM_THRESHOLD, POLL_INTERVAL_MS…
+  incidents.ts       # STATUS_COLOR, STATUS_LABEL, TYPE_LABEL, NEXT_STATUSES, MAX_INCIDENT_PHOTOS
+  i18n/              # fr.ts (référence) + en.ts, typé d'après le français
+  news-cities.ts     # Villes et leurs sources d'événements
+  privacy.ts         # Politique de confidentialité
+  terms.ts           # Conditions d'utilisation
+  native-runtime.json # Version du runtime natif + liste des modules (garde-fou OTA)
+  theme.ts           # CityCareColors
 
 context/
   AuthContext.tsx          # Authentification, rôle, logout (vide le push token)
-  NotificationContext.tsx  # Compteur non-lus, polling, listener temps réel, enregistrement push token
+  NotificationContext.tsx  # Compteur non-lus, polling, listener temps réel, token push
+  PreferencesContext.tsx   # Thème, langue, taille du texte, retours, position, économie
+  AppMenuContext.tsx       # Ouverture du menu latéral
 
 hooks/
   use-user-location.ts         # Géolocalisation partagée (explore + report)
   use-incident-filters.ts      # Filtres type + statut réutilisables
+  use-incident-search.ts       # Recherche et tri du fil, distance
   use-incident-chat.ts         # Chat SignalR (connexion, messages, send)
   use-incident-votes.ts        # Vote / soutien (toggle, compteur)
   use-incident-photos.ts       # Photos d'un incident
-  use-incident-permissions.ts  # Droits de l'utilisateur sur un incident
+  use-incident-permissions.ts  # Droits sur un incident, dont signaler / masquer
+  use-content-report.ts        # Signaler, masquer, masquage local
   use-map-clusters.ts          # Clustering serveur (debounce, zoom, bounds)
-  use-notification-settings.ts # Préférences de notifications (toggle, save)
-  use-push-token.ts            # Enregistrement du token push après login
+  use-nearby-alerts.ts         # Alertes de proximité
+  use-auto-refresh.ts          # Sondage au premier plan, cadence de reprise, économie
   use-app-colors.ts            # Thème clair/sombre
 
 services/
-  api-client.ts   # fetchWithTimeout, authFetch, throwFromResponse
-  incidents.ts    # getIncidents, createIncident, updateIncidentStatus, deleteIncident,
-                  # getPhotos, uploadPhoto, deletePhoto, getStatusHistory, reverseGeocode,
-                  # getMapSummary, addVote, removeVote, getVotes
-  messages.ts     # getMessages, sendMessage
-  users.ts        # getUserMe, getMyIncidents, updateMe, deleteAccount
-  auth.ts         # login, register, refresh, logout
-  notifications.ts # getNotifications, getUnreadCount, markAsRead, markAllAsRead,
-                   # deleteNotification, deleteAllNotifications,
-                   # registerPushToken, getNotificationSettings, updateNotificationSettings
+  api-client.ts    # fetchWithTimeout, authFetch, throwFromResponse
+  incidents.ts     # getIncidents (dont includeHidden), getIncidentById, createIncident,
+                   # updateIncidentStatus, deleteIncident, photos, votes, historique,
+                   # getMapSummary, reverseGeocode
+  messages.ts      # getMessages, sendMessage
+  users.ts         # getUserMe, getMyIncidents, updateMe, deleteAccount
+  auth.ts          # login, register, refresh, logout
+  notifications.ts # liste, compteur, lecture, suppression, token push, préférences
+  moderation.ts    # flagContent, hideContent, file, décisions, masqués, restauration
+  admin.ts         # getAdminUsers, setUserRole, setUserEnabled
+  data-export.ts   # exportMyData (fichier JSON + feuille de partage)
+  news*.ts         # Agrégation des sources d'événements
 
 storage/
-  tokens.ts      # Stockage sécurisé des tokens JWT (access + refresh)
+  tokens.ts          # Stockage sécurisé des tokens JWT (access + refresh)
+  preferences.ts     # Réglages de l'appareil
+  hidden-content.ts  # Contenus masqués localement après signalement
+  onboarding.ts      # Guide vu / à revoir
+  consent.ts         # Trace de la demande de position
 
 types/
-  incidents.ts      # IncidentResponse, PhotoResponse, StatusHistoryEntry, VoteResponse, MapClusterDto…
-  users.ts          # UserMeResponse, MyIncidentItem, MyIncidentsResponse, UpdateMePayload
-  auth.ts           # LoginPayload, LoginResponse, RegisterPayload, RegisterResponse, MeResponse
+  incidents.ts      # IncidentResponse (dont visibility), PhotoResponse, MapClusterDto…
+  users.ts          # UserMeResponse, MyIncidentItem (dont visibility), UpdateMePayload
+  auth.ts           # LoginPayload, LoginResponse, RegisterPayload, MeResponse
   messages.ts       # MessageResponse, CreateMessageRequest
-  notifications.ts  # NotificationResponse, NotificationSettingsResponse, UpdateNotificationSettingsRequest…
-
-utils/
-  format-date.ts     # formatDateShort, formatDate, formatIncidentDateTime, extractCity, timeAgo
-  format-address.ts  # extractCity
+  notifications.ts  # NotificationResponse, NotificationSettingsResponse…
 
 tests/
   unit/
-    services/    # api-client, incidents, users, auth, notifications, messages
-    hooks/       # use-incident-filters, use-app-colors, use-easter-egg, use-user-location,
-                 # use-color-scheme-web, use-incident-votes, use-incident-chat,
-                 # use-map-clusters, use-notification-settings, use-push-token
-    utils/       # format-date, format-address
+    components/  # incident-row, chat tab, file de modération, comptes, AppText,
+                 # notifications, bannières, fenêtres…
+    services/    # api-client, incidents, users, auth, notifications, messages,
+                 # moderation, admin, news
+    hooks/       # filtres, couleurs, votes, chat, clusters, position, préférences notifs…
+    utils/       # dates, adresses, distances, partage, groupes d'actus
     storage/     # tokens
 ```
 
@@ -206,6 +298,11 @@ tests/
 ## Configuration
 
 La config Expo est centralisée dans `app.config.ts`. La version de l'app est lue depuis `package.json` — c'est le seul fichier à modifier pour bumper la version.
+
+Deux langues sont livrées, français et anglais. `constants/i18n/fr.ts` fait
+référence et `en.ts` en est typé : ajouter une clé sans la traduire ne compile
+pas. Une traduction manquante est donc une erreur au build, jamais une chaîne
+vide à l'écran.
 
 Les valeurs globales de l'application sont centralisées dans `constants/config.ts`.
 
@@ -260,7 +357,8 @@ npx eas credentials --platform android
 | GET      | `/users/me`                                     | Profil DB utilisateur                  |
 | PATCH    | `/users/me`                                     | Mise à jour du profil                  |
 | DELETE   | `/users/me`                                     | Suppression du compte                  |
-| GET      | `/users/me/incidents`                           | Mes signalements                       |
+| GET      | `/users/me/incidents`                           | Mes signalements (dont les masqués)    |
+| GET      | `/users/me/export`                              | Export de ses données (JSON)           |
 | PATCH    | `/users/me/push-token`                          | Enregistrement / vidage token push     |
 | GET      | `/users/me/notification-settings`              | Préférences de notifications           |
 | PATCH    | `/users/me/notification-settings`              | Mise à jour des préférences            |
@@ -270,7 +368,8 @@ npx eas credentials --platform android
 | POST     | `/users/me/notifications/read-all`              | Tout marquer comme lu                  |
 | DELETE   | `/users/me/notifications/{id}`                  | Supprimer une notification             |
 | DELETE   | `/users/me/notifications`                       | Supprimer toutes les notifications     |
-| GET      | `/incidents`                                    | Liste avec filtres & pagination        |
+| GET      | `/incidents`                                    | Liste avec filtres & pagination — `includeHidden` pour agents / admins |
+| GET      | `/incidents/{id}`                               | Détail — un contenu masqué n'est servi qu'à son auteur et à la modération |
 | POST     | `/incidents`                                    | Créer un signalement                   |
 | PATCH    | `/incidents/{id}/status`                        | Changer le statut                      |
 | DELETE   | `/incidents/{id}`                               | Supprimer (admin)                      |
@@ -286,6 +385,42 @@ npx eas credentials --platform android
 | GET      | `/incidents/map-summary`                        | Clustering serveur (AllowAnonymous)    |
 | GET      | `/geocode/reverse`                              | Géocodage inverse                      |
 | WS       | `/hubs/incident-chat`                           | Hub SignalR chat temps réel            |
+| POST     | `/moderation/flags`                             | Signaler un contenu (409 si déjà fait) |
+| POST     | `/moderation/hide`                              | Masquer directement (agent / admin)    |
+| GET      | `/moderation/queue`                             | File des contenus signalés             |
+| GET      | `/moderation/queue/count`                       | Compteur pour la pastille              |
+| POST     | `/moderation/queue/{id}/hide` · `/keep`         | Trancher                               |
+| GET      | `/moderation/hidden`                            | Contenus masqués, et par qui           |
+| POST     | `/moderation/hidden/restore`                    | Rendre visible                         |
+| DELETE   | `/moderation/hidden/{type}/{id}`                | Supprimer définitivement (admin)       |
+| GET      | `/admin/users`                                  | Comptes — recherche, pagination        |
+| PUT      | `/admin/users/{keycloakId}/role`                | Changer le rôle                        |
+| PUT      | `/admin/users/{keycloakId}/enabled`             | Activer / désactiver un compte         |
+
+---
+
+## Confidentialité et modération
+
+**Ce qui est masqué l'est côté serveur.** Un filtre de requête global écarte les
+contenus masqués de toutes les lectures ordinaires — liste, détail, carte,
+votes, photos, historique, fil de discussion. Si le filtrage était laissé au
+mobile, le contenu litigieux continuerait de partir vers tous les téléphones et
+ne serait masqué que par politesse. Deux appelants seulement demandent
+explicitement à le voir : la modération et la suppression admin.
+
+**Les photos sont servies par des liens signés**, valables six heures. Elles
+étaient auparavant lisibles par n'importe qui connaissant l'adresse, sans jeton
+ni expiration — masquer un signalement laissait donc ses images accessibles.
+
+**L'auteur garde la main sur ses données** : son contenu masqué reste visible
+dans sa liste, en rouge, avec le motif du retrait ; il peut exporter l'ensemble
+de ce que l'application détient sur lui, et supprimer son compte.
+
+> ⚠️ **Deux points restent ouverts.** L'API de production est jointe en **HTTP
+> clair** (`usesCleartextTraffic`) : jetons, photos et coordonnées circulent en
+> clair. Et `constants/privacy.ts` et `constants/terms.ts` contiennent des
+> marqueurs `[À COMPLÉTER]` — éditeur, contact, durées de conservation, droit
+> applicable — à renseigner avant toute publication réelle.
 
 ---
 
@@ -299,7 +434,13 @@ npm test
 npm run test:coverage
 ```
 
-300 tests unitaires couvrant les services, hooks, utilitaires et stockage.
+829 tests répartis en 91 suites, couvrant les composants, services, hooks,
+utilitaires et stockage.
+
+Ils servent surtout à verrouiller des défauts déjà rencontrés : une propriété
+déclarée mais jamais transmise, une fenêtre qu'aucun bouton n'ouvre, un rôle
+comparé dans la mauvaise casse, une liste paginée qui redemande le mauvais rang.
+Chacun de ces tests porte en commentaire le défaut qu'il empêche de revenir.
 
 ---
 
