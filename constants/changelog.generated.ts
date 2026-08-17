@@ -741,6 +741,15 @@ export const LAST_RELEASED_VERSION = "1.5.5";
 /** Changements accumulés depuis, donc embarqués par les pré-versions. */
 export const UNRELEASED_CHANGES: Change[] = [
   {
+    "kind": "fix",
+    "scope": "admin",
+    "text": "Les rôles ne s'affichaient jamais, et la page passe dans le menu"
+  },
+  {
+    "kind": "fix",
+    "text": "Badge « le mien » perdu, distance conditionnée au tri, signalement en double"
+  },
+  {
     "kind": "feature",
     "scope": "admin",
     "text": "Onglet de gestion des comptes, et le masqué en rouge chez les agents"
