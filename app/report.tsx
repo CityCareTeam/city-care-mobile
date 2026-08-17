@@ -352,6 +352,22 @@ export default function ReportScreen() {
     }
   }
 
+  /**
+   * Ouvre le signalement existant sur la carte.
+   *
+   * `router.push` était faux ici : ce formulaire est présenté en fenêtre
+   * modale, et pousser un onglet depuis une modale l'empile **par-dessus** au
+   * lieu de la remplacer — les deux écrans se superposent, le formulaire
+   * restant monté sous la carte. `dismissTo` referme la fenêtre et navigue d'un
+   * seul geste, ce qui est le comportement attendu : on quitte le brouillon
+   * pour aller voir ce qui existe déjà.
+   */
+  function openExisting(existingId: string) {
+    const target = { pathname: "/(tabs)/explore" as const, params: { selectId: existingId } };
+    if (router.canDismiss()) router.dismissTo(target);
+    else router.push(target);
+  }
+
   /** `Alert` est déclaratif ; on l'enveloppe pour pouvoir l'attendre. */
   function confirmDuplicate(): Promise<boolean> {
     return new Promise((resolve) => {
@@ -601,7 +617,7 @@ export default function ReportScreen() {
       {duplicates.length > 0 && (
         <TouchableOpacity
           style={styles.duplicateCard}
-          onPress={() => router.push(`/(tabs)/explore?selectId=${duplicates[0].id}`)}
+          onPress={() => openExisting(duplicates[0].id)}
           activeOpacity={0.8}
           accessibilityRole="button"
           accessibilityLabel={t.report.duplicateOpen}
