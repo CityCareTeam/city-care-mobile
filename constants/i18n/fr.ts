@@ -242,8 +242,11 @@ export const fr = {
     pickTitle: "Ville",
     empty: "Aucun événement à venir pour le moment.",
     failed: "Impossible de charger les actualités.",
-    source: (city: string, km: number) =>
-      `Événements publics OpenAgenda, à ${km} km autour de ${city}`,
+    // On lit la page d'un office de tourisme : la citer n'est pas une
+    // politesse, c'est la moindre des choses.
+    sources: (parts: string) => `Sources : ${parts}`,
+    sourceNational: (city: string, km: number) =>
+      `événements publics OpenAgenda à ${km} km autour de ${city}`,
   },
 
   // ── Profil ──

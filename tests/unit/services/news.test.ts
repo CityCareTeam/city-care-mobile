@@ -1,123 +1,94 @@
-import { getNews } from '@/services/news';
+import type { NewsCity } from '@/constants/news-cities';
+import { getNews, type NewsItem } from '@/services/news';
+import { getOpenAgendaEvents } from '@/services/news-openagenda';
+import { getTourismEvents } from '@/services/news-tourism';
 
-const mockFetch = jest.fn();
-global.fetch = mockFetch;
+jest.mock('@/services/news-openagenda', () => ({ getOpenAgendaEvents: jest.fn() }));
+jest.mock('@/services/news-tourism', () => ({ getTourismEvents: jest.fn() }));
 
-function respond(body: unknown, status = 200) {
-  return { ok: status >= 200 && status < 300, status, json: () => Promise.resolve(body) } as Response;
+const national = getOpenAgendaEvents as jest.Mock;
+const tourism = getTourismEvents as jest.Mock;
+
+function item(title: string, startsAt: string | null): NewsItem {
+  return { id: title, title, summary: '', when: '', place: null, imageUrl: null, startsAt };
 }
 
-// Forme réellement renvoyée par l'agrégation Opendatasoft des événements
-// publics OpenAgenda, relevée sur un enregistrement du Bugey.
-const record = {
-  uid: '68533709',
-  title_fr: 'Création entreprise',
-  description_fr: 'Ateliers-conseils : les étapes de la création d’entreprise.',
-  daterange_fr: 'Lundi 17 août, 09h00',
-  firstdate_begin: '2026-08-17T07:00:00+00:00',
-  location_name: 'France Travail Belley',
-  location_city: 'Belley',
-  thumbnail: 'https://img.openagenda.com/main/017e.thumb.image.jpg',
-  image: 'https://img.openagenda.com/main/017e.base.image.jpg',
+const PLATEAU: NewsCity = {
+  id: 'plateau-hauteville',
+  name: 'Plateau d’Hauteville',
+  latitude: 45.9298,
+  longitude: 5.5744,
+  sources: [
+    { kind: 'page', url: 'https://example.test/agenda/', label: 'Office de tourisme' },
+    { kind: 'openagenda', radiusKm: 15 },
+  ],
 };
 
-const PLATEAU = { latitude: 45.9298, longitude: 5.5744 };
-
-beforeEach(() => mockFetch.mockReset());
-
-function lastUrl(): string {
-  return decodeURIComponent(mockFetch.mock.calls[0][0] as string);
-}
+beforeEach(() => {
+  national.mockReset();
+  tourism.mockReset();
+});
 
 describe('getNews', () => {
   /**
-   * Le cœur du service : on interroge un rayon autour d'un point, pas un
-   * agenda. C'est ce qui rend une commune de trois mille sept cents habitants
-   * couvrable au même titre qu'une métropole.
+   * La raison d'être de la fusion : l'agrégation nationale ne connaît qu'un
+   * événement sur la commune, l'office de tourisme en publie vingt-quatre.
+   * Séparément, aucune des deux ne fait l'écran qu'on veut.
    */
-  it('cherche dans un rayon autour du point demandé', async () => {
-    mockFetch.mockResolvedValueOnce(respond({ results: [] }));
-    await getNews(PLATEAU, 25);
+  it('fond les sources d’un lieu dans un seul ordre chronologique', async () => {
+    tourism.mockResolvedValueOnce([item('Marché', '2026-09-10T00:00:00.000Z')]);
+    national.mockResolvedValueOnce([
+      item('Concert', '2026-09-01T00:00:00.000Z'),
+      item('Visite', '2026-09-20T00:00:00.000Z'),
+    ]);
 
-    const url = lastUrl();
-    expect(url).toContain('evenements-publics-openagenda');
-    expect(url).toContain("GEOM'POINT(5.57440 45.92980)'");
-    expect(url).toContain('25km');
+    const news = await getNews(PLATEAU);
+    expect(news.map((n) => n.title)).toEqual(['Concert', 'Marché', 'Visite']);
   });
 
-  // Une liste dont les cinq premières dates sont passées a l'air cassée : le
-  // jeu garde les événements tant qu'ils courent, on ne veut que ce qui vient.
-  it('n’accepte que ce qui commence à partir de maintenant, au plus proche d’abord', async () => {
-    mockFetch.mockResolvedValueOnce(respond({ results: [] }));
-    await getNews(PLATEAU, 25);
+  it('interroge chaque source avec ce qui la concerne', async () => {
+    tourism.mockResolvedValueOnce([item('Marché', null)]);
+    national.mockResolvedValueOnce([]);
 
-    const url = lastUrl();
-    expect(url).toMatch(/firstdate_begin>='\d{4}-\d{2}-\d{2}T/);
-    expect(url).toContain('order_by=firstdate_begin');
+    await getNews(PLATEAU);
+    expect(tourism).toHaveBeenCalledWith('https://example.test/agenda/');
+    expect(national).toHaveBeenCalledWith(PLATEAU, 15);
+  });
+
+  // Un même événement publié des deux côtés ne doit faire qu'une carte.
+  it('ne garde qu’un exemplaire d’un événement présent partout', async () => {
+    tourism.mockResolvedValueOnce([item('Marché', '2026-09-10T00:00:00.000Z')]);
+    national.mockResolvedValueOnce([item('  marché ', '2026-09-10T00:00:00.000Z')]);
+
+    const news = await getNews(PLATEAU);
+    expect(news).toHaveLength(1);
+    // Celui de la première source, la plus locale.
+    expect(news[0].title).toBe('Marché');
   });
 
   /**
-   * France Travail épingle ses ateliers et ses visioconférences nationales à
-   * l'adresse de l'agence la plus proche : 54 % des événements à venir autour
-   * du Plateau d'Hauteville. Sans cette exclusion, l'écran affiche un
-   * calendrier d'agence pour l'emploi au lieu de ce qui se passe en ville.
+   * Lire la page d'un tiers, c'est accepter qu'elle change. Ce jour-là l'écran
+   * doit perdre le marché du mercredi, pas tout le reste.
    */
-  it('écarte les agendas qui n’ont rien à faire là', async () => {
-    mockFetch.mockResolvedValueOnce(respond({ results: [] }));
-    await getNews(PLATEAU, 25);
+  it('rend ce qui a répondu quand une source tombe', async () => {
+    tourism.mockRejectedValueOnce(new Error('la page a changé de forme'));
+    national.mockResolvedValueOnce([item('Concert', '2026-09-01T00:00:00.000Z')]);
 
-    expect(lastUrl()).toContain("NOT canonicalurl LIKE 'francetravail'");
+    expect((await getNews(PLATEAU)).map((n) => n.title)).toEqual(['Concert']);
   });
 
-  it('rend les champs dont l’écran a besoin', async () => {
-    mockFetch.mockResolvedValueOnce(respond({ results: [record] }));
-    const [item] = await getNews(PLATEAU, 25);
+  it('ne lève que si toutes les sources tombent', async () => {
+    tourism.mockRejectedValueOnce(new Error('page illisible'));
+    national.mockRejectedValueOnce(new Error('réseau'));
 
-    expect(item.id).toBe('68533709');
-    expect(item.title).toBe('Création entreprise');
-    expect(item.when).toBe('Lundi 17 août, 09h00');
-    expect(item.startsAt).toBe('2026-08-17T07:00:00+00:00');
+    await expect(getNews(PLATEAU)).rejects.toThrow('page illisible');
   });
 
-  // « Salle des fêtes » situe mieux que « Belley » quand on est déjà à Belley.
-  it('préfère le nom du lieu à celui de la commune', async () => {
-    mockFetch.mockResolvedValueOnce(respond({ results: [record] }));
-    expect((await getNews(PLATEAU, 25))[0].place).toBe('France Travail Belley');
+  // Sans date, un événement existe : on ne sait juste pas le situer.
+  it('renvoie les événements sans date en fin de liste', async () => {
+    tourism.mockResolvedValueOnce([item('Toute l’année', null)]);
+    national.mockResolvedValueOnce([item('Concert', '2026-09-01T00:00:00.000Z')]);
 
-    mockFetch.mockResolvedValueOnce(
-      respond({ results: [{ ...record, location_name: null }] }),
-    );
-    expect((await getNews(PLATEAU, 25))[0].place).toBe('Belley');
-  });
-
-  // Une liste n'a pas besoin de sept cents pixels de large.
-  it('prend la vignette plutôt que l’image pleine', async () => {
-    mockFetch.mockResolvedValueOnce(respond({ results: [record] }));
-    expect((await getNews(PLATEAU, 25))[0].imageUrl).toContain('.thumb.');
-
-    mockFetch.mockResolvedValueOnce(respond({ results: [{ ...record, thumbnail: null }] }));
-    expect((await getNews(PLATEAU, 25))[0].imageUrl).toContain('.base.');
-  });
-
-  it('débarrasse un résumé de son HTML', async () => {
-    mockFetch.mockResolvedValueOnce(
-      respond({ results: [{ ...record, description_fr: '<p>Une <b>fête</b>  du village</p>' }] }),
-    );
-    expect((await getNews(PLATEAU, 25))[0].summary).toBe('Une fête du village');
-  });
-
-  it('accepte un enregistrement sans image ni lieu', async () => {
-    mockFetch.mockResolvedValueOnce(respond({ results: [{ uid: '1', title_fr: 'Sans rien' }] }));
-    const [item] = await getNews(PLATEAU, 25);
-
-    expect(item.imageUrl).toBeNull();
-    expect(item.place).toBeNull();
-    expect(item.title).toBe('Sans rien');
-    expect(item.when).toBe('');
-  });
-
-  it('remonte une erreur du service', async () => {
-    mockFetch.mockResolvedValueOnce(respond({}, 400));
-    await expect(getNews(PLATEAU, 25)).rejects.toThrow('400');
+    expect((await getNews(PLATEAU)).map((n) => n.title)).toEqual(['Concert', 'Toute l’année']);
   });
 });

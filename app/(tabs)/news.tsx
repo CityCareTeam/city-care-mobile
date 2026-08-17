@@ -130,7 +130,17 @@ export default function NewsScreen() {
         }
         ListFooterComponent={
           city && (items?.length ?? 0) > 0 ? (
-            <Text style={styles.source}>{t.news.source(city.name, city.radiusKm)}</Text>
+            <Text style={styles.source}>
+              {t.news.sources(
+                city.sources
+                  .map((source) =>
+                    source.kind === "page"
+                      ? source.label
+                      : t.news.sourceNational(city.name, source.radiusKm),
+                  )
+                  .join(", "),
+              )}
+            </Text>
           ) : null
         }
       />

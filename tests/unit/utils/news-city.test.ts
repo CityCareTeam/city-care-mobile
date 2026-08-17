@@ -71,12 +71,20 @@ describe('NEWS_CITIES', () => {
     expect(new Set(NEWS_CITIES.map((c) => c.id)).size).toBe(NEWS_CITIES.length);
   });
 
-  // Un rayon nul ne renverrait jamais rien, et le lieu resterait vide sans que
-  // l'écran ait de quoi l'expliquer.
-  it('donne à chaque lieu un rayon de recherche exploitable', () => {
+  // Un lieu sans source est un onglet qui s'ouvre sur rien, sans que l'écran
+  // ait de quoi l'expliquer.
+  it('donne à chaque lieu au moins une source exploitable', () => {
     for (const city of NEWS_CITIES) {
-      expect(city.radiusKm).toBeGreaterThanOrEqual(5);
-      expect(city.radiusKm).toBeLessThanOrEqual(50);
+      expect(city.sources.length).toBeGreaterThan(0);
+      for (const source of city.sources) {
+        if (source.kind === 'openagenda') {
+          expect(source.radiusKm).toBeGreaterThanOrEqual(5);
+          expect(source.radiusKm).toBeLessThanOrEqual(50);
+        } else {
+          expect(source.url).toMatch(/^https:\/\//);
+          expect(source.label.length).toBeGreaterThan(0);
+        }
+      }
     }
   });
 });

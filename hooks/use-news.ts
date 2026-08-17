@@ -40,7 +40,7 @@ export function useNews(city: NewsCity | null) {
       }
 
       try {
-        const fresh = await getNews(city, city.radiusKm);
+        const fresh = await getNews(city);
         setItems(fresh);
         setFailed(false);
         void writeJson(KEY, {
