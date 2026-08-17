@@ -6,8 +6,12 @@ import { authFetch } from "@/services/api-client";
  *
  *   POST   /moderation/flags          { targetType, targetId, reason }        → 201
  *   GET    /moderation/queue                                                 → 200 [FlaggedContent]
+ *   GET    /moderation/queue/count                                           → 200 { count }
  *   POST   /moderation/queue/{id}/hide   { comment? }                        → 204
  *   POST   /moderation/queue/{id}/keep   { comment? }                        → 204
+ *   GET    /moderation/hidden                                                → 200 [HiddenContent]
+ *   POST   /moderation/hidden/restore { targetType, targetId, comment? }     → 204
+ *   DELETE /moderation/hidden/{targetType}/{targetId}                        → 204 (admin)
  *
  * Implémenté côté back (`ModerationController`, branche `feat/moderation`) avec
  * les deux exigences qui ne se voient pas dans les signatures : un même
@@ -125,4 +129,94 @@ export async function decideOnFlag(
 
   if (unavailable(response.status)) throw new Error(MODERATION_UNAVAILABLE);
   if (!response.ok) throw new Error(`Décision impossible (${response.status})`);
+}
+
+/**
+ * Nombre de contenus en attente d'arbitrage, pour la pastille.
+ *
+ * Des contenus, pas des signalements : dix personnes signalant la même chose
+ * font une seule décision à prendre, et un « 10 » mentirait sur la charge.
+ *
+ * Renvoie 0 plutôt que de lever quand la route manque : une pastille est un
+ * ornement, elle n'a pas à faire échouer l'écran qui la porte.
+ */
+export async function getModerationCount(token: string): Promise<number> {
+  try {
+    const response = await authFetch(`${API_BASE_URL}/moderation/queue/count`, token);
+    if (!response.ok) return 0;
+    const body = (await response.json()) as { count?: number };
+    return typeof body.count === "number" ? body.count : 0;
+  } catch {
+    return 0;
+  }
+}
+
+/** Un contenu masqué par la modération, avec la décision qui l'a masqué. */
+export type HiddenContent = {
+  targetType: FlagTarget;
+  targetId: string;
+  incidentId: string;
+  excerpt: string;
+  /** `removed` s'assume, `hidden` s'annule. */
+  visibility: "hidden" | "removed";
+  reason: FlagReason | null;
+  flagCount: number;
+  decidedAt: string | null;
+  decidedBy: string | null;
+  decisionComment: string | null;
+};
+
+/**
+ * Les contenus masqués.
+ *
+ * Sans cette liste, masquer était un cul-de-sac : le contenu quittait toutes les
+ * lectures, la file se vidait, et plus rien ne permettait de revenir dessus. Une
+ * décision qu'on ne peut pas revoir est une décision qu'on n'ose pas prendre.
+ */
+export async function getHiddenContent(token: string): Promise<HiddenContent[]> {
+  const response = await authFetch(`${API_BASE_URL}/moderation/hidden`, token);
+
+  if (unavailable(response.status)) throw new Error(MODERATION_UNAVAILABLE);
+  if (!response.ok) throw new Error(`Contenus masqués indisponibles (${response.status})`);
+
+  const data = (await response.json()) as unknown;
+  return Array.isArray(data) ? (data as HiddenContent[]) : [];
+}
+
+/** Rendre un contenu masqué à nouveau visible. */
+export async function restoreContent(
+  target: FlagTarget,
+  targetId: string,
+  token: string,
+  comment?: string,
+): Promise<void> {
+  const response = await authFetch(`${API_BASE_URL}/moderation/hidden/restore`, token, {
+    method: "POST",
+    body: JSON.stringify({ targetType: target, targetId, comment }),
+  });
+
+  if (unavailable(response.status)) throw new Error(MODERATION_UNAVAILABLE);
+  if (!response.ok) throw new Error(`Restauration impossible (${response.status})`);
+}
+
+/**
+ * Supprimer définitivement un contenu masqué.
+ *
+ * Réservé aux administrateurs côté serveur, et l'écran n'offre le bouton qu'à
+ * eux : un agent masque — geste réversible — un administrateur efface. Le 403
+ * est donc traité comme un vrai refus, pas comme une route absente.
+ */
+export async function deleteHiddenContent(
+  target: FlagTarget,
+  targetId: string,
+  token: string,
+): Promise<void> {
+  const response = await authFetch(
+    `${API_BASE_URL}/moderation/hidden/${target}/${targetId}`,
+    token,
+    { method: "DELETE" },
+  );
+
+  if (unavailable(response.status)) throw new Error(MODERATION_UNAVAILABLE);
+  if (!response.ok) throw new Error(`Suppression impossible (${response.status})`);
 }

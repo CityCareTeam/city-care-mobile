@@ -14,6 +14,7 @@ import { useAppColors } from "@/hooks/use-app-colors";
 import { useStrings } from "@/hooks/use-strings";
 import { STRINGS } from "@/constants/strings";
 import { deleteAccount } from "@/services/users";
+import { getModerationCount } from "@/services/moderation";
 import { getValidToken } from "@/storage/tokens";
 import { formatDate } from "@/utils/format-date";
 import { router } from "expo-router";
@@ -140,6 +141,16 @@ function makeStyles(c: AppColors, bottomInset: number) {
     },
     settingsLabel: { fontSize: 15, flex: 1 },
     chevron: { fontSize: 22, color: c.text, opacity: 0.2 },
+    rowBadge: {
+      minWidth: 20,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 10,
+      alignItems: "center",
+      justifyContent: "center",
+      marginRight: 6,
+    },
+    rowBadgeText: { fontSize: 11, fontWeight: "800", color: "#fff" },
 
     errorText: { color: "#e53e3e", fontSize: 13, marginBottom: 12 },
     version: { marginTop: 20, fontSize: 12, color: c.text, opacity: 0.3 },
@@ -159,11 +170,37 @@ export default function ProfileScreen() {
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [queueOpen, setQueueOpen] = useState(false);
+  const [queueCount, setQueueCount] = useState(0);
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) router.replace("/login");
   }, [loading, isAuthenticated]);
+
+  /**
+   * Le compteur de la pastille, chargé à part de la file elle-même.
+   *
+   * La file rapporte extraits, motifs et adresses ; les demander pour afficher un
+   * chiffre à chaque ouverture du profil serait payer cher un ornement. La file
+   * met ensuite ce compteur à jour quand une décision est prise, sans nouvel
+   * aller-retour.
+   */
+  const role = keycloakUser?.mainRole ?? null;
+  const moderates = role === "Agent" || role === "Admin";
+
+  useEffect(() => {
+    if (!moderates) return;
+    let alive = true;
+    void (async () => {
+      const token = await getValidToken();
+      if (!token) return;
+      const count = await getModerationCount(token);
+      if (alive) setQueueCount(count);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [moderates]);
 
   if (loading) {
     return (
@@ -181,7 +218,6 @@ export default function ProfileScreen() {
     keycloakUser?.username?.[0]?.toUpperCase() ||
     "?";
 
-  const role = keycloakUser?.mainRole ?? null;
   const memberSince = dbUser?.createdAt ? formatDate(dbUser.createdAt) : null;
 
   const handleDelete = () => {
@@ -257,7 +293,7 @@ export default function ProfileScreen() {
           {/* La file de modération est un outil de travail, pas un réglage : elle
               n'apparaît que pour ceux qui ont à trancher. */}
           {(role === "Agent" || role === "Admin") && (
-            <SettingsRow label={t.moderation.queue} icon="flag" color="#e53e3e" last onPress={() => setQueueOpen(true)} styles={styles} colors={colors} />
+            <SettingsRow label={t.moderation.queue} icon="flag" color="#e53e3e" badge={queueCount} last onPress={() => setQueueOpen(true)} styles={styles} colors={colors} />
           )}
         </Card>
 
@@ -302,6 +338,10 @@ export default function ProfileScreen() {
       <ModerationQueueModal
         visible={queueOpen}
         onClose={() => setQueueOpen(false)}
+        // Un agent masque, un administrateur efface : c'est le partage qui existe
+        // déjà sur la suppression d'incident, et le serveur le refuse aussi.
+        canDelete={role === "Admin"}
+        onCountChange={setQueueCount}
         onOpenContent={(incidentId, onMessage) => {
           setQueueOpen(false);
           router.push(`/(tabs)/explore?selectId=${incidentId}${onMessage ? "&tab=chat" : ""}`);
@@ -362,7 +402,7 @@ function InfoRow({
 // ─── Settings row ─────────────────────────────────────────────────────────────
 
 function SettingsRow({
-  label, icon, color, showChevron = true, last, loading, onPress, styles, colors,
+  label, icon, color, showChevron = true, last, loading, badge, onPress, styles, colors,
 }: {
   label: string;
   icon: ComponentProps<typeof MaterialIcons>["name"];
@@ -370,6 +410,8 @@ function SettingsRow({
   showChevron?: boolean;
   last?: boolean;
   loading?: boolean;
+  /** Nombre à porter en pastille. Absent ou nul : rien n'est affiché. */
+  badge?: number;
   onPress: () => void;
   styles: ReturnType<typeof makeStyles>;
   colors: AppColors;
@@ -388,6 +430,13 @@ function SettingsRow({
         ? <ActivityIndicator color={color} size="small" style={{ flex: 1 }} />
         : <Text style={[styles.settingsLabel, { color: showChevron ? colors.text : color, fontWeight: showChevron ? "500" : "600" }]}>{label}</Text>
       }
+      {/* Prend la couleur de la ligne, pas une couleur d'alerte à elle : la
+          pastille compte, elle n'ajoute pas un second signal. */}
+      {!!badge && badge > 0 && (
+        <View style={[styles.rowBadge, { backgroundColor: color }]}>
+          <Text style={styles.rowBadgeText}>{badge > 99 ? "99+" : badge}</Text>
+        </View>
+      )}
       {showChevron && <Text style={styles.chevron}>›</Text>}
     </TouchableOpacity>
   );

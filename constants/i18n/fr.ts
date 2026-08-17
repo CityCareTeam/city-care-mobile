@@ -595,6 +595,21 @@ export const fr = {
     hide: "Masquer",
     decided: "Décision enregistrée",
     decideFailed: "La décision n’a pas pu être enregistrée.",
+    // ── Contenus masqués ──
+    tabQueue: "À traiter",
+    tabHidden: "Masqués",
+    hiddenEmpty: "Aucun contenu masqué.",
+    hiddenNoReason: "Masqué sans signalement",
+    hiddenBy: (name: string): string => `Masqué par ${name}`,
+    restore: "Rendre visible",
+    restored: "Contenu rendu visible",
+    deleteShort: "Supprimer",
+    deleteTitle: "Supprimer définitivement ?",
+    deleteMessage:
+      "Le contenu et ses signalements seront effacés. Masquer se corrige, supprimer ne se corrige pas.",
+    deleteConfirm: "Supprimer",
+    deleted: "Contenu supprimé",
+    deleteFailed: "La suppression a échoué.",
   },
 
   // ── Conditions d’utilisation ──

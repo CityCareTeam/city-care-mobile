@@ -562,6 +562,20 @@ export const en: typeof fr = {
     hide: "Hide",
     decided: "Decision recorded",
     decideFailed: "The decision could not be recorded.",
+    tabQueue: "Pending",
+    tabHidden: "Hidden",
+    hiddenEmpty: "No hidden content.",
+    hiddenNoReason: "Hidden without a report",
+    hiddenBy: (name: string): string => `Hidden by ${name}`,
+    restore: "Make visible",
+    restored: "Content is visible again",
+    deleteShort: "Delete",
+    deleteTitle: "Delete permanently?",
+    deleteMessage:
+      "The content and its reports will be erased. Hiding can be undone, deleting cannot.",
+    deleteConfirm: "Delete",
+    deleted: "Content deleted",
+    deleteFailed: "Deletion failed.",
   },
 
   terms: {
