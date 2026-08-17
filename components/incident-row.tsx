@@ -3,7 +3,7 @@ import { STATUS_COLOR, STATUS_LABEL, TYPE_COLOR, TYPE_ICON, TYPE_LABEL } from "@
 import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
 import { useStrings } from "@/hooks/use-strings";
-import { extractCity } from "@/utils/format-address";
+import { extractCity, UNKNOWN_CITY } from "@/utils/format-address";
 import { formatDateShort } from "@/utils/format-date";
 import { formatDistance } from "@/utils/format-distance";
 import { memo, useMemo } from "react";
@@ -78,29 +78,30 @@ function makeStyles(c: AppColors) {
       justifyContent: "center",
       flexShrink: 0,
     },
-    content: { flex: 1, minWidth: 0 },
-    type: {
+    content: { flex: 1, minWidth: 0, gap: 3 },
+    // Deux lignes autorisées : une description tronquée à mi-mot ne renseigne
+    // pas, et c'est elle qu'on lit pour choisir sur quelle ligne appuyer. La
+    // hauteur varie d'une ligne à l'autre, ce qu'une liste séparée par des
+    // filets supporte sans peine.
+    title: {
       fontSize: 14,
       fontWeight: "700",
       color: c.text,
-      marginBottom: 2,
+      lineHeight: 19,
     },
-    description: {
-      fontSize: 12,
+    meta: {
+      fontSize: 11.5,
       color: c.text,
-      opacity: 0.6,
-      marginBottom: 2,
-      fontStyle: "italic",
+      opacity: 0.45,
     },
-    address: {
+    // Neutre, et non en couleur d'accent : la ligne porte déjà une bulle de
+    // catégorie colorée et un badge de statut coloré. Une date orange y faisait
+    // une troisième couleur sans rien signifier de plus — et se lisait comme un
+    // lien.
+    date: {
       fontSize: 11,
       color: c.text,
       opacity: 0.4,
-    },
-    date: {
-      fontSize: 11,
-      color: c.primary,
-      opacity: 0.7,
       fontWeight: "600",
     },
     right: {
@@ -142,11 +143,28 @@ function IncidentRowBase({ id, type, status, description, address, createdAt, on
   const statusColor = STATUS_COLOR[status] ?? "#999";
   const typeColor   = TYPE_COLOR[type]   ?? "#78909C";
   const typeIcon    = TYPE_ICON[type]    ?? "help-outline";
-  const city        = extractCity(address);
-  // « Villeurbanne · 1,2 km » : où c'est, puis à quelle distance. Les deux
-  // répondent à la même question et tiennent sur la même ligne.
-  const away        = distanceKm === undefined ? "" : formatDistance(distanceKm, t.locale);
-  const place       = [city, away].filter(Boolean).join(" · ");
+  const typeLabel   = TYPE_LABEL[type]   ?? type;
+
+  const city = extractCity(address);
+  // On préfère taire la localisation qu'annoncer qu'on l'ignore : « Localisation
+  // inconnue » occupait une ligne pour ne rien dire.
+  const knownCity = city === UNKNOWN_CITY ? "" : city;
+  const away = distanceKm === undefined ? "" : formatDistance(distanceKm, t.locale);
+
+  /**
+   * La description en tête, la catégorie en dessous — et non l'inverse.
+   *
+   * Le titre d'une ligne doit être ce qui la distingue de sa voisine. C'était la
+   * catégorie : dix lignes de suite intitulées « Voirie », sous dix icônes
+   * identiques qui le disaient déjà, tandis que la seule information propre à
+   * chacune — la description — passait en italique tronqué à une ligne.
+   *
+   * Sans description, la catégorie reprend la place du titre : mieux vaut la
+   * répéter que laisser une ligne sans nom.
+   */
+  const written = description?.trim();
+  const title = written || typeLabel;
+  const meta = [written ? typeLabel : "", knownCity, away].filter(Boolean).join(" · ");
 
   return (
     <TouchableOpacity style={styles.row} onPress={() => onPress(id)} activeOpacity={0.75}>
@@ -179,12 +197,9 @@ function IncidentRowBase({ id, type, status, description, address, createdAt, on
         )}
       </View>
       <View style={styles.content}>
-        <Text style={styles.type} numberOfLines={1}>{TYPE_LABEL[type] ?? type}</Text>
-        {description ? (
-          <Text style={styles.description} numberOfLines={1}>{description}</Text>
-        ) : null}
-        {place ? (
-          <Text style={styles.address} numberOfLines={1}>{place}</Text>
+        <Text style={styles.title} numberOfLines={2}>{title}</Text>
+        {meta ? (
+          <Text style={styles.meta} numberOfLines={1}>{meta}</Text>
         ) : null}
       </View>
       <View style={styles.right}>

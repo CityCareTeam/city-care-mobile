@@ -13,10 +13,18 @@ function normKey(s: string) {
   return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 }
 
+/**
+ * Ce que rend `extractCity` quand elle ne trouve rien d'exploitable.
+ *
+ * Exporté pour que l'appelant puisse le reconnaître : une ligne de liste
+ * préfère taire la localisation plutôt qu'afficher qu'elle l'ignore.
+ */
+export const UNKNOWN_CITY = "Localisation inconnue";
+
 export function extractCity(address: string | null | undefined): string {
-  if (!address) return "Localisation inconnue";
+  if (!address) return UNKNOWN_CITY;
   const parts = address.split(",").map((p) => p.trim()).filter(Boolean);
-  if (parts.length === 0) return "Localisation inconnue";
+  if (parts.length === 0) return UNKNOWN_CITY;
 
   for (const part of parts) {
     const match = part.match(/^\d{5}\s+(.+)$/);

@@ -1,4 +1,5 @@
 import { IncidentRow } from '@/components/incident-row';
+import { TYPE_LABEL } from '@/constants/incidents';
 import { render, screen } from '@testing-library/react-native';
 
 const BASE = {
@@ -14,6 +15,30 @@ describe('IncidentRow', () => {
   it('montre la commune extraite de l’adresse', () => {
     render(<IncidentRow {...BASE} />);
     expect(screen.getByText('Lyon')).toBeTruthy();
+  });
+
+  /**
+   * Le titre est ce qui distingue une ligne de sa voisine. C'était la catégorie
+   * — dix lignes de suite intitulées pareil, sous dix icônes qui le disaient
+   * déjà — et la description passait en italique tronqué.
+   */
+  it('met la description en titre, la catégorie en second', () => {
+    render(<IncidentRow {...BASE} description="Nid-de-poule devant le 12" />);
+
+    expect(screen.getByText('Nid-de-poule devant le 12')).toBeTruthy();
+    expect(screen.getByText(`${TYPE_LABEL.Road} · Lyon`)).toBeTruthy();
+  });
+
+  // Sans description, mieux vaut répéter la catégorie que laisser un titre vide.
+  it('retombe sur la catégorie quand rien n’est écrit', () => {
+    render(<IncidentRow {...BASE} description="   " />);
+    expect(screen.getByText(TYPE_LABEL.Road)).toBeTruthy();
+  });
+
+  // « Localisation inconnue » occupait une ligne pour ne rien dire.
+  it('tait la localisation plutôt que d’annoncer qu’elle l’ignore', () => {
+    render(<IncidentRow {...BASE} address={null} />);
+    expect(screen.queryByText(/inconnue/i)).toBeNull();
   });
 
   /**
