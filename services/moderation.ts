@@ -2,28 +2,24 @@ import { API_BASE_URL } from "@/constants/api";
 import { authFetch } from "@/services/api-client";
 
 /**
- * Modération : le contrat attendu du serveur.
- *
- * ⚠️ Ces routes **n'existent pas encore** côté back. Ce fichier les décrit pour
- * que le mobile soit prêt, et surtout pour que l'écran dise la vérité en
- * attendant : un endpoint absent n'est pas une panne, et l'afficher comme telle
- * enverrait chercher un problème là où il n'y en a pas.
- *
- * D'où `MODERATION_UNAVAILABLE`, distingué d'une vraie erreur. Le jour où les
- * routes arrivent, rien ne change ici — le cas cesse simplement de se produire.
- *
- * Le contrat, si tu l'implémentes :
+ * Modération : le contrat du serveur.
  *
  *   POST   /moderation/flags          { targetType, targetId, reason }        → 201
  *   GET    /moderation/queue                                                 → 200 [FlaggedContent]
  *   POST   /moderation/queue/{id}/hide   { comment? }                        → 204
  *   POST   /moderation/queue/{id}/keep   { comment? }                        → 204
  *
- * Deux exigences qui ne se voient pas dans les signatures. Un même utilisateur
- * ne doit pouvoir signaler un contenu qu'une fois — sans quoi il fait monter un
- * compteur tout seul. Et masquer doit retirer le contenu des lectures
- * ordinaires : si le mobile doit filtrer lui-même, le contenu litigieux continue
- * d'être envoyé à tous les téléphones, et n'est masqué que par politesse.
+ * Implémenté côté back (`ModerationController`, branche `feat/moderation`) avec
+ * les deux exigences qui ne se voient pas dans les signatures : un même
+ * utilisateur ne peut signaler un contenu qu'une fois — sans quoi il fait monter
+ * un compteur tout seul, d'où le 409 sur doublon — et masquer retire le contenu
+ * des lectures ordinaires côté serveur. Si le mobile devait filtrer lui-même, le
+ * contenu litigieux continuerait d'être envoyé à tous les téléphones, et ne
+ * serait masqué que par politesse.
+ *
+ * `MODERATION_UNAVAILABLE` reste utile : tant qu'un serveur plus ancien tourne
+ * quelque part, un 404 n'est pas une panne, et l'afficher comme telle enverrait
+ * chercher un problème là où il n'y en a pas.
  */
 
 /**
@@ -45,7 +41,11 @@ export type FlagReason = (typeof FLAG_REASONS)[number];
 export type FlagTarget = "incident" | "message";
 
 export type FlaggedContent = {
-  /** Identifiant du signalement de contenu, pas du contenu lui-même. */
+  /**
+   * Identifiant du groupe de signalements, pas du contenu lui-même. Le serveur
+   * agrège par cible et renvoie l'identifiant du plus ancien signalement ; c'est
+   * lui qu'on repasse pour trancher, et la décision vaut pour tout le groupe.
+   */
   id: string;
   targetType: FlagTarget;
   targetId: string;
