@@ -35,3 +35,29 @@ export function incidentShareMessage(incident: Shareable, t: Dictionary): string
   const headline = place ? `${type} — ${place}` : type;
   return `${headline}\n${incidentUrl(incident.id)}`;
 }
+
+/**
+ * Message de partage d'un événement.
+ *
+ * Même grammaire que ci-dessus, et pour la même raison : ce qu'on partage
+ * d'abord, où et quand ensuite, le lien en dernier — les messageries coupent la
+ * fin, jamais le début.
+ *
+ * Une différence : le lien n'est pas un lien profond mais l'adresse publique de
+ * la fiche chez la source. Partager un événement, c'est l'envoyer à quelqu'un qui
+ * n'a pas l'application — un lien qui exige de l'installer ne se partage pas.
+ */
+export function eventShareMessage(event: {
+  title: string;
+  when?: string;
+  place?: string | null;
+  url?: string | null;
+}): string {
+  const lines = [event.title.trim()];
+
+  const situation = [event.when?.trim(), event.place?.trim()].filter(Boolean).join(" · ");
+  if (situation) lines.push(situation);
+  if (event.url) lines.push(event.url);
+
+  return lines.join("\n");
+}

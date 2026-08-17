@@ -524,7 +524,12 @@ export default function ReportScreen() {
             }}
           />
           {addressQuery.length > 0 && (
-            <TouchableOpacity onPress={() => { setAddressQuery(""); setSuggestions([]); }} style={{ marginRight: 10 }}>
+            <TouchableOpacity
+              onPress={() => { setAddressQuery(""); setSuggestions([]); }}
+              style={{ marginRight: 10 }}
+              accessibilityRole="button"
+              accessibilityLabel={t.alert.a11yClearAddress}
+            >
               <MaterialIcons name="close" size={16} color={colors.text + "55"} />
             </TouchableOpacity>
           )}
@@ -595,6 +600,8 @@ export default function ReportScreen() {
             <TouchableOpacity
               style={styles.photoRemoveBtn}
               onPress={() => setPhotos((prev) => prev.filter((_, idx) => idx !== i))}
+              accessibilityRole="button"
+              accessibilityLabel={t.alert.a11yRemovePhoto}
             >
               <MaterialIcons name="close" size={11} color="#fff" />
             </TouchableOpacity>

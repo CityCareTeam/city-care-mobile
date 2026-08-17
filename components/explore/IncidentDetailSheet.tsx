@@ -328,7 +328,12 @@ export function IncidentDetailSheet({ incident, userPlace, initialTab, onClose, 
                   {votes?.voteCount ?? 0}
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={onClose} style={[s.closeBtn, { marginLeft: 10 }]}>
+              <TouchableOpacity
+                onPress={onClose}
+                style={[s.closeBtn, { marginLeft: 10 }]}
+                accessibilityRole="button"
+                accessibilityLabel={t.alert.a11yClose}
+              >
                 <MaterialIcons name="close" size={16} color={colors.text} />
               </TouchableOpacity>
             </View>
@@ -476,11 +481,21 @@ export function IncidentDetailSheet({ incident, userPlace, initialTab, onClose, 
                     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                       {photos.map((p) => (
                         <View key={p.id} style={s.photoThumb}>
-                          <TouchableOpacity activeOpacity={0.85} onPress={() => setZoomedPhoto(p.url)}>
+                          <TouchableOpacity
+                            activeOpacity={0.85}
+                            onPress={() => setZoomedPhoto(p.url)}
+                            accessibilityRole="button"
+                            accessibilityLabel={t.alert.a11yOpenPhoto}
+                          >
                             <Image source={{ uri: p.url }} style={s.photoImg} contentFit="cover" />
                           </TouchableOpacity>
                           {canDeletePhoto(p) && (
-                            <TouchableOpacity style={s.photoDeleteBtn} onPress={() => handleDeletePhoto(p.id)}>
+                            <TouchableOpacity
+                              style={s.photoDeleteBtn}
+                              onPress={() => handleDeletePhoto(p.id)}
+                              accessibilityRole="button"
+                              accessibilityLabel={t.alert.a11yDeletePhoto}
+                            >
                               <MaterialIcons name="close" size={12} color="#fff" />
                             </TouchableOpacity>
                           )}

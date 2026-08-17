@@ -178,6 +178,8 @@ export function IncidentChatTab({ messages, loading, connected, sending, dbUserI
           onPress={handleSend}
           disabled={!connected || !inputText.trim() || sending}
           activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel={t.alert.a11ySend}
         >
           {sending
             ? <ActivityIndicator size="small" color="#fff" />

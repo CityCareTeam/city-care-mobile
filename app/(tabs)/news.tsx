@@ -12,11 +12,12 @@ import { mixHex } from "@/utils/color";
 import { countdown } from "@/utils/countdown";
 import { getTabBarScrollPadding } from "@/utils/layout";
 import { groupByPeriod } from "@/utils/news-groups";
+import { eventShareMessage } from "@/utils/share-incident";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { Image } from "expo-image";
 import * as WebBrowser from "expo-web-browser";
-import { memo, useMemo, useState } from "react";
-import { Pressable, SectionList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { memo, useCallback, useMemo, useState } from "react";
+import { Pressable, SectionList, Share, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 /**
@@ -51,6 +52,23 @@ export default function NewsScreen() {
     offset: 24,
   });
 
+  /**
+   * Le système choisit le destinataire, comme pour un signalement : l'application
+   * n'a besoin ni des contacts ni d'une permission. Elle tend un texte.
+   */
+  const shareEvent = useCallback(
+    (item: NewsItem) => {
+      void Share.share({
+        title: item.title,
+        message: eventShareMessage(item),
+      }).catch(() => {
+        // Partage annulé, ou aucune application pour le recevoir : l'utilisateur
+        // vient de fermer la feuille lui-même, il n'y a rien à lui dire.
+      });
+    },
+    [],
+  );
+
   // La ligne sous le titre est la seule qui puisse dire à la fois où on est et
   // pourquoi on n'est nulle part.
   const summary = city
@@ -72,7 +90,14 @@ export default function NewsScreen() {
         refreshControl={refreshControl}
         stickySectionHeadersEnabled
         renderItem={({ item }) => (
-          <NewsCard item={item} styles={styles} openLabel={t.news.open} soon={countdown(item.startsAt, t)} />
+          <NewsCard
+            item={item}
+            styles={styles}
+            openLabel={t.news.open}
+            shareLabel={t.news.share}
+            soon={countdown(item.startsAt, t)}
+            onShare={() => shareEvent(item)}
+          />
         )}
         /* Vingt-cinq dates à la file, de demain à novembre : il fallait lire
            chaque ligne pour savoir où s'arrêtait ce week-end. Un agenda se
@@ -218,12 +243,16 @@ const NewsCard = memo(function NewsCard({
   item,
   styles,
   openLabel,
+  shareLabel,
   soon,
+  onShare,
 }: {
   item: NewsItem;
   styles: ReturnType<typeof makeStyles>;
   openLabel: string;
+  shareLabel: string;
   soon: string;
+  onShare: () => void;
 }) {
   /**
    * Le navigateur intégré plutôt qu'un renvoi vers Chrome : on revient d'un
@@ -283,11 +312,20 @@ const NewsCard = memo(function NewsCard({
         ) : null}
       </View>
 
-      {/* Un chevron plutôt qu'une ligne « Voir la fiche » sur chaque carte : le
-          geste se devine tout autant et ne coûte pas une ligne par événement. */}
-      {open && (
-        <MaterialIcons name="chevron-right" size={20} color={styles.place.color} style={styles.chevron} />
-      )}
+      {/* Deux gestes en colonne : ouvrir la fiche, ou l'envoyer à quelqu'un.
+          Le chevron dit l'appui sur la rangée, le partage est son propre bouton
+          — sinon il faudrait ouvrir la fiche pour transmettre une date. */}
+      <View style={styles.cardActions}>
+        <TouchableOpacity
+          onPress={onShare}
+          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel={shareLabel}
+        >
+          <MaterialIcons name="share" size={17} color={styles.place.color} />
+        </TouchableOpacity>
+        {open && <MaterialIcons name="chevron-right" size={20} color={styles.place.color} />}
+      </View>
     </Pressable>
   );
 });
@@ -405,7 +443,7 @@ function makeStyles(c: AppColors, bottomInset: number) {
     thumbEmpty: { alignItems: "center", justifyContent: "center" },
     // La rangée s'aligne en haut — le texte est plus haut que la vignette — mais
     // le chevron désigne la rangée entière, pas sa première ligne.
-    chevron: { alignSelf: "center" },
+    cardActions: { alignItems: "center", justifyContent: "center", gap: 10, alignSelf: "center" },
     body: { flex: 1, minWidth: 0, gap: 4 },
     whenRow: { flexDirection: "row", alignItems: "center", gap: 7, flexWrap: "wrap" },
     // La date en petites majuscules colorées, le délai en pastille pleine : le

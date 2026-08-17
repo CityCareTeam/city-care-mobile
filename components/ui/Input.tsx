@@ -1,6 +1,7 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
+import { useStrings } from "@/hooks/use-strings";
 import { useMemo, useState } from "react";
 import {
     StyleSheet,
@@ -73,6 +74,7 @@ function makeStyles(c: AppColors) {
 
 export function Input({ label, error, icon, style, secureTextEntry, ...props }: InputProps) {
   const { colors, isDark } = useAppColors();
+  const t = useStrings();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [hidden, setHidden] = useState(true);
   const isPassword = Boolean(secureTextEntry);
@@ -103,6 +105,10 @@ export function Input({ label, error, icon, style, secureTextEntry, ...props }: 
             style={styles.eyeBtn}
             onPress={() => setHidden((h) => !h)}
             hitSlop={8}
+            accessibilityRole="button"
+            // Ce que l'appui va faire, et non l'état présent : un lecteur
+            // d'écran annonce une action, pas une constatation.
+            accessibilityLabel={hidden ? t.alert.a11yShowPassword : t.alert.a11yHidePassword}
           >
             <MaterialIcons
               name={hidden ? "visibility-off" : "visibility"}
