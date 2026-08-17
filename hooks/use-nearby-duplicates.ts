@@ -1,10 +1,18 @@
+import { INCIDENTS_PAGE_SIZE } from "@/constants/config";
 import { getIncidents } from "@/services/incidents";
 import type { IncidentResponse } from "@/types/incidents";
 import { findDuplicates } from "@/utils/duplicates";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
-/** Assez pour couvrir une ville sur un type donné, sans ramener tout le fil. */
-const PAGE_SIZE = 100;
+/**
+ * Attente avant d'interroger le serveur.
+ *
+ * Choisir une catégorie doit rester instantané. Sans ce délai, appuyer sur une
+ * pastille lançait une requête, puis le décodage de cinquante signalements, sur
+ * le fil qui tient l'écran — et le formulaire porte une carte, qui saccade à la
+ * moindre occupation de ce fil. On laisse donc l'appui se terminer.
+ */
+const SETTLE_MS = 600;
 
 /**
  * Signalements du même type déjà ouverts à deux pas.
@@ -33,22 +41,30 @@ export function useNearbyDuplicates(
     asked.current.add(type);
 
     let alive = true;
-    void (async () => {
-      try {
-        const response = await getIncidents({ type, pageSize: PAGE_SIZE });
-        if (alive) setByType((current) => ({ ...current, [type]: response.data }));
-      } catch {
-        // Sans réponse, pas d'avertissement. Le formulaire reste utilisable.
-        asked.current.delete(type);
-      }
-    })();
+    const timer = setTimeout(() => {
+      void (async () => {
+        try {
+          const response = await getIncidents({ type, pageSize: INCIDENTS_PAGE_SIZE.load });
+          if (alive) setByType((current) => ({ ...current, [type]: response.data }));
+        } catch {
+          // Sans réponse, pas d'avertissement. Le formulaire reste utilisable.
+          asked.current.delete(type);
+        }
+      })();
+    }, SETTLE_MS);
 
     return () => {
       alive = false;
+      clearTimeout(timer);
     };
   }, [type]);
 
-  // Recalculé à chaque déplacement de l'épingle : c'est le seul moyen que
-  // l'avertissement suive la position choisie sur la carte.
-  return findDuplicates(type ? (byType[type] ?? []) : [], place, type);
+  // Recalculé quand l'épingle bouge, et seulement alors : c'est ce qui fait
+  // suivre l'avertissement, sans le recalculer à chaque lettre de la
+  // description.
+  const known = type ? byType[type] : undefined;
+  return useMemo(
+    () => findDuplicates(known ?? [], place, type),
+    [known, type, place.latitude, place.longitude],
+  );
 }

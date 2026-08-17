@@ -25,7 +25,8 @@ import { useUserLocation } from "@/hooks/use-user-location";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { StyleProp, ViewStyle } from "react-native";
 import {
   ActivityIndicator,
   Alert,
@@ -57,6 +58,47 @@ const INCIDENT_TYPES: {
   { value: "Other",    icon: "help-outline",    color: "#78909C" },
 ];
 
+
+/**
+ * La carte du formulaire, isolée derrière `memo`.
+ *
+ * Elle vit dans un écran qui se rend à chaque frappe de la description, à
+ * chaque enregistrement de brouillon et à chaque réponse réseau. Une vue de
+ * carte n'aime pas ça : sur Android elle est adossée à une surface native, et
+ * la faire retraverser le pont à tout propos la fait clignoter, perdre son
+ * cadrage ou saccader sous le doigt.
+ *
+ * Isolée, elle ne se rend plus que si sa position ou sa couleur changent.
+ * `initialRegion` est figé de son côté — c'est un cadrage de départ, le
+ * recomposer à chaque rendu n'avait aucun sens.
+ */
+const ReportMap = memo(function ReportMap({
+  mapRef,
+  style,
+  initialRegion,
+  coords,
+  pinColor,
+  onPress,
+}: {
+  mapRef: React.RefObject<MapView | null>;
+  style: StyleProp<ViewStyle>;
+  initialRegion: Region;
+  coords: { latitude: number; longitude: number };
+  pinColor: string;
+  onPress: (coordinate: { latitude: number; longitude: number }) => void;
+}) {
+  return (
+    <MapView
+      ref={mapRef}
+      style={style}
+      initialRegion={initialRegion}
+      showsUserLocation
+      onPress={(e) => onPress(e.nativeEvent.coordinate)}
+    >
+      <Marker coordinate={coords} pinColor={pinColor} tracksViewChanges={false} />
+    </MapView>
+  );
+});
 
 export default function ReportScreen() {
   const { colors, isDark } = useAppColors();
@@ -325,7 +367,23 @@ export default function ReportScreen() {
     });
   }
 
-  const initialRegion: Region = { ...coords, latitudeDelta: MAP_DELTAS.report, longitudeDelta: MAP_DELTAS.report };
+  /**
+   * Cadrage de départ, calculé une fois.
+   *
+   * `initialRegion` n'est lu qu'au montage de la carte : le recomposer à chaque
+   * rendu ne changeait rien à l'écran mais renvoyait un objet neuf à la vue
+   * native, encore et encore.
+   */
+  const frozenRegion = useRef<Region | null>(null);
+  if (!frozenRegion.current && !locLoading) {
+    frozenRegion.current = {
+      ...coords,
+      latitudeDelta: MAP_DELTAS.report,
+      longitudeDelta: MAP_DELTAS.report,
+    };
+  }
+  const initialRegion = frozenRegion.current;
+
   const remaining  = 255 - description.length;
   const canSubmit  = !!selectedType && !!description.trim();
 
@@ -420,18 +478,17 @@ export default function ReportScreen() {
       {/* ── Localisation ── */}
       <SectionHeader title={t.report.location} colors={colors} required />
       <View style={styles.mapContainer}>
-        {locLoading ? (
+        {locLoading || !initialRegion ? (
           <View style={styles.mapLoader}><ActivityIndicator color={colors.primary} /></View>
         ) : (
-          <MapView
-            ref={mapRef}
+          <ReportMap
+            mapRef={mapRef}
             style={styles.map}
             initialRegion={initialRegion}
-            showsUserLocation
-            onPress={(e) => handleMapPress(e.nativeEvent.coordinate)}
-          >
-            <Marker coordinate={coords} pinColor={colors.primary} tracksViewChanges={false} />
-          </MapView>
+            coords={coords}
+            pinColor={colors.primary}
+            onPress={handleMapPress}
+          />
         )}
       </View>
 
