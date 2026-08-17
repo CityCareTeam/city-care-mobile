@@ -741,6 +741,16 @@ export const LAST_RELEASED_VERSION = "1.5.5";
 /** Changements accumulés depuis, donc embarqués par les pré-versions. */
 export const UNRELEASED_CHANGES: Change[] = [
   {
+    "kind": "feature",
+    "scope": "admin",
+    "text": "Onglet de gestion des comptes, et le masqué en rouge chez les agents"
+  },
+  {
+    "kind": "feature",
+    "scope": "moderation",
+    "text": "Le signalement disparaît chez les agents, remplacé par le masquage"
+  },
+  {
     "kind": "fix",
     "scope": "moderation",
     "text": "Ouvrir la fiche pour de vrai, et retirer le fond quadrillé"
