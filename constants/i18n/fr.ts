@@ -562,6 +562,40 @@ export const fr = {
     link: "Politique de confidentialité",
   },
 
+  // ── Modération ──
+  moderation: {
+    flagTitle: "Signaler ce contenu",
+    flagIntro: "Dites en quoi ce contenu enfreint les conditions d’utilisation. Un motif précis permet à un modérateur de trancher ; « inapproprié » ne lui apprend rien.",
+    flagEffect: "Le contenu disparaîtra de cet appareil immédiatement. Un modérateur décidera ensuite de le retirer pour tout le monde ou de le garder.",
+    flagShort: "Signaler",
+    flagSend: "Signaler",
+    reasons: {
+      hateful: "Propos injurieux, haineux ou menaçants",
+      personal_data: "Données personnelles d’autrui (visage, plaque, nom)",
+      off_topic: "Hors sujet",
+      false_report: "Faux signalement ou doublon volontaire",
+      advertising: "Publicité",
+      other: "Autre raison",
+    },
+    sent: "Signalé. Un modérateur va regarder.",
+    hiddenOnly: "Masqué sur cet appareil. Les modérateurs ne sont pas encore joignables.",
+    failed: "Masqué sur cet appareil, mais le signalement n’est pas parti.",
+    // ── File, pour les agents et les administrateurs ──
+    queue: "Modération",
+    queueDetail: "Contenus signalés",
+    queueTitle: "Contenus signalés",
+    queueEmpty: "Rien à modérer. Tout est en ordre.",
+    queueFailed: "Impossible de charger la file.",
+    notReady: "La modération n’est pas encore active côté serveur. Les signalements des citoyens masquent déjà le contenu sur leur appareil ; la file s’ouvrira dès que les routes existeront.",
+    onIncident: "Sur un signalement",
+    onMessage: "Sur un message",
+    noExcerpt: "Aucun extrait disponible.",
+    keep: "Garder",
+    hide: "Masquer",
+    decided: "Décision enregistrée",
+    decideFailed: "La décision n’a pas pu être enregistrée.",
+  },
+
   // ── Conditions d’utilisation ──
   terms: {
     title: "Conditions d’utilisation",

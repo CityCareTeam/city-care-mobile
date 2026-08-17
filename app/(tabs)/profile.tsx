@@ -3,6 +3,7 @@ import { AppVersion } from "@/components/ui/AppVersion";
 import { Card } from "@/components/ui/Card";
 import { ChangePasswordModal } from "@/components/profile/ChangePasswordModal";
 import { EditProfileModal } from "@/components/profile/EditProfileModal";
+import { ModerationQueueModal } from "@/components/moderation/ModerationQueueModal";
 import { NotificationSettingsModal } from "@/components/profile/NotificationSettingsModal";
 import { ROLE_COLORS, ROLE_LABELS } from "@/constants/roles";
 import { DEBUG_NETWORK } from "@/constants/config";
@@ -157,6 +158,7 @@ export default function ProfileScreen() {
   const [editOpen, setEditOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [queueOpen, setQueueOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
@@ -251,7 +253,12 @@ export default function ProfileScreen() {
         <Card style={styles.card}>
           <SettingsRow label={t.profile.editDetails} icon="edit" color={colors.primary} onPress={() => setEditOpen(true)} styles={styles} colors={colors} />
           <SettingsRow label={t.profile.changePassword} icon="lock" color={colors.primary} onPress={() => setPasswordOpen(true)} styles={styles} colors={colors} />
-          <SettingsRow label={t.profile.notifications} icon="notifications" color={colors.primary} last onPress={() => setNotifOpen(true)} styles={styles} colors={colors} />
+          <SettingsRow label={t.profile.notifications} icon="notifications" color={colors.primary} last={role === "Citizen"} onPress={() => setNotifOpen(true)} styles={styles} colors={colors} />
+          {/* La file de modération est un outil de travail, pas un réglage : elle
+              n'apparaît que pour ceux qui ont à trancher. */}
+          {(role === "Agent" || role === "Admin") && (
+            <SettingsRow label={t.moderation.queue} icon="flag" color="#e53e3e" last onPress={() => setQueueOpen(true)} styles={styles} colors={colors} />
+          )}
         </Card>
 
         {/* Le bloc « Application » vivait ici. Il est passé dans le menu latéral
@@ -288,6 +295,7 @@ export default function ProfileScreen() {
       </ScrollView>
 
       <NotificationSettingsModal visible={notifOpen} onClose={() => setNotifOpen(false)} />
+      <ModerationQueueModal visible={queueOpen} onClose={() => setQueueOpen(false)} />
       <EditProfileModal
         visible={editOpen}
         initialValues={{

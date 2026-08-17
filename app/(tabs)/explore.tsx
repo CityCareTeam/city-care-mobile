@@ -18,6 +18,7 @@ import { useIncidentFilters } from "@/hooks/use-incident-filters";
 import { useIncidentPermissions } from "@/hooks/use-incident-permissions";
 import { useAutoRefresh } from "@/hooks/use-auto-refresh";
 import { useMapClusters } from "@/hooks/use-map-clusters";
+import { useContentReport } from "@/hooks/use-content-report";
 import { useUserLocation } from "@/hooks/use-user-location";
 import { getIncidents } from "@/services/incidents";
 import { loadIncidentsCache, saveIncidentsCache } from "@/storage/incidents-cache";
@@ -155,12 +156,16 @@ export default function SignalementsScreen() {
   const { dbUser } = useAuth();
   const { followed } = useFollowedIncidents();
 
+  const { hiddenIncidents } = useContentReport();
+
   const visibleIncidents = useMemo(() => {
-    let visible = filteredIncidents;
+    // Masqué par l'utilisateur : il vient de le signaler, il n'a pas à le
+    // recroiser en attendant qu'un modérateur tranche.
+    let visible = filteredIncidents.filter((i) => !hiddenIncidents.includes(i.id));
     if (mineOnly && dbUser) visible = visible.filter((i) => i.authorUserId === dbUser.id);
     if (followedOnly) visible = visible.filter((i) => followed.has(i.id));
     return visible;
-  }, [filteredIncidents, mineOnly, dbUser, followedOnly, followed]);
+  }, [filteredIncidents, mineOnly, dbUser, followedOnly, followed, hiddenIncidents]);
   const { clusters, failed: clustersFailed, stale: clustersStale, currentZoom, currentRegionRef, onRegionChangeComplete, reload: reloadClusters } =
     useMapClusters(filterStatus, filterType, userRegion ?? INITIAL_REGION);
 

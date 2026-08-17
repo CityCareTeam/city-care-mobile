@@ -28,6 +28,8 @@ import { formatIncidentDateTime } from "@/utils/format-date";
 import { formatDistance } from "@/utils/format-distance";
 import { distanceKm } from "@/utils/incident-search";
 import { GlassPillSelector } from "@/components/ui/GlassPillSelector";
+import { FlagContentModal } from "@/components/moderation/FlagContentModal";
+import { useContentReport } from "@/hooks/use-content-report";
 import { ModalShell } from "@/components/ui/ModalShell";
 import { useEffect, useState } from "react";
 import {
@@ -82,6 +84,7 @@ export function IncidentDetailSheet({ incident, userPlace, initialTab, onClose, 
   const { followed, toggle: toggleFollow } = useFollowedIncidents();
   const isFollowed = incident ? followed.has(incident.id) : false;
   const { dbUser } = useAuth();
+  const { report } = useContentReport();
   const [activeTab, setActiveTab] = useState<"details" | "chat">("details");
   const [zoomedPhoto, setZoomedPhoto] = useState<string | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
@@ -89,6 +92,7 @@ export function IncidentDetailSheet({ incident, userPlace, initialTab, onClose, 
   /** Statut choisi, en attente du commentaire facultatif. */
   const [pendingStatus, setPendingStatus] = useState<string | null>(null);
   const [comment, setComment] = useState("");
+  const [flagging, setFlagging] = useState(false);
 
   const away =
     userPlace && incident
@@ -642,6 +646,26 @@ export function IncidentDetailSheet({ incident, userPlace, initialTab, onClose, 
         )}
 
         <PhotoViewer uri={zoomedPhoto} onClose={() => setZoomedPhoto(null)} />
+
+        <FlagContentModal
+          visible={flagging}
+          onClose={() => setFlagging(false)}
+          onConfirm={async (reason) => {
+            if (!incident) return;
+            const outcome = await report("incident", incident.id, reason);
+            setFlagging(false);
+            // Trois issues, trois phrases : masqué et signalé, masqué seulement,
+            // ou masqué sans que le signalement soit parti. Les confondre
+            // laisserait croire qu'un modérateur a été prévenu quand personne ne
+            // l'a été.
+            Toast.show({
+              type: outcome === "sent" ? "success" : "error",
+              text1: t.moderation[outcome === "sent" ? "sent" : outcome === "hiddenOnly" ? "hiddenOnly" : "failed"],
+            });
+            // La fiche parle d'un contenu qu'on vient de masquer : on la ferme.
+            onClose();
+          }}
+        />
 
         {/* Le commentaire de changement de statut.
             Deux sorties à égalité : envoyer avec, ou changer sans. Le champ est
