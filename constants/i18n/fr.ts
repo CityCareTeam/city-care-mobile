@@ -102,6 +102,18 @@ export const fr = {
     settingsDetail: "Thème, langue",
   },
 
+  // ── Écran de secours ──
+  crash: {
+    title: "Quelque chose s’est cassé",
+    detail:
+      "L’écran n’a pas pu s’afficher. Réessayer suffit le plus souvent ; sinon, une version corrigée est peut-être déjà disponible.",
+    retry: "Réessayer",
+    lookForFix: "Chercher une version corrigée",
+    applying: "Application de la mise à jour…",
+    noFix: "Aucune version plus récente pour l’instant.",
+    checkFailed: "Recherche impossible. Vérifiez votre connexion.",
+  },
+
   // ── Mises à jour ──
   updates: {
     title: "Mises à jour",

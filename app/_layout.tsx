@@ -1,3 +1,4 @@
+import { ErrorBoundary } from "@/components/app/ErrorBoundary";
 import { ToastMessage } from "@/components/ui/ToastMessage";
 import { UpdateBanner } from "@/components/ui/UpdateBanner";
 import { CityCareColors, CityCareColorsDark } from "@/constants/theme";
@@ -57,7 +58,12 @@ function RootContent() {
 export default function RootLayout() {
   return (
     <PreferencesProvider>
-      <RootContent />
+      {/* Sous les préférences, pour que l'écran de secours ait le thème et la
+          langue choisis ; au-dessus de tout le reste, parce qu'une erreur de
+          rendu démonte l'arbre entier et ne laissait rien à l'écran. */}
+      <ErrorBoundary>
+        <RootContent />
+      </ErrorBoundary>
     </PreferencesProvider>
   );
 }

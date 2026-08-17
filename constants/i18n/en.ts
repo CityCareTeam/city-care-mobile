@@ -103,6 +103,17 @@ export const en: typeof fr = {
     settingsDetail: "Theme, language",
   },
 
+  crash: {
+    title: "Something broke",
+    detail:
+      "This screen failed to render. Trying again usually works; if not, a fixed version may already be available.",
+    retry: "Try again",
+    lookForFix: "Look for a fixed version",
+    applying: "Applying the update…",
+    noFix: "No newer version right now.",
+    checkFailed: "Check failed. Verify your connection.",
+  },
+
   updates: {
     title: "Updates",
     ready: "Update ready",
