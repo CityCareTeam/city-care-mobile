@@ -741,6 +741,14 @@ export const LAST_RELEASED_VERSION = "1.5.5";
 /** Changements accumulés depuis, donc embarqués par les pré-versions. */
 export const UNRELEASED_CHANGES: Change[] = [
   {
+    "kind": "feature",
+    "text": "Show status comments, let location be switched off, recentre the map"
+  },
+  {
+    "kind": "feature",
+    "text": "Share an event, and give every icon-only button a voice"
+  },
+  {
     "kind": "fix",
     "scope": "news",
     "text": "Put the description back on the cards"
