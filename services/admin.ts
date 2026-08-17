@@ -62,13 +62,26 @@ export type AdminUser = {
   role: AdminRole | null;
 };
 
+/**
+ * Taille d'une page de comptes.
+ *
+ * Petite, et pas seulement pour l'écran : le serveur interroge Keycloak une fois
+ * par compte pour connaître son rôle, donc une page de cent comptes fait cent
+ * allers-retours avant de répondre. Vingt-cinq arrivent vite et suffisent à
+ * remplir un téléphone.
+ */
+export const ADMIN_PAGE_SIZE = 25;
+
 export async function getAdminUsers(
   token: string,
   search?: string,
+  /** Rang du premier compte demandé — `0` pour la première page. */
+  first = 0,
 ): Promise<AdminUser[]> {
   const url = new URL(`${API_BASE_URL}/admin/users`);
   if (search?.trim()) url.searchParams.set("search", search.trim());
-  url.searchParams.set("max", "100");
+  url.searchParams.set("first", String(first));
+  url.searchParams.set("max", String(ADMIN_PAGE_SIZE));
 
   const response = await authFetch(url.toString(), token);
   if (!response.ok) throw new Error(await parseApiError(response, `Erreur ${response.status}`));

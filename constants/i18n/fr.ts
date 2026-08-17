@@ -119,6 +119,7 @@ export const fr = {
       `${name} pourra gérer les comptes, les rôles et les accès — y compris retirer les vôtres.`,
     promoteConfirm: "Nommer administrateur",
     roleLabel: "Rôle",
+    partialCounts: "Ces effectifs portent sur les comptes déjà chargés.",
     selfHint: "Vous ne pouvez pas modifier votre propre compte.",
   },
 

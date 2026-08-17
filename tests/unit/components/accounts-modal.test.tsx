@@ -1,6 +1,6 @@
 import { AccountsModal } from '@/components/admin/AccountsModal';
 import { getStrings } from '@/constants/i18n';
-import type { AdminUser } from '@/services/admin';
+import { ADMIN_PAGE_SIZE, type AdminUser } from '@/services/admin';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { Alert } from 'react-native';
 
@@ -148,5 +148,57 @@ describe('AccountsModal — agir', () => {
 
     expect(await screen.findByText(t.admin.selfHint)).toBeTruthy();
     expect(screen.queryByText(t.admin.disable)).toBeNull();
+  });
+});
+
+describe('AccountsModal — pagination', () => {
+  /**
+   * Keycloak ne renvoie aucun total : une page pleine est le seul indice qu'il
+   * en reste. L'absence de bouton est donc la seule façon honnête de dire qu'on
+   * est arrivé au bout.
+   */
+  function fullPage(prefix: string) {
+    return Array.from({ length: ADMIN_PAGE_SIZE }, (_, i) =>
+      user({ id: `${prefix}-${i}`, display_name: `${prefix} ${i}` }),
+    );
+  }
+
+  it('propose de charger la suite quand la page est pleine', async () => {
+    mockUsers.mockResolvedValueOnce(fullPage('a'));
+    open();
+
+    expect(await screen.findByText(t.home.loadMore)).toBeTruthy();
+  });
+
+  it('ne propose rien quand la page est incomplète', async () => {
+    open();
+    await screen.findByText('Zoé');
+
+    expect(screen.queryByText(t.home.loadMore)).toBeNull();
+  });
+
+  it('demande la page suivante au bon rang, et ajoute à la suite', async () => {
+    mockUsers.mockResolvedValueOnce(fullPage('a')).mockResolvedValueOnce([
+      user({ id: 'tardif', display_name: 'Tardif' }),
+    ]);
+    open();
+
+    fireEvent.press(await screen.findByText(t.home.loadMore));
+
+    await waitFor(() => expect(screen.getByText('Tardif')).toBeTruthy());
+    // Le rang demandé est le nombre déjà affiché, pas un numéro de page : c'est
+    // ce que Keycloak attend, et ça survit à un changement de taille de page.
+    expect(mockUsers).toHaveBeenLastCalledWith('jeton', '', ADMIN_PAGE_SIZE);
+    // La première page est toujours là.
+    expect(screen.getByText('a 0')).toBeTruthy();
+  });
+
+  // Les effectifs des puces ne décrivent que ce qui est chargé : le dire évite
+  // qu'on les lise comme des totaux.
+  it('avertit que les effectifs sont partiels', async () => {
+    mockUsers.mockResolvedValueOnce(fullPage('a'));
+    open();
+
+    expect(await screen.findByText(t.admin.partialCounts)).toBeTruthy();
   });
 });

@@ -120,6 +120,7 @@ export const en: typeof fr = {
       `${name} will be able to manage accounts, roles and access — including removing yours.`,
     promoteConfirm: "Make administrator",
     roleLabel: "Role",
+    partialCounts: "These counts cover the accounts loaded so far.",
     selfHint: "You can’t change your own account.",
   },
 

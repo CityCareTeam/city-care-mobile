@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useAppColors } from "@/hooks/use-app-colors";
 import { useStrings } from "@/hooks/use-strings";
 import {
+  ADMIN_PAGE_SIZE,
   ADMIN_ROLES,
   getAdminUsers,
   ROLE_LABEL_KEY,
@@ -72,6 +73,8 @@ export function AccountsModal({ visible, onClose }: { visible: boolean; onClose:
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
   const [failed, setFailed] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   /**
@@ -83,17 +86,33 @@ export function AccountsModal({ visible, onClose }: { visible: boolean; onClose:
    */
   const [openId, setOpenId] = useState<string | null>(null);
 
-  const load = useCallback(async (query: string) => {
-    setLoading(true);
+  /**
+   * Charge une page.
+   *
+   * `first === 0` remplace la liste — c'est une nouvelle recherche ; au-delà on
+   * ajoute à la suite. `hasMore` se déduit de la taille reçue : une page pleine
+   * laisse supposer une suivante, une page courte prouve qu'il n'y en a pas.
+   * Keycloak ne renvoyant aucun total, c'est le seul signal disponible.
+   */
+  const load = useCallback(async (query: string, first = 0) => {
+    if (first === 0) setLoading(true);
+    else setLoadingMore(true);
+
     try {
       const token = await getValidToken();
       if (!token) throw new Error("no token");
-      setUsers(await getAdminUsers(token, query));
+      const page = await getAdminUsers(token, query, first);
+      setUsers((current) => (first === 0 ? page : [...current, ...page]));
+      setHasMore(page.length === ADMIN_PAGE_SIZE);
       setFailed(false);
     } catch {
-      setFailed(true);
+      // Un échec en cours de déroulé ne jette pas ce qui est déjà affiché : on
+      // rend seulement le bouton, pour réessayer.
+      if (first === 0) setFailed(true);
+      setHasMore(true);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   }, []);
 
@@ -230,7 +249,10 @@ export function AccountsModal({ visible, onClose }: { visible: boolean; onClose:
 
       {/* Filtrer par rôle répond à la question qu'on se pose vraiment en ouvrant
           cette page : qui a des droits ? Les effectifs sont sur les puces —
-          « Agents 3 » se lit sans avoir à appuyer dessus. */}
+          « Agents 3 » se lit sans avoir à appuyer dessus.
+          Le filtre porte sur ce qui est chargé, pas sur l'ensemble : Keycloak ne
+          sait pas filtrer par rôle, et le dire vaut mieux que de laisser lire ces
+          chiffres comme des totaux. */}
       {!failed && (
         <View style={styles.filters}>
           {(["all", ...ADMIN_ROLES] as Filter[]).map((option) => {
@@ -259,6 +281,11 @@ export function AccountsModal({ visible, onClose }: { visible: boolean; onClose:
           })}
         </View>
       )}
+
+      {/* Dit une fois que ces chiffres décrivent les comptes chargés, tant qu'il
+          en reste à charger. Se taire les ferait lire comme des totaux — et
+          « Agents 2 » sur une ville qui en a douze est pire qu'aucun chiffre. */}
+      {!loading && !failed && hasMore && <Text style={styles.partialHint}>{t.admin.partialCounts}</Text>}
 
       {loading && (
         <View style={styles.skeletons}>
@@ -451,6 +478,25 @@ export function AccountsModal({ visible, onClose }: { visible: boolean; onClose:
             </View>
           );
         })}
+
+      {/* Une page pleine laisse supposer une suivante : Keycloak ne renvoie aucun
+          total, et l'absence de bouton est la seule façon honnête de dire qu'on
+          est au bout. */}
+      {!loading && !failed && hasMore && (
+        <TouchableOpacity
+          style={styles.more}
+          onPress={() => void load(search, users.length)}
+          disabled={loadingMore}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+        >
+          {loadingMore ? (
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : (
+            <Text style={styles.moreLabel}>{t.home.loadMore}</Text>
+          )}
+        </TouchableOpacity>
+      )}
     </ModalShell>
   );
 }
@@ -493,6 +539,25 @@ function makeStyles(c: ReturnType<typeof useAppColors>["colors"]) {
     filterLabel: { flexShrink: 1, fontSize: 11, fontWeight: "700" },
     filterCount: { fontSize: 11, fontWeight: "800", opacity: 0.75 },
     filterLabelActive: { color: "#fff", opacity: 1 },
+    partialHint: {
+      fontSize: 10.5,
+      color: c.text,
+      opacity: 0.45,
+      marginTop: -8,
+      marginBottom: 12,
+      lineHeight: 15,
+    },
+    more: {
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: 12,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: c.chipBorder,
+      backgroundColor: c.chipBg,
+      minHeight: 44,
+    },
+    moreLabel: { fontSize: 13, fontWeight: "700", color: c.primary },
 
     skeletons: { gap: 10 },
     skeletonAvatar: { width: 38, height: 38, borderRadius: 13 },
