@@ -198,8 +198,11 @@ export default function NotificationsScreen() {
   const handleTap = useCallback(async (item: NotificationResponse) => {
     await handleMarkRead(item);
     if (item.incident_id) {
-      const tab = item.type === "new_message" ? "&tab=chat" : "";
-      router.push(`/(tabs)/explore?selectId=${item.incident_id}${tab}`);
+      // Le fil, quand la notification parle d'un message — le sien ou celui
+      // qu'on vient de signaler. La fiche sinon : un contenu signalé, c'est la
+      // description et les photos qu'il faut lire.
+      const onThread = item.type === "new_message" || item.type === "message_flagged";
+      router.push(`/(tabs)/explore?selectId=${item.incident_id}${onThread ? "&tab=chat" : ""}`);
     }
   }, [handleMarkRead]);
 

@@ -295,7 +295,18 @@ export default function ProfileScreen() {
       </ScrollView>
 
       <NotificationSettingsModal visible={notifOpen} onClose={() => setNotifOpen(false)} />
-      <ModerationQueueModal visible={queueOpen} onClose={() => setQueueOpen(false)} />
+      {/* La file se ferme avant de naviguer : laisser une fenêtre ouverte
+          par-dessus l'écran qu'on rejoint avait déjà donné des écrans
+          superposés ailleurs. L'onglet visé dépend du contenu signalé — le fil
+          pour un message, la fiche pour un signalement. */}
+      <ModerationQueueModal
+        visible={queueOpen}
+        onClose={() => setQueueOpen(false)}
+        onOpenContent={(incidentId, onMessage) => {
+          setQueueOpen(false);
+          router.push(`/(tabs)/explore?selectId=${incidentId}${onMessage ? "&tab=chat" : ""}`);
+        }}
+      />
       <EditProfileModal
         visible={editOpen}
         initialValues={{

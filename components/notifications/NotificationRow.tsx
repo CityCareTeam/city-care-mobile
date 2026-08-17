@@ -15,6 +15,14 @@ type IconConfig = {
   color: string;
 };
 
+/**
+ * Types dont le serveur regroupe les notifications sous un compteur : trois
+ * messages sur un fil, ou trois personnes signalant le même contenu, tiennent en
+ * une ligne. Le nombre est alors la seule chose qui distingue « quelqu'un a
+ * réagi » de « ça s'emballe ».
+ */
+const COUNTED_TYPES = new Set(["new_message", "content_flagged", "message_flagged"]);
+
 function getIconConfig(type: string): IconConfig {
   switch (type) {
     case "new_incident":
@@ -23,6 +31,11 @@ function getIconConfig(type: string): IconConfig {
       return { name: "autorenew", bg: "#1D9BF020", color: "#1D9BF0" };
     case "new_message":
       return { name: "chat-bubble", bg: "#4caf5020", color: "#4caf50" };
+    // La modération est en rouge et sous un drapeau : c'est la seule notification
+    // qui demande un arbitrage, pas une lecture.
+    case "content_flagged":
+    case "message_flagged":
+      return { name: "flag", bg: "#e53e3e20", color: "#e53e3e" };
     default:
       return { name: "notifications", bg: "#AF52DE20", color: "#AF52DE" };
   }
@@ -133,7 +146,7 @@ function NotificationRowBase({ item, styles, strings, onPress, onDelete, onMarkR
                 <Text style={[styles.statusBadgeText, { color: statusColor }]}>{statusLabel}</Text>
               </View>
             )}
-            {item.type === "new_message" && (item.message_count ?? 0) > 1 && (
+            {COUNTED_TYPES.has(item.type) && (item.message_count ?? 0) > 1 && (
               <View style={styles.msgCountBadge}>
                 <Text style={styles.msgCountText}>{item.message_count}</Text>
               </View>

@@ -49,6 +49,16 @@ export type FlaggedContent = {
   id: string;
   targetType: FlagTarget;
   targetId: string;
+  /**
+   * L'incident qui porte le contenu : lui-même quand la cible est un incident,
+   * celui du fil quand c'est un message. C'est ce qui rend le contenu ouvrable
+   * depuis la file — juger sur un extrait de quatre lignes, sans le contexte, va
+   * bien jusqu'au cas douteux.
+   *
+   * Nul quand le contenu a disparu : l'entrée reste alors dans la file pour
+   * pouvoir être close, mais il n'y a plus rien à ouvrir.
+   */
+  incidentId: string | null;
   /** Ce qui est reproché, tel que l'a choisi le premier signalant. */
   reason: FlagReason;
   /** Combien de personnes ont signalé ce contenu. */

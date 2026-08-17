@@ -590,6 +590,7 @@ export const fr = {
     onIncident: "Sur un signalement",
     onMessage: "Sur un message",
     noExcerpt: "Aucun extrait disponible.",
+    openContent: "Ouvrir",
     keep: "Garder",
     hide: "Masquer",
     decided: "Décision enregistrée",

@@ -557,6 +557,7 @@ export const en: typeof fr = {
     onIncident: "On a report",
     onMessage: "On a message",
     noExcerpt: "No excerpt available.",
+    openContent: "Open",
     keep: "Keep",
     hide: "Hide",
     decided: "Decision recorded",

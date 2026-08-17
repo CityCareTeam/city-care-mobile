@@ -26,16 +26,23 @@ type State = "loading" | "ready" | "unavailable" | "failed";
  * pas une non-décision — c'est un arbitrage, il ferme le signalement et doit
  * laisser une trace comme l'autre.
  *
- * ⚠️ Les routes n'existent pas encore côté serveur. L'écran le dit en propre au
- * lieu d'afficher une erreur : un endpoint absent n'est pas une panne, et le
- * présenter comme telle enverrait chercher un problème là où il n'y en a pas.
+ * Chaque entrée s'ouvre aussi, parce qu'un extrait suffit au cas franc et pas au
+ * cas douteux : il manque le ton du fil, les photos, l'historique. La navigation
+ * remonte à l'écran — un composant ne route pas de lui-même ici.
+ *
+ * Si le serveur ne connaît pas ces routes, l'écran le dit en propre au lieu
+ * d'afficher une erreur : un endpoint absent n'est pas une panne, et le présenter
+ * comme telle enverrait chercher un problème là où il n'y en a pas.
  */
 export function ModerationQueueModal({
   visible,
   onClose,
+  onOpenContent,
 }: {
   visible: boolean;
   onClose: () => void;
+  /** Ouvre l'incident concerné, sur son fil quand le contenu visé est un message. */
+  onOpenContent?: (incidentId: string, onMessage: boolean) => void;
 }) {
   const { colors } = useAppColors();
   const t = useStrings();
@@ -130,9 +137,25 @@ export function ModerationQueueModal({
               <Text style={styles.when}>{timeAgo(flag.firstFlaggedAt)}</Text>
             </View>
 
-            <Text style={styles.kind}>
-              {flag.targetType === "incident" ? t.moderation.onIncident : t.moderation.onMessage}
-            </Text>
+            <View style={styles.kindRow}>
+              <Text style={styles.kind}>
+                {flag.targetType === "incident" ? t.moderation.onIncident : t.moderation.onMessage}
+              </Text>
+              {/* Absent quand le contenu a disparu : un bouton qui ne mène nulle
+                  part vaut moins que pas de bouton. L'entrée reste close-able. */}
+              {onOpenContent && flag.incidentId && (
+                <TouchableOpacity
+                  style={styles.open}
+                  onPress={() => onOpenContent(flag.incidentId!, flag.targetType === "message")}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel={t.moderation.openContent}
+                >
+                  <Text style={styles.openLabel}>{t.moderation.openContent}</Text>
+                  <MaterialIcons name="open-in-new" size={13} color={colors.primary} />
+                </TouchableOpacity>
+              )}
+            </View>
             {/* L'extrait, pour juger sans ouvrir : c'est ce qui fait la
                 différence entre une file qu'on traite et une file qu'on remet. */}
             <Text style={styles.excerpt} numberOfLines={4}>
@@ -205,7 +228,9 @@ function makeStyles(c: ReturnType<typeof useAppColors>["colors"]) {
     countText: { fontSize: 11, fontWeight: "800", color: "#fff" },
     reason: { flex: 1, fontSize: 12.5, fontWeight: "700", color: c.text },
     when: { fontSize: 11, color: c.text, opacity: 0.4 },
+    kindRow: { flexDirection: "row", alignItems: "center", gap: 8 },
     kind: {
+      flex: 1,
       fontSize: 10.5,
       fontWeight: "800",
       letterSpacing: 0.5,
@@ -213,6 +238,8 @@ function makeStyles(c: ReturnType<typeof useAppColors>["colors"]) {
       color: c.text,
       opacity: 0.4,
     },
+    open: { flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 3, paddingLeft: 6 },
+    openLabel: { fontSize: 12, fontWeight: "700", color: c.primary },
     excerpt: { fontSize: 13, color: c.text, opacity: 0.8, lineHeight: 18, fontStyle: "italic" },
     actions: { flexDirection: "row", gap: 8, marginTop: 6 },
     keep: {
