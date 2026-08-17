@@ -742,6 +742,62 @@ export const LAST_RELEASED_VERSION = "1.5.5";
 export const UNRELEASED_CHANGES: Change[] = [
   {
     "kind": "feature",
+    "scope": "settings",
+    "text": "Sounds, vibration, default feed order and a way to clear local data"
+  },
+  {
+    "kind": "fix",
+    "scope": "report",
+    "text": "Dismiss the modal instead of stacking a tab over it"
+  },
+  {
+    "kind": "feature",
+    "text": "Colour the distance, and show it on a report's details"
+  },
+  {
+    "kind": "feature",
+    "scope": "home",
+    "text": "Put what distinguishes a row at the top of it"
+  },
+  {
+    "kind": "fix",
+    "scope": "home",
+    "text": "Actually pass the distance down to the row"
+  },
+  {
+    "kind": "feature",
+    "text": "Show how far a report is, and let the guide be swiped"
+  },
+  {
+    "kind": "fix",
+    "scope": "report",
+    "text": "Stop the duplicate lookup from disturbing the map"
+  },
+  {
+    "kind": "feature",
+    "text": "Warn about duplicates, open directions, and search an address on the map"
+  },
+  {
+    "kind": "fix",
+    "scope": "updates",
+    "text": "Name the channel next to the build rank, not just the rank"
+  },
+  {
+    "kind": "feature",
+    "scope": "updates",
+    "text": "Give each of the three facts the shape of what it is"
+  },
+  {
+    "kind": "feature",
+    "scope": "updates",
+    "text": "Give the update window a state, not just a colour"
+  },
+  {
+    "kind": "feature",
+    "text": "Catch render errors, and rebuild the update banner on the app's own idiom"
+  },
+  {
+    "kind": "feature",
     "text": "Open news items, and keep the map's last known state"
   },
   {
