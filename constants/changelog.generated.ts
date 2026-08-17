@@ -741,6 +741,11 @@ export const LAST_RELEASED_VERSION = "1.5.5";
 /** Changements accumulés depuis, donc embarqués par les pré-versions. */
 export const UNRELEASED_CHANGES: Change[] = [
   {
+    "kind": "fix",
+    "scope": "moderation",
+    "text": "Ouvrir la fiche pour de vrai, et retirer le fond quadrillé"
+  },
+  {
     "kind": "feature",
     "scope": "menu",
     "text": "Bouton de déconnexion en bas du panneau latéral"
