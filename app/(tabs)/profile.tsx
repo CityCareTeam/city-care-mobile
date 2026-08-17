@@ -15,6 +15,8 @@ import { useStrings } from "@/hooks/use-strings";
 import { STRINGS } from "@/constants/strings";
 import { deleteAccount } from "@/services/users";
 import { getModerationCount } from "@/services/moderation";
+import { exportMyData } from "@/services/data-export";
+import { Toast } from "@/components/ui/ToastMessage";
 import { getValidToken } from "@/storage/tokens";
 import { formatDate } from "@/utils/format-date";
 import { router } from "expo-router";
@@ -104,6 +106,17 @@ function makeStyles(c: AppColors, bottomInset: number) {
     },
     blockAccent: { width: 3, height: 18, borderRadius: 2, backgroundColor: c.primary },
     blockTitle: { fontSize: 16, fontWeight: "800", color: c.text },
+    // Sous une carte plutôt que dans la ligne : la description tient sur trois
+    // lignes, et une ligne de réglages n en porte qu une.
+    blockHint: {
+      alignSelf: "flex-start",
+      fontSize: 12,
+      lineHeight: 17,
+      color: c.text,
+      opacity: 0.45,
+      marginTop: 2,
+      marginBottom: 8,
+    },
 
     // ── Cards ──
     card: { width: "100%", marginBottom: 8, padding: 0 },
@@ -172,6 +185,38 @@ export default function ProfileScreen() {
   const [queueOpen, setQueueOpen] = useState(false);
   const [queueCount, setQueueCount] = useState(0);
   const [deleting, setDeleting] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  /**
+   * Trois issues, trois phrases.
+   *
+   * « Partagé » n'est pas garanti — la personne peut refermer la feuille sans
+   * rien choisir, et le système ne le dit pas. On annonce donc que le fichier est
+   * prêt, ce qui est vrai dans les deux cas, plutôt qu'un envoi qu'on ne peut pas
+   * confirmer.
+   */
+  async function runExport() {
+    setExporting(true);
+    try {
+      const token = await getValidToken();
+      if (!token) {
+        Toast.show({ type: "error", text1: t.api.unauthenticated });
+        return;
+      }
+      const outcome = await exportMyData(token);
+      Toast.show({
+        type: outcome === "failed" ? "error" : "success",
+        text1:
+          outcome === "shared"
+            ? t.settings.exportReady
+            : outcome === "unavailable"
+              ? t.settings.exportNoTarget
+              : t.settings.exportFailed,
+      });
+    } finally {
+      setExporting(false);
+    }
+  }
 
   useEffect(() => {
     if (!loading && !isAuthenticated) router.replace("/login");
@@ -307,6 +352,32 @@ export default function ProfileScreen() {
         <Card style={styles.card}>
           <SettingsRow label={t.profile.signOut} icon="logout" color={colors.primary} showChevron={false} last onPress={logout} styles={styles} colors={colors} />
         </Card>
+
+        {/* ── Mes données ──
+            Ici et non dans les réglages : l'export tire du serveur ce qui décrit
+            le *compte* — signalements, messages, votes — et suit donc la personne
+            d'un téléphone à l'autre, quand les réglages décrivent cet appareil-ci.
+
+            Juste au-dessus de la suppression de compte, et dans son propre bloc.
+            Au-dessus, parce que c'en est le pendant exact — droit d'accès contre
+            droit à l'effacement — et que le moment où l'on veut récupérer ses
+            données est celui où l'on envisage de partir. Dans son propre bloc,
+            parce que ce sont deux gestes opposés : l'un rend, l'autre détruit. */}
+        <BlockHeader title={t.settings.myData} styles={styles} />
+        <Card style={styles.card}>
+          <SettingsRow
+            label={t.settings.exportData}
+            icon="download"
+            color={colors.primary}
+            showChevron={false}
+            last
+            loading={exporting}
+            onPress={() => void runExport()}
+            styles={styles}
+            colors={colors}
+          />
+        </Card>
+        <Text style={styles.blockHint}>{t.settings.exportDetail}</Text>
 
         {/* ── Zone danger ── */}
         <BlockHeader title={t.profile.dangerZone} styles={styles} />

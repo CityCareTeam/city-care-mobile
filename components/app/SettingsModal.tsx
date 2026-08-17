@@ -7,8 +7,6 @@ import { resolveLanguage, type Language } from "@/constants/i18n";
 import type { SortPreference, TextScale, ThemePreference } from "@/storage/preferences";
 import { clearLocalData } from "@/storage/local-reset";
 import { forgetGuide } from "@/storage/onboarding";
-import { exportMyData } from "@/services/data-export";
-import { getValidToken } from "@/storage/tokens";
 import { previewSound, warned } from "@/utils/feedback";
 import { Toast } from "@/components/ui/ToastMessage";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
@@ -72,7 +70,6 @@ export function SettingsModal({ visible, onClose }: { visible: boolean; onClose:
   const effective = resolveLanguage(language);
   const s = useStrings();
   const [clearing, setClearing] = useState(false);
-  const [exporting, setExporting] = useState(false);
 
   /**
    * Le son s'essaie en même temps qu'on l'active.
@@ -97,37 +94,6 @@ export function SettingsModal({ visible, onClose }: { visible: boolean; onClose:
     await forgetGuide();
     warned();
     Toast.show({ type: "success", text1: s.settings.guideReset });
-  }
-
-  /**
-   * Trois issues, trois phrases.
-   *
-   * « Partagé » n'est pas garanti — la personne peut refermer la feuille sans
-   * rien choisir, et le système ne le dit pas. On annonce donc que le fichier
-   * est prêt, ce qui est vrai dans les deux cas, plutôt qu'un envoi qu'on ne
-   * peut pas confirmer.
-   */
-  async function runExport() {
-    setExporting(true);
-    try {
-      const token = await getValidToken();
-      if (!token) {
-        Toast.show({ type: "error", text1: s.api.unauthenticated });
-        return;
-      }
-      const outcome = await exportMyData(token);
-      Toast.show({
-        type: outcome === "failed" ? "error" : "success",
-        text1:
-          outcome === "shared"
-            ? s.settings.exportReady
-            : outcome === "unavailable"
-              ? s.settings.exportNoTarget
-              : s.settings.exportFailed,
-      });
-    } finally {
-      setExporting(false);
-    }
   }
 
   /**
@@ -381,32 +347,6 @@ export function SettingsModal({ visible, onClose }: { visible: boolean; onClose:
       >
         <MaterialIcons name="school" size={17} color={colors.primary} />
         <Text style={styles.secondaryLabel}>{s.settings.replayGuide}</Text>
-      </TouchableOpacity>
-
-      <View style={styles.divider} />
-
-      {/* ── Mes données ──
-          Le pendant de la suppression de compte : pouvoir tout effacer sans
-          pouvoir rien consulter laissait le choix entre l'ignorance et la table
-          rase. Le fichier part vers l'application qu'on veut — courriel, disque,
-          messagerie — l'application n'en garde pas de copie. */}
-      <Text style={styles.label}>{s.settings.myData}</Text>
-      <Text style={[styles.hint, { marginBottom: 12 }]}>{s.settings.exportDetail}</Text>
-      <TouchableOpacity
-        style={styles.secondary}
-        onPress={() => void runExport()}
-        disabled={exporting}
-        activeOpacity={0.8}
-        accessibilityRole="button"
-      >
-        {exporting ? (
-          <ActivityIndicator size="small" color={colors.primary} />
-        ) : (
-          <>
-            <MaterialIcons name="download" size={17} color={colors.primary} />
-            <Text style={styles.secondaryLabel}>{s.settings.exportData}</Text>
-          </>
-        )}
       </TouchableOpacity>
 
       <View style={styles.divider} />
