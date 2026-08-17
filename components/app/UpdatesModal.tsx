@@ -2,7 +2,7 @@ import { ModalShell } from "@/components/ui/ModalShell";
 import { useAppColors } from "@/hooks/use-app-colors";
 import { checkAndFetchUpdate, useAppUpdate, useRunningUpdate } from "@/hooks/use-app-update";
 import { useStrings } from "@/hooks/use-strings";
-import { appVersion } from "@/utils/app-version";
+import { baseVersion, buildLabel } from "@/utils/app-version";
 import { mixHex } from "@/utils/color";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import * as Updates from "expo-updates";
@@ -101,23 +101,49 @@ export function UpdatesModal({ visible, onClose }: { visible: boolean; onClose: 
         </View>
       </View>
 
+      {/* Trois faits techniques, mais de trois natures différentes : une
+          version, un identifiant, une catégorie. Les rendre tous en texte gris
+          aligné à droite obligeait à les lire un par un pour comprendre lequel
+          on regardait. Chacun a maintenant la forme de ce qu'il est. */}
       <View style={styles.rows}>
-        <Row icon="label" label={t.updates.installedVersion} value={appVersion()} styles={styles} />
-        <Row
-          icon="layers"
-          label={t.updates.runningBundle}
-          // Sans identifiant, c'est celui livré avec l'application : le dire
-          // vaut mieux qu'un tiret, qui se lit comme une donnée manquante.
-          value={bundle || t.updates.embedded}
-          styles={styles}
-        />
-        <Row
-          icon="alt-route"
-          label={t.updates.channel}
-          value={Updates.channel ?? t.updates.noChannel}
-          styles={styles}
-          last
-        />
+        <Row icon="label" label={t.updates.installedVersion} styles={styles}>
+          <Text style={styles.value}>{baseVersion()}</Text>
+          {/* Le rang de pré-version compte les APK. Il mérite d'être lisible
+              séparément : c'est lui qu'on compare entre deux appareils de test,
+              pas le « 1.6.0 » qu'ils ont en commun. */}
+          {buildLabel() ? (
+            <View style={styles.buildChip}>
+              <Text style={styles.buildChipText}>{buildLabel()}</Text>
+            </View>
+          ) : null}
+        </Row>
+
+        <Row icon="layers" label={t.updates.runningBundle} styles={styles}>
+          {bundle ? (
+            // Un identifiant, donc présenté comme tel : chiffres à largeur
+            // fixe sur fond teinté, pour se comparer d'un coup d'œil à ce qu'on
+            // vient de publier.
+            <View style={styles.codeChip}>
+              <Text style={styles.codeChipText}>{bundle}</Text>
+            </View>
+          ) : (
+            // Sans identifiant, c'est celui livré avec l'application : le dire
+            // vaut mieux qu'un tiret, qui se lit comme une donnée manquante.
+            <Text style={styles.muted}>{t.updates.embedded}</Text>
+          )}
+        </Row>
+
+        <Row icon="alt-route" label={t.updates.channel} styles={styles} last>
+          {Updates.channel ? (
+            // Le fait le plus utile du panneau : sur quel canal cet appareil
+            // est branché. Une pastille colorée le dit sans le lire.
+            <View style={[styles.channelPill, { backgroundColor: channelColor(Updates.channel, colors.primary) }]}>
+              <Text style={styles.channelText}>{Updates.channel}</Text>
+            </View>
+          ) : (
+            <Text style={styles.muted}>{t.updates.noChannel}</Text>
+          )}
+        </Row>
       </View>
 
       <TouchableOpacity
@@ -151,24 +177,39 @@ export function UpdatesModal({ visible, onClose }: { visible: boolean; onClose: 
   );
 }
 
+/**
+ * Couleur d'un canal.
+ *
+ * `beta` reprend la couleur de l'application, `rc` le bleu des états en cours
+ * et `production` le vert des états résolus : la progression se lit dans la
+ * teinte, du chantier au livré. Un canal inconnu prend le gris plutôt qu'une
+ * couleur inventée qui laisserait croire à un sens.
+ */
+function channelColor(channel: string, primary: string): string {
+  if (channel === "production") return "#4caf50";
+  if (channel === "rc") return "#2196f3";
+  if (channel === "beta") return primary;
+  return "#78909c";
+}
+
 function Row({
   icon,
   label,
-  value,
   last = false,
   styles,
+  children,
 }: {
   icon: Icon;
   label: string;
-  value: string;
   last?: boolean;
   styles: ReturnType<typeof makeStyles>;
+  children: React.ReactNode;
 }) {
   return (
     <View style={[styles.row, last && styles.rowLast]}>
       <MaterialIcons name={icon} size={15} color={styles.rowLabel.color} style={styles.rowIcon} />
       <Text style={styles.rowLabel}>{label}</Text>
-      <Text style={styles.rowValue} numberOfLines={1}>{value}</Text>
+      <View style={styles.rowValue}>{children}</View>
     </View>
   );
 }
@@ -214,12 +255,57 @@ function makeStyles(colors: ReturnType<typeof useAppColors>["colors"], isDark: b
     rowLast: { borderBottomWidth: 0 },
     rowIcon: { opacity: 0.75 },
     rowLabel: { flex: 1, fontSize: 13, color: colors.text, opacity: 0.6 },
-    rowValue: {
-      fontSize: 13,
+    rowValue: { flexDirection: "row", alignItems: "center", gap: 6, flexShrink: 1 },
+
+    value: {
+      fontSize: 13.5,
       fontWeight: "700",
       color: colors.text,
-      flexShrink: 1,
       fontVariant: ["tabular-nums"],
+    },
+    muted: { fontSize: 13, color: colors.text, opacity: 0.45 },
+
+    buildChip: {
+      paddingHorizontal: 7,
+      paddingVertical: 2,
+      borderRadius: 7,
+      backgroundColor: mixHex(colors.white, colors.primary, 0.16),
+    },
+    buildChipText: {
+      fontSize: 11,
+      fontWeight: "800",
+      color: colors.primary,
+      letterSpacing: 0.2,
+    },
+
+    codeChip: {
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 7,
+      backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)",
+    },
+    codeChipText: {
+      fontSize: 12,
+      fontWeight: "700",
+      color: colors.text,
+      opacity: 0.8,
+      // Un identifiant se compare caractère par caractère : chiffres à largeur
+      // fixe, et de l'air entre les lettres.
+      fontVariant: ["tabular-nums"],
+      letterSpacing: 1,
+    },
+
+    channelPill: {
+      paddingHorizontal: 9,
+      paddingVertical: 3,
+      borderRadius: 9,
+    },
+    channelText: {
+      fontSize: 11,
+      fontWeight: "800",
+      color: "#fff",
+      textTransform: "uppercase",
+      letterSpacing: 0.6,
     },
 
     action: {

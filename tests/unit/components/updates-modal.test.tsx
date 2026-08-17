@@ -3,6 +3,16 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
 const state = { isUpdatePending: false };
 const mockCheck = jest.fn();
+const expoConfig: { version: string } = { version: '1.6.0-beta.3' };
+
+jest.mock('expo-constants', () => ({
+  __esModule: true,
+  default: {
+    get expoConfig() {
+      return expoConfig;
+    },
+  },
+}));
 
 jest.mock('expo-updates', () => ({
   useUpdates: () => ({ ...state, currentlyRunning: { updateId: null, isEmbeddedLaunch: true } }),
@@ -19,6 +29,7 @@ jest.mock('@/hooks/use-app-update', () => {
 beforeEach(() => {
   state.isUpdatePending = false;
   mockCheck.mockReset();
+  expoConfig.version = '1.6.0-beta.3';
 });
 
 async function press(label: string) {
@@ -74,5 +85,25 @@ describe('UpdatesModal', () => {
     render(<UpdatesModal visible onClose={() => {}} />);
     expect(screen.getByText('Livré avec l’application')).toBeTruthy();
     expect(screen.getByText('beta')).toBeTruthy();
+  });
+
+  /**
+   * Le rang de pré-version se détache de la version : c'est lui qu'on compare
+   * entre deux appareils de test, pas le « 1.6.0 » qu'ils ont en commun.
+   */
+  it('sépare la version de son rang de pré-version', () => {
+    expoConfig.version = '1.6.0-beta.3';
+    render(<UpdatesModal visible onClose={() => {}} />);
+
+    expect(screen.getByText('1.6.0')).toBeTruthy();
+    expect(screen.getByText('3')).toBeTruthy();
+  });
+
+  it('n’affiche pas de rang sur une version livrée', () => {
+    expoConfig.version = '1.6.0';
+    render(<UpdatesModal visible onClose={() => {}} />);
+
+    expect(screen.getByText('1.6.0')).toBeTruthy();
+    expect(screen.queryByText('3')).toBeNull();
   });
 });
