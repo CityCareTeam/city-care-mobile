@@ -743,6 +743,11 @@ export const UNRELEASED_CHANGES: Change[] = [
   {
     "kind": "feature",
     "scope": "moderation",
+    "text": "Onglet des contenus masqués et pastille de la file"
+  },
+  {
+    "kind": "feature",
+    "scope": "moderation",
     "text": "Notifications de signalement et ouverture du contenu"
   },
   {
