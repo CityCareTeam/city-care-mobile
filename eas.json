@@ -10,7 +10,6 @@
       "env": {
         "EXPO_PUBLIC_API_URL": "http://192.168.1.152:5158",
         "EXPO_PUBLIC_DEBUG_NETWORK": "false",
-        "EXPO_PUBLIC_OPENAGENDA_KEY": "oa_pk_YtIYgpoHYSbKnoOuBLYshZXEbfXsggdeQBeUGwnXaGmYpFKSnKhnkKKZGZpPwkyH",
         "APP_RELEASE_TAG": "beta"
       },
       "android": {
@@ -24,7 +23,6 @@
       "env": {
         "EXPO_PUBLIC_API_URL": "https://staging-api.citycare.fr",
         "EXPO_PUBLIC_DEBUG_NETWORK": "false",
-        "EXPO_PUBLIC_OPENAGENDA_KEY": "oa_pk_YtIYgpoHYSbKnoOuBLYshZXEbfXsggdeQBeUGwnXaGmYpFKSnKhnkKKZGZpPwkyH",
         "APP_RELEASE_TAG": "rc"
       },
       "android": {
@@ -37,7 +35,6 @@
       "env": {
         "EXPO_PUBLIC_API_URL": "http://172.20.10.245/api",
         "EXPO_PUBLIC_DEBUG_NETWORK": "false",
-        "EXPO_PUBLIC_OPENAGENDA_KEY": "oa_pk_YtIYgpoHYSbKnoOuBLYshZXEbfXsggdeQBeUGwnXaGmYpFKSnKhnkKKZGZpPwkyH",
         "APP_RELEASE_TAG": "none"
       },
       "android": {

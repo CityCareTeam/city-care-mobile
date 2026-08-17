@@ -233,8 +233,8 @@ export const en: typeof fr = {
     pickTitle: "City",
     empty: "No upcoming event right now.",
     failed: "Couldn’t load the news.",
-    unconfigured: "This build doesn’t know where to look for the news.",
-    source: (city: string) => `Source: ${city}’s public agenda, via OpenAgenda`,
+    source: (city: string, km: number) =>
+      `OpenAgenda public events, within ${km} km of ${city}`,
   },
 
   profile: {

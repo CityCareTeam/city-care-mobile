@@ -1,4 +1,4 @@
-import { NEWS_CITIES, NEWS_CITY_RADIUS_KM, type NewsCity } from "@/constants/news-cities";
+import { AUTO_PICK_RADIUS_KM, NEWS_CITIES, type NewsCity } from "@/constants/news-cities";
 import { distanceKm } from "@/utils/incident-search";
 
 /**
@@ -12,7 +12,7 @@ import { distanceKm } from "@/utils/incident-search";
 export function nearestCity(
   coords: { latitude: number; longitude: number },
   cities: readonly NewsCity[] = NEWS_CITIES,
-  radiusKm: number = NEWS_CITY_RADIUS_KM,
+  radiusKm: number = AUTO_PICK_RADIUS_KM,
 ): NewsCity | null {
   let closest: NewsCity | null = null;
   let shortest = Infinity;

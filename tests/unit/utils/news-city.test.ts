@@ -16,10 +16,20 @@ describe('nearestCity', () => {
     expect(nearestCity(TOULOUSE)?.id).toBe('toulouse');
   });
 
-  // Un seuil qui tombe à quatre cents mètres d'une commune réelle n'est pas un
-  // seuil. Ce test existe pour qu'on ne le rabaisse pas sans s'en apercevoir.
-  it('rattache le Plateau d’Hauteville à Lyon, à soixante kilomètres', () => {
-    expect(nearestCity(PLATEAU_HAUTEVILLE)?.id).toBe('lyon');
+  /**
+   * Le plateau se désigne lui-même, alors qu'il n'a pas d'agenda : c'est tout
+   * l'intérêt d'interroger un point plutôt qu'un identifiant. Sans lui dans la
+   * liste, il tombait sur Lyon à 60,4 km — quatre cents mètres au-delà du seuil
+   * d'alors, qui l'aurait laissé sans rien.
+   */
+  it('rattache le Plateau d’Hauteville à lui-même, pas à Lyon', () => {
+    expect(nearestCity(PLATEAU_HAUTEVILLE)?.id).toBe('plateau-hauteville');
+  });
+
+  // Une commune voisine du plateau ne doit pas basculer sur Lyon.
+  it('couvre les alentours du plateau', () => {
+    // Cormaranche-en-Bugey, 5 km au sud.
+    expect(nearestCity({ latitude: 45.8952, longitude: 5.5567 })?.id).toBe('plateau-hauteville');
   });
 
   // L'agenda couvre une métropole : être dans une commune voisine ne doit pas
@@ -57,8 +67,16 @@ describe('cityById', () => {
 });
 
 describe('NEWS_CITIES', () => {
-  it('n’a ni identifiant ni agenda en double', () => {
+  it('n’a pas d’identifiant en double', () => {
     expect(new Set(NEWS_CITIES.map((c) => c.id)).size).toBe(NEWS_CITIES.length);
-    expect(new Set(NEWS_CITIES.map((c) => c.agendaUid)).size).toBe(NEWS_CITIES.length);
+  });
+
+  // Un rayon nul ne renverrait jamais rien, et le lieu resterait vide sans que
+  // l'écran ait de quoi l'expliquer.
+  it('donne à chaque lieu un rayon de recherche exploitable', () => {
+    for (const city of NEWS_CITIES) {
+      expect(city.radiusKm).toBeGreaterThanOrEqual(5);
+      expect(city.radiusKm).toBeLessThanOrEqual(50);
+    }
   });
 });

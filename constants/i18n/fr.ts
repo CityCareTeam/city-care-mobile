@@ -242,8 +242,8 @@ export const fr = {
     pickTitle: "Ville",
     empty: "Aucun événement à venir pour le moment.",
     failed: "Impossible de charger les actualités.",
-    unconfigured: "Cette version de l’application ne sait pas où chercher les actualités.",
-    source: (city: string) => `Source : agenda public de ${city}, via OpenAgenda`,
+    source: (city: string, km: number) =>
+      `Événements publics OpenAgenda, à ${km} km autour de ${city}`,
   },
 
   // ── Profil ──

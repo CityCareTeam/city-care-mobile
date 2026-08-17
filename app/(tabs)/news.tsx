@@ -98,15 +98,8 @@ export default function NewsScreen() {
             </View>
 
             {/* Le bandeau ne remplace pas la liste : un agenda daté reste plus
-                utile qu'un écran vide, et cette ligne dit qu'il l'est.
-                Sans clé, pas de bouton « réessayer » : il n'y a rien à
-                réessayer, et le proposer ferait tourner l'utilisateur en rond. */}
-            {failed && (
-              <ErrorNotice
-                detail={failed === "unconfigured" ? t.news.unconfigured : t.news.failed}
-                onRetry={failed === "network" ? () => void refresh() : undefined}
-              />
-            )}
+                utile qu'un écran vide, et cette ligne dit qu'il l'est. */}
+            {failed && <ErrorNotice detail={t.news.failed} onRetry={() => void refresh()} />}
           </>
         }
         ListEmptyComponent={
@@ -137,7 +130,7 @@ export default function NewsScreen() {
         }
         ListFooterComponent={
           city && (items?.length ?? 0) > 0 ? (
-            <Text style={styles.source}>{t.news.source(city.name)}</Text>
+            <Text style={styles.source}>{t.news.source(city.name, city.radiusKm)}</Text>
           ) : null
         }
       />
