@@ -741,6 +741,11 @@ export const LAST_RELEASED_VERSION = "1.5.5";
 /** Changements accumulés depuis, donc embarqués par les pré-versions. */
 export const UNRELEASED_CHANGES: Change[] = [
   {
+    "kind": "feature",
+    "scope": "moderation",
+    "text": "Notifications de signalement et ouverture du contenu"
+  },
+  {
     "kind": "fix",
     "scope": "moderation",
     "text": "Poser les boutons qui ouvrent le signalement"
