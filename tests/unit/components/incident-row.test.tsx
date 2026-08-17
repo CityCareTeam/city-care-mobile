@@ -1,6 +1,7 @@
 import { IncidentRow } from '@/components/incident-row';
-import { TYPE_LABEL } from '@/constants/incidents';
-import { render, screen } from '@testing-library/react-native';
+import { STATUS_LABEL, TYPE_LABEL } from '@/constants/incidents';
+import { getStrings } from '@/constants/i18n';
+import { fireEvent, render, screen } from '@testing-library/react-native';
 
 const BASE = {
   id: '1',
@@ -65,5 +66,44 @@ describe('IncidentRow', () => {
   it('n’affiche rien sans distance', () => {
     render(<IncidentRow {...BASE} />);
     expect(screen.queryByText(/km|\bm\b/)).toBeNull();
+  });
+});
+
+describe('IncidentRow — contenu masqué', () => {
+  const t = getStrings();
+
+  /**
+   * Le manque que ces tests verrouillent : un signalement masqué par la
+   * modération quittait toutes les lectures, y compris celle de son auteur. Il
+   * disparaissait donc de sa liste sans un mot — ce qui se lit comme une perte
+   * de données et non comme une décision.
+   */
+  it('annonce le masquage', () => {
+    render(<IncidentRow {...BASE} hidden />);
+    expect(screen.getByText(t.moderation.hiddenTag)).toBeTruthy();
+  });
+
+  /**
+   * À la place du statut, pas au-dessus : masqué, le contenu n'avance plus dans
+   * le traitement, et afficher les deux ferait croire qu'il suit son cours.
+   */
+  it('remplace le badge de statut au lieu de s’y ajouter', () => {
+    render(<IncidentRow {...BASE} hidden />);
+    expect(screen.queryByText(STATUS_LABEL.reported)).toBeNull();
+  });
+
+  it('garde le statut quand rien n’est masqué', () => {
+    render(<IncidentRow {...BASE} />);
+    expect(screen.getByText(STATUS_LABEL.reported)).toBeTruthy();
+    expect(screen.queryByText(t.moderation.hiddenTag)).toBeNull();
+  });
+
+  // La ligne reste ouvrable : le serveur sert la fiche à son auteur, et c'est là
+  // qu'il lit pourquoi elle a été retirée.
+  it('reste ouvrable', () => {
+    const onPress = jest.fn();
+    render(<IncidentRow {...BASE} hidden onPress={onPress} />);
+    fireEvent.press(screen.getByLabelText(new RegExp(t.moderation.hiddenTag)));
+    expect(onPress).toHaveBeenCalledWith('1');
   });
 });

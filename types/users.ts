@@ -28,6 +28,14 @@ export type MyIncidentItem = {
   description?: string;
   address_label: string;
   created_at: string;
+  /**
+   * État de modération, renvoyé seulement ici — c'est la seule liste où un
+   * contenu masqué reparaît, et seulement pour son auteur.
+   *
+   * Facultatif parce qu'un serveur plus ancien ne l'envoie pas : absent se lit
+   * comme « visible », ce qui était le comportement d'avant.
+   */
+  visibility?: "visible" | "hidden" | "removed";
 };
 
 export type MyIncidentsResponse = {

@@ -562,6 +562,9 @@ export const en: typeof fr = {
     hide: "Hide",
     decided: "Decision recorded",
     decideFailed: "The decision could not be recorded.",
+    hiddenTag: "Hidden",
+    hiddenNotice:
+      "This report was hidden by moderation. Other users can no longer see it.",
     tabQueue: "Pending",
     tabHidden: "Hidden",
     hiddenEmpty: "No hidden content.",

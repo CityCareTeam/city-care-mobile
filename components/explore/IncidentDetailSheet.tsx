@@ -240,6 +240,18 @@ export function IncidentDetailSheet({ incident, userPlace, initialTab, onClose, 
     },
     header: { flexDirection: "row", alignItems: "center", marginBottom: 16, paddingHorizontal: 20, gap: 12 },
     titleBlock: { flex: 1, gap: 6 },
+    hiddenNotice: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: 9,
+      marginBottom: 14,
+      padding: 12,
+      borderRadius: 12,
+      backgroundColor: colors.statusRed + "14",
+      borderWidth: 1,
+      borderColor: colors.statusRed + "4D",
+    },
+    hiddenNoticeText: { flex: 1, fontSize: 12.5, lineHeight: 18, color: colors.text, opacity: 0.85 },
     actionRow: { flexDirection: "row", gap: 8, marginBottom: 14 },
     action: {
       flex: 1,
@@ -459,6 +471,16 @@ export function IncidentDetailSheet({ incident, userPlace, initialTab, onClose, 
                 <MaterialIcons name="close" size={16} color={colors.text} />
               </TouchableOpacity>
             </View>
+
+            {/* Dit à celui qui la voit pourquoi cette fiche ne l'est plus par les
+                autres. Elle n'arrive qu'à l'auteur et à la modération — le serveur
+                ne sert un contenu masqué à personne d'autre. */}
+            {incident.visibility !== undefined && incident.visibility !== "visible" && (
+              <View style={s.hiddenNotice}>
+                <MaterialIcons name="visibility-off" size={16} color={colors.statusRed} />
+                <Text style={s.hiddenNoticeText}>{t.moderation.hiddenNotice}</Text>
+              </View>
+            )}
 
             {/* Suivre et partager quittent l'en-tête, où trois boutons se
                 disputaient le coin supérieur droit — le point le plus éloigné

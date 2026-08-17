@@ -214,6 +214,8 @@ function IncidentList({
     createdAt: string;
     /** Absente tant qu'on ne connaît pas la position de l'utilisateur. */
     distanceKm?: number;
+    /** Masqué par la modération. N'arrive que sur ses propres signalements. */
+    hidden?: boolean;
   }[];
   onPress: (id: string) => void;
   pageSize?: number;
@@ -250,6 +252,7 @@ function IncidentList({
             isFollowed={followedIds?.has(inc.id)}
             onToggleFollow={onToggleFollow}
             distanceKm={inc.distanceKm}
+            hidden={inc.hidden}
           />
         </View>
       ))}
@@ -518,6 +521,9 @@ function CitizenView({
                 // Les coordonnées viennent du fil : la charge utile de « mes
                 // signalements » ne les porte pas.
                 distanceKm: awayKm(mineSearch.origin, full),
+                // Le serveur ne renvoie cet état qu'à l'auteur, et « mes
+                // signalements » est donc la seule liste où il puisse apparaître.
+                hidden: i.visibility !== undefined && i.visibility !== "visible",
               };
             })}
             onPress={onPress}

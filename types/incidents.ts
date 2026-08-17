@@ -29,6 +29,14 @@ export type IncidentResponse = {
   longitude: number;
   addressLabel: string;
   status: "reported" | "in_progress" | "resolved";
+  /**
+   * État de modération. Presque toujours `"visible"` : le serveur ne sert un
+   * contenu masqué qu'à son auteur et à la modération.
+   *
+   * Facultatif parce qu'un serveur plus ancien ne l'envoie pas — absent se lit
+   * comme visible, ce qui était le comportement d'avant.
+   */
+  visibility?: "visible" | "hidden" | "removed";
   createdAt: string;
   updatedAt: string;
   resolvedAt: string | null;

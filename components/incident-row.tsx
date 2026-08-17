@@ -34,6 +34,15 @@ type Props = {
    * proche, jamais s'il était à deux rues ou à dix kilomètres.
    */
   distanceKm?: number;
+  /**
+   * Masqué par la modération.
+   *
+   * N'arrive que sur ses propres signalements : le serveur ne renvoie l'état qu'à
+   * l'auteur. La ligne passe alors au rouge et le dit — sans quoi le signalement
+   * disparaîtrait purement et simplement de la liste, ce qui se lit comme une
+   * perte de données et non comme une décision.
+   */
+  hidden?: boolean;
 };
 
 
@@ -140,10 +149,40 @@ function makeStyles(c: AppColors) {
       fontWeight: "700",
       color: "#fff",
     },
+    /**
+     * Le rouge de la modération, tenu à l'écart de celui du statut.
+     *
+     * `statusRed` sert déjà à « résolu » et à la suppression ; on prend donc un
+     * fond teinté et une bordure sur toute la ligne plutôt qu'un quatrième badge
+     * coloré. La ligne entière change d'aspect, ce qui est exactement le message :
+     * ce n'est pas une étape du traitement, c'est un état de la publication.
+     */
+    hiddenRow: {
+      backgroundColor: HIDDEN + "0F",
+      borderWidth: 1,
+      borderColor: HIDDEN + "55",
+      borderRadius: 12,
+    },
+    hiddenBadge: {
+      borderRadius: 10,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      backgroundColor: HIDDEN,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+    },
+    hiddenBadgeText: { fontSize: 10, fontWeight: "700", color: "#fff" },
+    // Le titre grisé : le contenu n'est plus publié, la ligne ne doit pas se lire
+    // comme les autres.
+    hiddenTitle: { color: c.text + "8C" },
   });
 }
 
-function IncidentRowBase({ id, type, status, description, address, createdAt, onPress, isMine, isFollowed, onToggleFollow, distanceKm }: Props) {
+/** Rouge de la modération. Distinct du rouge de statut, qui dit « résolu ». */
+const HIDDEN = "#e53e3e";
+
+function IncidentRowBase({ id, type, status, description, address, createdAt, onPress, isMine, isFollowed, onToggleFollow, distanceKm, hidden }: Props) {
   const { colors } = useAppColors();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const t = useStrings();
@@ -176,8 +215,14 @@ function IncidentRowBase({ id, type, status, description, address, createdAt, on
   const context = [written ? typeLabel : "", knownCity].filter(Boolean).join(" · ");
 
   return (
-    <TouchableOpacity style={styles.row} onPress={() => onPress(id)} activeOpacity={0.75}>
-      <View style={[styles.stripe, { backgroundColor: statusColor }]} />
+    <TouchableOpacity
+      style={[styles.row, hidden && styles.hiddenRow]}
+      onPress={() => onPress(id)}
+      activeOpacity={0.75}
+      accessibilityRole="button"
+      accessibilityLabel={hidden ? `${title} — ${t.moderation.hiddenTag}` : title}
+    >
+      <View style={[styles.stripe, { backgroundColor: hidden ? HIDDEN : statusColor }]} />
       <View style={styles.inner}>
       <View>
         <View style={[styles.iconBubble, { backgroundColor: typeColor + "22" }]}>
@@ -206,7 +251,7 @@ function IncidentRowBase({ id, type, status, description, address, createdAt, on
         )}
       </View>
       <View style={styles.content}>
-        <Text style={styles.title} numberOfLines={2}>{title}</Text>
+        <Text style={[styles.title, hidden && styles.hiddenTitle]} numberOfLines={2}>{title}</Text>
         {context || away ? (
           <Text style={styles.meta} numberOfLines={1}>
             {context}
@@ -217,12 +262,22 @@ function IncidentRowBase({ id, type, status, description, address, createdAt, on
         ) : null}
       </View>
       <View style={styles.right}>
-        <View style={[styles.badge, { backgroundColor: statusColor + "20" }]}>
-          <Text style={[styles.badgeText, { color: statusColor }]}>
-            {STATUS_LABEL[status] ?? status}
-          </Text>
-        </View>
-        {isMine && (
+        {/* À la place du badge de statut, pas au-dessus : masqué, le contenu
+            n'avance plus dans le traitement, et afficher les deux ferait croire
+            qu'il suit son cours. */}
+        {hidden ? (
+          <View style={styles.hiddenBadge}>
+            <MaterialIcons name="visibility-off" size={10} color="#fff" />
+            <Text style={styles.hiddenBadgeText}>{t.moderation.hiddenTag}</Text>
+          </View>
+        ) : (
+          <View style={[styles.badge, { backgroundColor: statusColor + "20" }]}>
+            <Text style={[styles.badgeText, { color: statusColor }]}>
+              {STATUS_LABEL[status] ?? status}
+            </Text>
+          </View>
+        )}
+        {isMine && !hidden && (
           <View style={styles.mineBadge}>
             <MaterialIcons name="person" size={10} color="#fff" />
             <Text style={styles.mineBadgeText}>{t.incident.mine}</Text>

@@ -596,6 +596,10 @@ export const fr = {
     decided: "Décision enregistrée",
     decideFailed: "La décision n’a pas pu être enregistrée.",
     // ── Contenus masqués ──
+    /** Sur sa propre ligne, quand la modération l'a retirée. */
+    hiddenTag: "Masqué",
+    hiddenNotice:
+      "Ce signalement a été masqué par la modération. Il n’est plus visible par les autres utilisateurs.",
     tabQueue: "À traiter",
     tabHidden: "Masqués",
     hiddenEmpty: "Aucun contenu masqué.",
