@@ -118,6 +118,7 @@ export const fr = {
     promoteMessage: (name: string): string =>
       `${name} pourra gérer les comptes, les rôles et les accès — y compris retirer les vôtres.`,
     promoteConfirm: "Nommer administrateur",
+    roleLabel: "Rôle",
     selfHint: "Vous ne pouvez pas modifier votre propre compte.",
   },
 

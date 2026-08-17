@@ -74,6 +74,14 @@ export function AccountsModal({ visible, onClose }: { visible: boolean; onClose:
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  /**
+   * La carte dépliée — une seule à la fois.
+   *
+   * En accordéon plutôt qu'ouvertes indépendamment : la liste reste courte, et on
+   * voit sans hésiter sur quel compte on est en train d'agir. Ouvrir un compte
+   * referme donc le précédent.
+   */
+  const [openId, setOpenId] = useState<string | null>(null);
 
   const load = useCallback(async (query: string) => {
     setLoading(true);
@@ -254,16 +262,18 @@ export function AccountsModal({ visible, onClose }: { visible: boolean; onClose:
 
       {loading && (
         <View style={styles.skeletons}>
-          {[0, 1, 2].map((i) => (
+          {[0, 1, 2, 3].map((i) => (
             <View key={i} style={styles.card}>
-              <View style={styles.identityRow}>
-                <Skeleton style={styles.skeletonAvatar} />
-                <View style={styles.identity}>
-                  <Skeleton style={styles.skeletonName} />
-                  <Skeleton style={styles.skeletonEmail} />
+              <View style={[styles.stripe, { backgroundColor: colors.chipBorder }]} />
+              <View style={styles.body}>
+                <View style={styles.identityRow}>
+                  <Skeleton style={styles.skeletonAvatar} />
+                  <View style={styles.identity}>
+                    <Skeleton style={styles.skeletonName} />
+                    <Skeleton style={styles.skeletonEmail} />
+                  </View>
                 </View>
               </View>
-              <Skeleton style={styles.skeletonRoles} />
             </View>
           ))}
         </View>
@@ -295,116 +305,149 @@ export function AccountsModal({ visible, onClose }: { visible: boolean; onClose:
           const busy = busyId === user.id;
           const role = user.role ?? "citizen";
           const accent = ROLE_COLOR[role];
+          const open = openId === user.id;
+          const name = user.display_name || user.username;
 
           return (
-            <View key={user.id} style={[styles.card, !user.enabled && styles.cardDisabled]}>
-              <View style={styles.identityRow}>
-                {/* L'initiale sur pastille colorée : le rôle se lit avant même le
-                    nom quand on parcourt une liste de trente comptes. */}
-                <View style={[styles.avatar, { backgroundColor: accent + "1F" }]}>
-                  <Text style={[styles.avatarText, { color: accent }]}>
-                    {(user.display_name || user.username || "?").charAt(0).toUpperCase()}
-                  </Text>
-                  {!user.enabled && (
-                    <View style={styles.avatarCut}>
-                      <MaterialIcons name="block" size={11} color="#fff" />
-                    </View>
-                  )}
-                </View>
+            <View key={user.id} style={[styles.card, open && styles.cardOpen]}>
+              {/* Le liseré porte la couleur du rôle sur toute la hauteur : c'est
+                  le même vocabulaire que les lignes de signalement, où la bande
+                  dit le statut. On lit la composition de la liste en la
+                  parcourant, sans lire un seul mot. */}
+              <View style={[styles.stripe, { backgroundColor: user.enabled ? accent : colors.statusRed }]} />
 
-                <View style={styles.identity}>
-                  <View style={styles.nameRow}>
-                    <Text style={styles.name} numberOfLines={1}>
-                      {user.display_name || user.username}
+              <View style={styles.body}>
+                {/* Toute l'en-tête est la zone d'ouverture : viser un chevron de
+                    vingt points au pouce, sur une liste qu'on déroule, rate une
+                    fois sur trois. */}
+                <TouchableOpacity
+                  style={styles.identityRow}
+                  onPress={() => setOpenId(open ? null : user.id)}
+                  activeOpacity={0.6}
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: open }}
+                  accessibilityLabel={name}
+                >
+                  <View style={[styles.avatar, { backgroundColor: accent + "1F" }]}>
+                    <Text style={[styles.avatarText, { color: accent }]}>
+                      {(name || "?").charAt(0).toUpperCase()}
                     </Text>
-                    {isSelf && <Text style={styles.selfTag}>{t.admin.you}</Text>}
-                  </View>
-                  <Text style={styles.email} numberOfLines={1}>
-                    {user.email ?? user.username}
-                  </Text>
-                </View>
-
-                {/* Le rôle en toutes lettres, en plus des segments en dessous :
-                    lire un état demande moins d'effort que déduire lequel des
-                    trois boutons est rempli. */}
-                <View style={[styles.roleTag, { backgroundColor: accent + "1A" }]}>
-                  <MaterialIcons name={ROLE_ICON[role]} size={11} color={accent} />
-                  <Text style={[styles.roleTagText, { color: accent }]} numberOfLines={1}>
-                    {t.roles[ROLE_LABEL_KEY[role]]}
-                  </Text>
-                </View>
-              </View>
-
-              {busy ? (
-                <View style={styles.busy}>
-                  <ActivityIndicator size="small" color={colors.primary} />
-                </View>
-              ) : (
-                <>
-                  <View style={styles.roles}>
-                    {ADMIN_ROLES.map((option) => {
-                      const active = role === option;
-                      const color = ROLE_COLOR[option];
-                      return (
-                        <TouchableOpacity
-                          key={option}
-                          style={[
-                            styles.role,
-                            active && { backgroundColor: color, borderColor: color },
-                            isSelf && !active && styles.roleLocked,
-                          ]}
-                          onPress={() => changeRole(user, option)}
-                          disabled={active || isSelf}
-                          activeOpacity={0.8}
-                          accessibilityRole="radio"
-                          accessibilityState={{ selected: active, disabled: isSelf }}
-                          accessibilityLabel={t.roles[ROLE_LABEL_KEY[option]]}
-                        >
-                          <MaterialIcons
-                            name={ROLE_ICON[option]}
-                            size={13}
-                            color={active ? "#fff" : color}
-                            style={!active && { opacity: 0.75 }}
-                          />
-                          <Text
-                            style={[styles.roleLabel, active ? styles.roleLabelActive : { color }]}
-                            numberOfLines={1}
-                          >
-                            {t.roles[ROLE_LABEL_KEY[option]]}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
+                    {!user.enabled && (
+                      <View style={styles.avatarCut}>
+                        <MaterialIcons name="block" size={11} color="#fff" />
+                      </View>
+                    )}
                   </View>
 
-                  {isSelf ? (
-                    // Dire pourquoi les boutons sont éteints vaut mieux que de les
-                    // éteindre sans un mot : on cherche sinon ce qui ne va pas.
-                    <Text style={styles.selfHint}>{t.admin.selfHint}</Text>
-                  ) : (
-                    <TouchableOpacity
-                      style={[styles.access, user.enabled ? styles.accessCut : styles.accessGive]}
-                      onPress={() => toggleEnabled(user)}
-                      activeOpacity={0.8}
-                      accessibilityRole="button"
-                    >
-                      <MaterialIcons
-                        name={user.enabled ? "block" : "lock-open"}
-                        size={15}
-                        color={user.enabled ? colors.statusRed : colors.primary}
-                      />
+                  <View style={styles.identity}>
+                    <View style={styles.nameRow}>
                       <Text
-                        style={[
-                          styles.accessLabel,
-                          { color: user.enabled ? colors.statusRed : colors.primary },
-                        ]}
+                        style={[styles.name, !user.enabled && styles.nameCut]}
+                        numberOfLines={1}
                       >
-                        {user.enabled ? t.admin.disable : t.admin.enable}
+                        {name}
                       </Text>
-                    </TouchableOpacity>
+                      {isSelf && <Text style={styles.selfTag}>{t.admin.you}</Text>}
+                    </View>
+                    <View style={styles.metaRow}>
+                      {/* Le rôle en toutes lettres, à côté de l'adresse : au repos
+                          la carte se lit, elle ne se manipule pas. */}
+                      <View style={[styles.roleTag, { backgroundColor: accent + "1A" }]}>
+                        <MaterialIcons name={ROLE_ICON[role]} size={10} color={accent} />
+                        <Text style={[styles.roleTagText, { color: accent }]} numberOfLines={1}>
+                          {t.roles[ROLE_LABEL_KEY[role]]}
+                        </Text>
+                      </View>
+                      <Text style={styles.email} numberOfLines={1}>
+                        {user.email ?? user.username}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {busy ? (
+                    <ActivityIndicator size="small" color={colors.primary} />
+                  ) : (
+                    <MaterialIcons
+                      name={open ? "expand-less" : "expand-more"}
+                      size={22}
+                      color={colors.text + "59"}
+                    />
                   )}
-                </>
-              )}
+                </TouchableOpacity>
+
+                {/* Les commandes ne se déploient qu'à la demande, et sur une
+                    carte à la fois. Trois segments et un bouton rouge sur chacune
+                    des quarante lignes faisaient un mur : on ouvre cette page pour
+                    lire dix fois et modifier une. */}
+                {open && !busy && (
+                  <View style={styles.actions}>
+                    <Text style={styles.actionsLabel}>{t.admin.roleLabel}</Text>
+                    <View style={styles.roles}>
+                      {ADMIN_ROLES.map((option) => {
+                        const active = role === option;
+                        const color = ROLE_COLOR[option];
+                        return (
+                          <TouchableOpacity
+                            key={option}
+                            style={[
+                              styles.role,
+                              active && { backgroundColor: color, borderColor: color },
+                              isSelf && !active && styles.roleLocked,
+                            ]}
+                            onPress={() => changeRole(user, option)}
+                            disabled={active || isSelf}
+                            activeOpacity={0.8}
+                            accessibilityRole="radio"
+                            accessibilityState={{ selected: active, disabled: isSelf }}
+                            accessibilityLabel={t.roles[ROLE_LABEL_KEY[option]]}
+                          >
+                            <MaterialIcons
+                              name={ROLE_ICON[option]}
+                              size={13}
+                              color={active ? "#fff" : color}
+                              style={!active && { opacity: 0.75 }}
+                            />
+                            <Text
+                              style={[styles.roleLabel, active ? styles.roleLabelActive : { color }]}
+                              numberOfLines={1}
+                            >
+                              {t.roles[ROLE_LABEL_KEY[option]]}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+
+                    {isSelf ? (
+                      // Dire pourquoi les boutons sont éteints vaut mieux que de
+                      // les éteindre sans un mot : on cherche sinon ce qui ne va
+                      // pas.
+                      <Text style={styles.selfHint}>{t.admin.selfHint}</Text>
+                    ) : (
+                      <TouchableOpacity
+                        style={[styles.access, user.enabled ? styles.accessCut : styles.accessGive]}
+                        onPress={() => toggleEnabled(user)}
+                        activeOpacity={0.8}
+                        accessibilityRole="button"
+                      >
+                        <MaterialIcons
+                          name={user.enabled ? "block" : "lock-open"}
+                          size={15}
+                          color={user.enabled ? colors.statusRed : colors.primary}
+                        />
+                        <Text
+                          style={[
+                            styles.accessLabel,
+                            { color: user.enabled ? colors.statusRed : colors.primary },
+                          ]}
+                        >
+                          {user.enabled ? t.admin.disable : t.admin.enable}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                )}
+              </View>
             </View>
           );
         })}
@@ -455,19 +498,21 @@ function makeStyles(c: ReturnType<typeof useAppColors>["colors"]) {
     skeletonAvatar: { width: 38, height: 38, borderRadius: 13 },
     skeletonName: { width: "55%", height: 13, borderRadius: 5 },
     skeletonEmail: { width: "75%", height: 10, borderRadius: 5, marginTop: 6 },
-    skeletonRoles: { width: "100%", height: 32, borderRadius: 11 },
 
     card: {
+      flexDirection: "row",
+      alignItems: "stretch",
       borderRadius: 16,
       borderWidth: 1,
       borderColor: c.chipBorder,
       backgroundColor: c.white,
-      padding: 13,
       marginBottom: 10,
-      gap: 11,
+      overflow: "hidden",
     },
-    // Un compte coupé se lit d'un coup d'œil dans une liste qu'on parcourt.
-    cardDisabled: { borderColor: c.statusRed + "55", backgroundColor: c.statusRed + "08" },
+    // Dépliée, la carte se détache de ses voisines : on sait sur quoi on agit.
+    cardOpen: { borderColor: c.primary + "59" },
+    stripe: { width: 4 },
+    body: { flex: 1, padding: 12, gap: 12, minWidth: 0 },
 
     identityRow: { flexDirection: "row", alignItems: "center", gap: 11 },
     avatar: { width: 38, height: 38, borderRadius: 13, alignItems: "center", justifyContent: "center" },
@@ -497,19 +542,38 @@ function makeStyles(c: ReturnType<typeof useAppColors>["colors"]) {
       letterSpacing: 0.4,
       color: c.primary,
     },
-    email: { fontSize: 11.5, color: c.text, opacity: 0.5 },
+    // Barré quand le compte est coupé : l'état se lit sur le nom lui-même, pas
+    // seulement sur une pastille à côté.
+    nameCut: { textDecorationLine: "line-through", opacity: 0.55 },
+    metaRow: { flexDirection: "row", alignItems: "center", gap: 6, minWidth: 0 },
+    email: { flexShrink: 1, fontSize: 11.5, color: c.text, opacity: 0.5 },
     roleTag: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 4,
-      paddingHorizontal: 8,
-      paddingVertical: 4,
-      borderRadius: 9,
-      maxWidth: 118,
+      gap: 3,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 7,
+      flexShrink: 0,
     },
-    roleTagText: { flexShrink: 1, fontSize: 10.5, fontWeight: "800" },
+    roleTagText: { fontSize: 10, fontWeight: "800" },
 
-    busy: { alignItems: "center", justifyContent: "center", minHeight: 78 },
+    // Séparées de l'identité par un filet : ce qui se lit d'un côté, ce qui
+    // s'actionne de l'autre.
+    actions: {
+      gap: 8,
+      paddingTop: 12,
+      borderTopWidth: 1,
+      borderTopColor: c.chipBorder,
+    },
+    actionsLabel: {
+      fontSize: 9.5,
+      fontWeight: "800",
+      letterSpacing: 0.8,
+      textTransform: "uppercase",
+      color: c.text,
+      opacity: 0.4,
+    },
 
     roles: { flexDirection: "row", gap: 6 },
     role: {

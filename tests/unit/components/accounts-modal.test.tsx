@@ -55,6 +55,17 @@ function open() {
   render(<AccountsModal visible onClose={() => {}} />);
 }
 
+/**
+ * Déplie la carte d'un compte.
+ *
+ * Au repos une carte se lit, elle ne se manipule pas : les segments de rôle et le
+ * bouton d'accès n'existent qu'une fois ouverte. Les tests d'action passent donc
+ * tous par ici — comme l'administrateur.
+ */
+async function expand(name: string) {
+  fireEvent.press(await screen.findByLabelText(name));
+}
+
 describe('AccountsModal — lire la liste', () => {
   /**
    * Le défaut d'origine : le serveur renvoie les rôles en minuscules et le
@@ -65,7 +76,9 @@ describe('AccountsModal — lire la liste', () => {
     open();
     await screen.findByText('Zoé');
 
-    // Deux fois chacun : l'étiquette de l'en-tête et le segment correspondant.
+    // Cartes repliées : le libellé vient de la puce de filtre — une occurrence,
+    // toujours — plus l'étiquette de chaque compte portant ce rôle. Au-delà de
+    // un, c'est donc qu'un compte l'affiche bien.
     expect(screen.getAllByText(t.roles.Agent).length).toBeGreaterThan(1);
     expect(screen.getAllByText(t.roles.Admin).length).toBeGreaterThan(1);
   });
@@ -101,12 +114,10 @@ describe('AccountsModal — lire la liste', () => {
 describe('AccountsModal — agir', () => {
   it('change un rôle sans cérémonie', async () => {
     open();
-    await screen.findByText('Zoé');
+    await expand('Zoé');
 
-    // Le segment « Agent » de la carte de Zoé. L'ordre trié est Bob, Anna, Zoé,
-    // Coupé : on vise le troisième, parce que le segment du rôle déjà porté est
-    // désactivé et qu'appuyer dessus ne ferait rien.
-    fireEvent.press(screen.getAllByLabelText(t.roles.Agent)[2]);
+    // Une seule carte est ouverte : le segment est donc sans ambiguïté.
+    fireEvent.press(screen.getByLabelText(t.roles.Agent));
 
     await waitFor(() => expect(mockRole).toHaveBeenCalled());
     expect(Alert.alert).not.toHaveBeenCalled();
@@ -120,9 +131,9 @@ describe('AccountsModal — agir', () => {
    */
   it('demande confirmation avant de nommer un administrateur', async () => {
     open();
-    await screen.findByText('Zoé');
+    await expand('Zoé');
 
-    fireEvent.press(screen.getAllByLabelText(t.roles.Admin)[2]);
+    fireEvent.press(screen.getByLabelText(t.roles.Admin));
 
     expect(Alert.alert).toHaveBeenCalled();
     expect(mockRole).not.toHaveBeenCalled();
@@ -133,6 +144,7 @@ describe('AccountsModal — agir', () => {
   it('explique pourquoi sa propre ligne est verrouillée', async () => {
     mockUsers.mockResolvedValue([user({ id: 'moi', display_name: 'Moi', role: 'admin' })]);
     open();
+    await expand('Moi');
 
     expect(await screen.findByText(t.admin.selfHint)).toBeTruthy();
     expect(screen.queryByText(t.admin.disable)).toBeNull();
