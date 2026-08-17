@@ -9,6 +9,7 @@ import { useNewsCity } from "@/hooks/use-news-city";
 import { useStrings } from "@/hooks/use-strings";
 import type { NewsItem } from "@/services/news";
 import { mixHex } from "@/utils/color";
+import { countdown } from "@/utils/countdown";
 import { getTabBarScrollPadding } from "@/utils/layout";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { Image } from "expo-image";
@@ -67,7 +68,7 @@ export default function NewsScreen() {
         contentContainerStyle={styles.container}
         refreshControl={refreshControl}
         renderItem={({ item }) => (
-          <NewsCard item={item} styles={styles} openLabel={t.news.open} />
+          <NewsCard item={item} styles={styles} openLabel={t.news.open} soon={countdown(item.startsAt, t)} />
         )}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListHeaderComponent={
@@ -203,10 +204,12 @@ const NewsCard = memo(function NewsCard({
   item,
   styles,
   openLabel,
+  soon,
 }: {
   item: NewsItem;
   styles: ReturnType<typeof makeStyles>;
   openLabel: string;
+  soon: string;
 }) {
   /**
    * Le navigateur intégré plutôt qu'un renvoi vers Chrome : on revient d'un
@@ -231,7 +234,19 @@ const NewsCard = memo(function NewsCard({
         <Image source={{ uri: item.imageUrl }} style={styles.image} contentFit="cover" transition={150} />
       )}
       <View style={styles.body}>
-        {item.when ? <Text style={styles.when}>{item.when}</Text> : null}
+        {/* La date et le délai sur la même ligne. La source donne « Samedi 19
+            septembre » ; savoir s'il faut compter sur ses doigts pour situer ce
+            samedi-là est la seule question qu'on se pose devant un agenda. */}
+        {item.when || soon ? (
+          <View style={styles.whenRow}>
+            {item.when ? <Text style={styles.when}>{item.when}</Text> : null}
+            {soon ? (
+              <View style={styles.soonChip}>
+                <Text style={styles.soonText}>{soon}</Text>
+              </View>
+            ) : null}
+          </View>
+        ) : null}
         <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
         {item.summary ? (
           <Text style={styles.summaryText} numberOfLines={3}>{item.summary}</Text>
@@ -335,6 +350,22 @@ function makeStyles(c: AppColors, bottomInset: number) {
     },
     image: { width: "100%", height: 150, backgroundColor: c.chipBg },
     body: { padding: 14, gap: 5 },
+    whenRow: { flexDirection: "row", alignItems: "center", gap: 7, flexWrap: "wrap" },
+    // La date en petites majuscules colorées, le délai en pastille pleine : le
+    // second se remarque, le premier se lit.
+    soonChip: {
+      paddingHorizontal: 7,
+      paddingVertical: 2,
+      borderRadius: 7,
+      backgroundColor: c.primary,
+    },
+    soonText: {
+      fontSize: 10,
+      fontWeight: "800",
+      color: "#fff",
+      letterSpacing: 0.3,
+      textTransform: "uppercase",
+    },
     when: {
       fontSize: 11,
       fontWeight: "800",

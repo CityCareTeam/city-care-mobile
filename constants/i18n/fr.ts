@@ -441,6 +441,7 @@ export const fr = {
     noResultsDetail: "Aucun signalement ne correspond à ces filtres.",
     retry: "Réessayer",
     retryA11y: "Réessayer le chargement",
+    clearFilters: "Tout afficher",
   },
 
   // ── Préférences de notification ──
@@ -514,6 +515,16 @@ export const fr = {
   },
 
   // ── Alerte de proximité ──
+  // ── Compte à rebours ──
+  countdown: {
+    now: "En cours",
+    soon: "Dans moins d'une heure",
+    hours: (n: number) => `Dans ${n} h`,
+    tomorrow: "Demain",
+    days: (n: number) => `Dans ${n} jours`,
+  },
+
+
   nearby: {
     title: "Signalement près de vous",
     // Le lieu en dernier : les notifications Android coupent la fin, et une

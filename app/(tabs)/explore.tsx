@@ -200,6 +200,18 @@ export default function SignalementsScreen() {
     }
   }, []);
 
+  /**
+   * Défait tous les filtres d'un coup, y compris les deux qui vivent hors du
+   * hook — « les miens » et « suivis » sont locaux à cet écran, et les oublier
+   * ici laisserait le panneau promettre plus qu'il ne tient.
+   */
+  const clearFilters = useCallback(() => {
+    setFilterType(null);
+    setFilterStatus(null);
+    setMineOnly(false);
+    setFollowedOnly(false);
+  }, [setFilterType, setFilterStatus]);
+
   const handleRefresh = useCallback(async () => {
     await loadIncidents();
     reloadClusters();
@@ -308,10 +320,14 @@ export default function SignalementsScreen() {
     if (isClusterMode ? clustersStale : incidentsStale) return "stale";
 
     if (!nothingToShow) return null;
-    return filterStatus || filterType ? "filtered" : "empty";
+    // « Les miens » et « suivis » comptent comme des filtres : ils vident
+    // l'écran exactement de la même façon, et le panneau annonçait pourtant une
+    // ville sans signalements.
+    const filtering = Boolean(filterStatus || filterType || mineOnly || followedOnly);
+    return filtering ? "filtered" : "empty";
   }, [
     loading, isClusterMode, clustersFailed, incidentsFailed, clustersStale, incidentsStale,
-    clusters.length, visibleIncidents.length, filterStatus, filterType,
+    clusters.length, visibleIncidents.length, filterStatus, filterType, mineOnly, followedOnly,
   ]);
 
   // Le résumé carte ne renvoie pas le type des signalements. Mais une cellule
@@ -402,6 +418,14 @@ export default function SignalementsScreen() {
           kind={notice}
           top={insets.top + FILTER_BAR_TOP + FILTER_BAR_HEIGHT}
           onRetry={notice === "offline" || notice === "stale" ? handleRefresh : undefined}
+          /* Un filtre qui ne trouve rien n'a pas besoin d'un nouvel essai : il a
+             besoin qu'on le retire. Le panneau le disait sans le proposer, et il
+             fallait remonter les défaire un à un. */
+          action={
+            notice === "filtered"
+              ? { label: t.mapNotice.clearFilters, onPress: clearFilters }
+              : undefined
+          }
         />
       )}
 

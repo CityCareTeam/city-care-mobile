@@ -419,6 +419,7 @@ export const en: typeof fr = {
     noResultsDetail: "No report matches these filters.",
     retry: "Retry",
     retryA11y: "Retry loading",
+    clearFilters: "Show all",
   },
 
   notifSettings: {
@@ -486,6 +487,15 @@ export const en: typeof fr = {
       },
     ],
   },
+
+  countdown: {
+    now: "Happening now",
+    soon: "Within the hour",
+    hours: (n: number) => `In ${n} h`,
+    tomorrow: "Tomorrow",
+    days: (n: number) => `In ${n} days`,
+  },
+
 
   nearby: {
     title: "Reported near you",

@@ -33,6 +33,14 @@ type Props = {
   top: number;
   /** Proposé uniquement quand une nouvelle tentative peut changer le résultat. */
   onRetry?: () => void;
+  /**
+   * Action propre au panneau, quand « réessayer » n'est pas le geste attendu.
+   *
+   * Un filtre qui ne trouve rien n'a pas besoin d'un nouvel essai : il a besoin
+   * qu'on le retire. Le panneau le disait sans jamais le proposer, et il fallait
+   * remonter défaire les filtres un à un.
+   */
+  action?: { label: string; onPress: () => void };
 };
 
 /**
@@ -41,7 +49,7 @@ type Props = {
  * c'est le réseau qui a échoué — relancer un filtre qui ne donne rien
  * n'apporterait rien.
  */
-export function MapNotice({ kind, top, onRetry }: Props) {
+export function MapNotice({ kind, top, onRetry, action }: Props) {
   const { colors, isDark } = useAppColors();
   const t = useStrings();
   const styles = useMemo(() => makeStyles(isDark), [isDark]);
@@ -58,7 +66,17 @@ export function MapNotice({ kind, top, onRetry }: Props) {
         <Text style={styles.title}>{notice.title}</Text>
         <Text style={styles.detail}>{notice.detail}</Text>
       </View>
-      {onRetry && (
+      {action ? (
+        <TouchableOpacity
+          style={styles.retry}
+          onPress={action.onPress}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel={action.label}
+        >
+          <Text style={styles.retryLabel}>{action.label}</Text>
+        </TouchableOpacity>
+      ) : onRetry ? (
         <TouchableOpacity
           style={styles.retry}
           onPress={onRetry}
@@ -68,7 +86,7 @@ export function MapNotice({ kind, top, onRetry }: Props) {
         >
           <Text style={styles.retryLabel}>{t.mapNotice.retry}</Text>
         </TouchableOpacity>
-      )}
+      ) : null}
     </GlassSurface>
   );
 }
