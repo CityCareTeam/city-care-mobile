@@ -6,6 +6,9 @@ import { useStrings } from "@/hooks/use-strings";
 import { resolveLanguage, type Language } from "@/constants/i18n";
 import type { SortPreference, ThemePreference } from "@/storage/preferences";
 import { clearLocalData } from "@/storage/local-reset";
+import { forgetGuide } from "@/storage/onboarding";
+import { exportMyData } from "@/services/data-export";
+import { getValidToken } from "@/storage/tokens";
 import { previewSound, warned } from "@/utils/feedback";
 import { Toast } from "@/components/ui/ToastMessage";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
@@ -55,10 +58,12 @@ export function SettingsModal({ visible, onClose }: { visible: boolean; onClose:
     sounds, setSounds,
     defaultSort, setDefaultSort,
     location, setLocation,
+    batterySaver, setBatterySaver,
   } = usePreferences();
   const effective = resolveLanguage(language);
   const s = useStrings();
   const [clearing, setClearing] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   /**
    * Le son s'essaie en même temps qu'on l'active.
@@ -70,6 +75,50 @@ export function SettingsModal({ visible, onClose }: { visible: boolean; onClose:
   function toggleSounds(next: boolean) {
     setSounds(next);
     if (next) previewSound();
+  }
+
+  /**
+   * Le guide repassera au prochain lancement.
+   *
+   * Pas tout de suite : cette fenêtre est ouverte par-dessus les onglets, et
+   * lancer le guide par-dessus ferait trois écrans empilés. On le dit, et il
+   * arrive quand l'application redémarre.
+   */
+  async function replayGuide() {
+    await forgetGuide();
+    warned();
+    Toast.show({ type: "success", text1: s.settings.guideReset });
+  }
+
+  /**
+   * Trois issues, trois phrases.
+   *
+   * « Partagé » n'est pas garanti — la personne peut refermer la feuille sans
+   * rien choisir, et le système ne le dit pas. On annonce donc que le fichier
+   * est prêt, ce qui est vrai dans les deux cas, plutôt qu'un envoi qu'on ne
+   * peut pas confirmer.
+   */
+  async function runExport() {
+    setExporting(true);
+    try {
+      const token = await getValidToken();
+      if (!token) {
+        Toast.show({ type: "error", text1: s.api.unauthenticated });
+        return;
+      }
+      const outcome = await exportMyData(token);
+      Toast.show({
+        type: outcome === "failed" ? "error" : "success",
+        text1:
+          outcome === "shared"
+            ? s.settings.exportReady
+            : outcome === "unavailable"
+              ? s.settings.exportNoTarget
+              : s.settings.exportFailed,
+      });
+    } finally {
+      setExporting(false);
+    }
   }
 
   function confirmClear() {
@@ -222,6 +271,68 @@ export function SettingsModal({ visible, onClose }: { visible: boolean; onClose:
         })}
       </View>
       {defaultSort === "nearest" && <Text style={styles.hint}>{s.settings.sortNearestHint}</Text>}
+
+      <View style={styles.divider} />
+
+      {/* ── Économie ──
+          L'application redemande le fil toutes les quinze secondes. C'est ce
+          qu'il faut pour qu'un signalement apparaisse pendant qu'on regarde, et
+          beaucoup pour un vieux téléphone ou un forfait compté. Le réglage
+          espace sans rien couper : on voit les mêmes choses, un peu plus tard. */}
+      <Text style={styles.label}>{s.settings.battery}</Text>
+      <Switch
+        icon="battery-saver"
+        label={s.settings.batterySaver}
+        detail={s.settings.batterySaverDetail}
+        value={batterySaver}
+        onToggle={setBatterySaver}
+        styles={styles}
+        accent={colors.primary}
+      />
+
+      <View style={styles.divider} />
+
+      {/* ── Guide ──
+          Le revoir n'exigeait rien de moins que d'effacer toutes les données
+          locales — donc de perdre brouillons et favoris pour relire trois
+          écrans. */}
+      <Text style={styles.label}>{s.guide.title}</Text>
+      <Text style={[styles.hint, { marginBottom: 12 }]}>{s.settings.replayGuideDetail}</Text>
+      <TouchableOpacity
+        style={styles.secondary}
+        onPress={() => void replayGuide()}
+        activeOpacity={0.8}
+        accessibilityRole="button"
+      >
+        <MaterialIcons name="school" size={17} color={colors.primary} />
+        <Text style={styles.secondaryLabel}>{s.settings.replayGuide}</Text>
+      </TouchableOpacity>
+
+      <View style={styles.divider} />
+
+      {/* ── Mes données ──
+          Le pendant de la suppression de compte : pouvoir tout effacer sans
+          pouvoir rien consulter laissait le choix entre l'ignorance et la table
+          rase. Le fichier part vers l'application qu'on veut — courriel, disque,
+          messagerie — l'application n'en garde pas de copie. */}
+      <Text style={styles.label}>{s.settings.myData}</Text>
+      <Text style={[styles.hint, { marginBottom: 12 }]}>{s.settings.exportDetail}</Text>
+      <TouchableOpacity
+        style={styles.secondary}
+        onPress={() => void runExport()}
+        disabled={exporting}
+        activeOpacity={0.8}
+        accessibilityRole="button"
+      >
+        {exporting ? (
+          <ActivityIndicator size="small" color={colors.primary} />
+        ) : (
+          <>
+            <MaterialIcons name="download" size={17} color={colors.primary} />
+            <Text style={styles.secondaryLabel}>{s.settings.exportData}</Text>
+          </>
+        )}
+      </TouchableOpacity>
 
       <View style={styles.divider} />
 
@@ -488,5 +599,19 @@ function makeStyles(colors: ReturnType<typeof useAppColors>["colors"]) {
       minHeight: 46,
     },
     dangerLabel: { fontSize: 14, fontWeight: "700", color: DANGER },
+    // Bordé et non plein : c'est une action ordinaire, pas la principale de
+    // l'écran ni une destruction.
+    secondary: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+      paddingVertical: 13,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: colors.primary + "59",
+      minHeight: 46,
+    },
+    secondaryLabel: { fontSize: 14, fontWeight: "700", color: colors.primary },
   });
 }

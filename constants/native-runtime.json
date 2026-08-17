@@ -1,11 +1,12 @@
 {
-  "version": "2",
+  "version": "3",
   "nativeModules": [
     "@react-native-async-storage/async-storage",
     "expo",
     "expo-audio",
     "expo-blur",
     "expo-constants",
+    "expo-file-system",
     "expo-font",
     "expo-haptics",
     "expo-image",
@@ -15,6 +16,7 @@
     "expo-notifications",
     "expo-router",
     "expo-secure-store",
+    "expo-sharing",
     "expo-splash-screen",
     "expo-symbols",
     "expo-system-ui",

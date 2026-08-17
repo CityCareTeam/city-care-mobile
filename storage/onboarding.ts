@@ -27,3 +27,14 @@ export async function hasSeenGuide(): Promise<boolean> {
 export async function markGuideSeen(): Promise<void> {
   await writeJson(KEY, { seenEdition: GUIDE_EDITION });
 }
+
+/**
+ * Oublie que le guide a été vu — il repassera au prochain lancement.
+ *
+ * Écrit l'édition zéro plutôt que d'effacer la clé : les deux se valent à la
+ * lecture, mais un enregistrement présent dit « on a décidé de le revoir »,
+ * quand une clé absente ne se distingue pas d'une installation neuve.
+ */
+export async function forgetGuide(): Promise<void> {
+  await writeJson(KEY, { seenEdition: 0 });
+}

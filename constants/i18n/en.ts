@@ -670,6 +670,20 @@ export const en: typeof fr = {
 
     defaultSort: "Feed order on opening",
     sortNearestHint: "The app will ask for your location when the feed opens.",
+    battery: "Battery",
+    batterySaver: "Slow down updates",
+    batterySaverDetail:
+      "The feed refreshes every minute instead of every fifteen seconds. Nothing is turned off, everything just arrives a little later.",
+    replayGuide: "Replay the guide",
+    replayGuideDetail: "It will come back the next time the app starts.",
+    guideReset: "The guide will return on next launch",
+    myData: "My data",
+    exportData: "Export my data",
+    exportDetail:
+      "A JSON file with your reports, messages, votes and preferences. You choose where to send it; the app keeps no copy.",
+    exportReady: "File ready",
+    exportNoTarget: "No app can receive the file.",
+    exportFailed: "The export failed.",
 
     localData: "This device’s data",
     localDataDetail:

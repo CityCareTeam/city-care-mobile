@@ -1,8 +1,17 @@
+import { usePreferences } from "@/context/PreferencesContext";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useEffect, useRef } from "react";
 
 /** Cadence de reprise tant qu'un chargement est en échec. */
 export const RETRY_INTERVAL_MS = 3_000;
+
+/**
+ * Facteur appliqué en mode économie.
+ *
+ * Quatre, pas dix : au-delà, un signalement mettrait deux minutes à apparaître
+ * et l'écran passerait pour figé. Économiser ne doit pas se payer en doute.
+ */
+export const BATTERY_SAVER_FACTOR = 4;
 
 type Options = {
   /** Cadence normale, quand tout va bien. */
@@ -33,7 +42,15 @@ export function useAutoRefresh(
   const refreshRef = useRef(refresh);
   useEffect(() => { refreshRef.current = refresh; }, [refresh]);
 
-  const delay = failed ? RETRY_INTERVAL_MS : interval;
+  /**
+   * L'économie espace le régime normal et laisse la reprise intacte.
+   *
+   * Ralentir aussi la reprise reviendrait à punir une coupure réseau : c'est le
+   * moment où l'on veut au contraire retrouver la main vite, et trois secondes
+   * d'un minuteur qui tourne le temps d'un tunnel ne coûtent rien.
+   */
+  const { batterySaver } = usePreferences();
+  const delay = failed ? RETRY_INTERVAL_MS : interval * (batterySaver ? BATTERY_SAVER_FACTOR : 1);
 
   // Chargement visible : à l'arrivée sur l'écran, et seulement là.
   useFocusEffect(

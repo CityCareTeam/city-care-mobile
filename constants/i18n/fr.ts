@@ -714,6 +714,20 @@ export const fr = {
 
     defaultSort: "Ordre du fil à l’ouverture",
     sortNearestHint: "L’application demandera votre position à l’ouverture du fil.",
+    battery: "Économie",
+    batterySaver: "Ralentir les mises à jour",
+    batterySaverDetail:
+      "Le fil se rafraîchit toutes les minutes au lieu de toutes les quinze secondes. Rien n’est coupé, tout arrive un peu plus tard.",
+    replayGuide: "Revoir le guide",
+    replayGuideDetail: "Il réapparaîtra au prochain lancement de l’application.",
+    guideReset: "Le guide reviendra au prochain lancement",
+    myData: "Mes données",
+    exportData: "Exporter mes données",
+    exportDetail:
+      "Un fichier JSON contenant vos signalements, vos messages, vos votes et vos préférences. Vous choisissez où l’envoyer ; l’application n’en garde pas de copie.",
+    exportReady: "Fichier prêt",
+    exportNoTarget: "Aucune application ne peut recevoir le fichier.",
+    exportFailed: "L’export a échoué.",
 
     localData: "Données de cet appareil",
     localDataDetail:

@@ -19,6 +19,7 @@ type PreferencesValue = {
   nearbyAlerts: boolean;
   nearbyRadiusKm: number;
   location: boolean;
+  batterySaver: boolean;
   setTheme: (theme: ThemePreference) => void;
   setLanguage: (language: LanguagePreference) => void;
   setHaptics: (on: boolean) => void;
@@ -27,6 +28,7 @@ type PreferencesValue = {
   setNearbyAlerts: (on: boolean) => void;
   setNearbyRadiusKm: (km: number) => void;
   setLocation: (on: boolean) => void;
+  setBatterySaver: (on: boolean) => void;
   /** Vrai tant que le disque n'a pas répondu — le temps d'un battement au démarrage. */
   loading: boolean;
 };
@@ -41,6 +43,7 @@ const PreferencesContext = createContext<PreferencesValue>({
   setNearbyAlerts: () => {},
   setNearbyRadiusKm: () => {},
   setLocation: () => {},
+  setBatterySaver: () => {},
   loading: true,
 });
 
@@ -108,10 +111,11 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
   );
 
   const setLocation = useCallback((location: boolean) => update({ location }), [update]);
+  const setBatterySaver = useCallback((batterySaver: boolean) => update({ batterySaver }), [update]);
 
   const value = useMemo(
-    () => ({ ...preferences, setTheme, setLanguage, setHaptics, setSounds, setDefaultSort, setNearbyAlerts, setNearbyRadiusKm, setLocation, loading }),
-    [preferences, setTheme, setLanguage, setHaptics, setSounds, setDefaultSort, setNearbyAlerts, setNearbyRadiusKm, setLocation, loading],
+    () => ({ ...preferences, setTheme, setLanguage, setHaptics, setSounds, setDefaultSort, setNearbyAlerts, setNearbyRadiusKm, setLocation, setBatterySaver, loading }),
+    [preferences, setTheme, setLanguage, setHaptics, setSounds, setDefaultSort, setNearbyAlerts, setNearbyRadiusKm, setLocation, setBatterySaver, loading],
   );
 
   return <PreferencesContext.Provider value={value}>{children}</PreferencesContext.Provider>;

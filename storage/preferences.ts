@@ -46,6 +46,15 @@ export type Preferences = {
    * actus se choisissent à la main, et rien ne demande plus rien.
    */
   location: boolean;
+  /**
+   * Espace les sondages automatiques.
+   *
+   * L'application redemande le fil toutes les quinze secondes. C'est ce qu'il
+   * faut pour qu'un signalement apparaisse pendant qu'on regarde — et beaucoup
+   * pour un vieux téléphone ou un forfait compté. Ce réglage quadruple les
+   * intervalles sans rien couper : on voit les mêmes choses, un peu plus tard.
+   */
+  batterySaver: boolean;
 };
 
 /**
@@ -63,6 +72,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   nearbyAlerts: false,
   nearbyRadiusKm: 1,
   location: true,
+  batterySaver: false,
 };
 
 const THEMES: ThemePreference[] = ["light", "dark", "system"];
@@ -110,6 +120,10 @@ export async function loadPreferences(): Promise<Preferences> {
       ? (stored?.nearbyRadiusKm as number)
       : DEFAULT_PREFERENCES.nearbyRadiusKm,
     location: typeof stored?.location === "boolean" ? stored.location : DEFAULT_PREFERENCES.location,
+    batterySaver:
+      typeof stored?.batterySaver === "boolean"
+        ? stored.batterySaver
+        : DEFAULT_PREFERENCES.batterySaver,
   };
 }
 
