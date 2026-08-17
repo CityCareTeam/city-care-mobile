@@ -741,6 +741,24 @@ export const LAST_RELEASED_VERSION = "1.5.5";
 /** Changements accumulés depuis, donc embarqués par les pré-versions. */
 export const UNRELEASED_CHANGES: Change[] = [
   {
+    "kind": "fix",
+    "scope": "news",
+    "text": "Put the description back on the cards"
+  },
+  {
+    "kind": "feature",
+    "scope": "news",
+    "text": "Group events by period, and gather every notification in one place"
+  },
+  {
+    "kind": "feature",
+    "text": "Count down to events, and let the map notice undo its own filters"
+  },
+  {
+    "kind": "feature",
+    "text": "Alert when a report appears nearby, and make notification taps open it"
+  },
+  {
     "kind": "feature",
     "scope": "settings",
     "text": "Sounds, vibration, default feed order and a way to clear local data"
