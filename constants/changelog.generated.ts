@@ -741,6 +741,36 @@ export const LAST_RELEASED_VERSION = "1.5.5";
 /** Changements accumulés depuis, donc embarqués par les pré-versions. */
 export const UNRELEASED_CHANGES: Change[] = [
   {
+    "kind": "improvement",
+    "scope": "settings",
+    "text": "L'export des données passe au profil"
+  },
+  {
+    "kind": "feature",
+    "scope": "settings",
+    "text": "Taille du texte, et remise à zéro des réglages"
+  },
+  {
+    "kind": "feature",
+    "scope": "settings",
+    "text": "Export des données, mode économie, revoir le guide"
+  },
+  {
+    "kind": "feature",
+    "scope": "admin",
+    "text": "Paginer les comptes, par pages de vingt-cinq"
+  },
+  {
+    "kind": "feature",
+    "scope": "admin",
+    "text": "La carte de compte se lit au repos, s'actionne dépliée"
+  },
+  {
+    "kind": "feature",
+    "scope": "admin",
+    "text": "Rendre la page des comptes lisible et sûre"
+  },
+  {
     "kind": "fix",
     "scope": "admin",
     "text": "Les rôles ne s'affichaient jamais, et la page passe dans le menu"
