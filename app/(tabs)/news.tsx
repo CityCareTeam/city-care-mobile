@@ -269,9 +269,12 @@ const NewsCard = memo(function NewsCard({
           </View>
         ) : null}
         <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
-        {/* Le résumé est parti à la fiche. Une liste d'agenda se parcourt — date,
-            titre, lieu — et trois lignes de description par événement faisaient
-            tenir quatre entrées à l'écran au lieu de sept. */}
+        {/* Deux lignes de résumé, et non trois comme avant : c'est ce qui fait
+            la différence entre un titre qu'on situe et une carte qu'on lit en
+            entier. Le reste est dans la fiche. */}
+        {item.summary ? (
+          <Text style={styles.summaryText} numberOfLines={2}>{item.summary}</Text>
+        ) : null}
         {item.place ? (
           <View style={styles.placeRow}>
             <MaterialIcons name="place" size={12} color={styles.place.color} />
@@ -283,7 +286,7 @@ const NewsCard = memo(function NewsCard({
       {/* Un chevron plutôt qu'une ligne « Voir la fiche » sur chaque carte : le
           geste se devine tout autant et ne coûte pas une ligne par événement. */}
       {open && (
-        <MaterialIcons name="chevron-right" size={20} color={styles.place.color} />
+        <MaterialIcons name="chevron-right" size={20} color={styles.place.color} style={styles.chevron} />
       )}
     </Pressable>
   );
@@ -385,7 +388,7 @@ function makeStyles(c: AppColors, bottomInset: number) {
     // tient sept, ce qui est ce qu'on attend d'un agenda.
     card: {
       flexDirection: "row",
-      alignItems: "center",
+      alignItems: "flex-start",
       gap: 12,
       padding: 10,
       borderRadius: 16,
@@ -400,6 +403,9 @@ function makeStyles(c: AppColors, bottomInset: number) {
     },
     thumb: { width: 76, height: 76, borderRadius: 12, backgroundColor: c.chipBg, flexShrink: 0 },
     thumbEmpty: { alignItems: "center", justifyContent: "center" },
+    // La rangée s'aligne en haut — le texte est plus haut que la vignette — mais
+    // le chevron désigne la rangée entière, pas sa première ligne.
+    chevron: { alignSelf: "center" },
     body: { flex: 1, minWidth: 0, gap: 4 },
     whenRow: { flexDirection: "row", alignItems: "center", gap: 7, flexWrap: "wrap" },
     // La date en petites majuscules colorées, le délai en pastille pleine : le
@@ -426,6 +432,7 @@ function makeStyles(c: AppColors, bottomInset: number) {
     },
     cardPressed: { opacity: 0.7 },
     cardTitle: { fontSize: 14.5, fontWeight: "700", color: c.text, lineHeight: 19 },
+    summaryText: { fontSize: 12, color: c.text, opacity: 0.55, lineHeight: 16.5 },
     placeRow: { flexDirection: "row", alignItems: "center", gap: 4 },
     place: { fontSize: 12, color: c.text, opacity: 0.5, flexShrink: 1 },
 
