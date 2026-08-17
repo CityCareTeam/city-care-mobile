@@ -91,12 +91,12 @@ describe('UpdatesModal', () => {
    * Le rang de pré-version se détache de la version : c'est lui qu'on compare
    * entre deux appareils de test, pas le « 1.6.0 » qu'ils ont en commun.
    */
-  it('sépare la version de son rang de pré-version', () => {
+  it('sépare la version de son canal et de son rang', () => {
     expoConfig.version = '1.6.0-beta.3';
     render(<UpdatesModal visible onClose={() => {}} />);
 
     expect(screen.getByText('1.6.0')).toBeTruthy();
-    expect(screen.getByText('3')).toBeTruthy();
+    expect(screen.getByText('beta.3')).toBeTruthy();
   });
 
   it('n’affiche pas de rang sur une version livrée', () => {
@@ -104,6 +104,6 @@ describe('UpdatesModal', () => {
     render(<UpdatesModal visible onClose={() => {}} />);
 
     expect(screen.getByText('1.6.0')).toBeTruthy();
-    expect(screen.queryByText('3')).toBeNull();
+    expect(screen.queryByText('beta.3')).toBeNull();
   });
 });

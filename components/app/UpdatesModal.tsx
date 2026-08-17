@@ -2,7 +2,7 @@ import { ModalShell } from "@/components/ui/ModalShell";
 import { useAppColors } from "@/hooks/use-app-colors";
 import { checkAndFetchUpdate, useAppUpdate, useRunningUpdate } from "@/hooks/use-app-update";
 import { useStrings } from "@/hooks/use-strings";
-import { baseVersion, buildLabel } from "@/utils/app-version";
+import { baseVersion, preRelease } from "@/utils/app-version";
 import { mixHex } from "@/utils/color";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import * as Updates from "expo-updates";
@@ -108,12 +108,12 @@ export function UpdatesModal({ visible, onClose }: { visible: boolean; onClose: 
       <View style={styles.rows}>
         <Row icon="label" label={t.updates.installedVersion} styles={styles}>
           <Text style={styles.value}>{baseVersion()}</Text>
-          {/* Le rang de pré-version compte les APK. Il mérite d'être lisible
-              séparément : c'est lui qu'on compare entre deux appareils de test,
-              pas le « 1.6.0 » qu'ils ont en commun. */}
-          {buildLabel() ? (
+          {/* Le canal et le rang, ensemble : « beta.3 ». C'est ce couple qu'on
+              compare entre deux appareils de test, et le rang seul ne dirait pas
+              de quoi il est le troisième. */}
+          {preRelease() ? (
             <View style={styles.buildChip}>
-              <Text style={styles.buildChipText}>{buildLabel()}</Text>
+              <Text style={styles.buildChipText}>{preRelease()}</Text>
             </View>
           ) : null}
         </Row>

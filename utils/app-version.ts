@@ -39,6 +39,19 @@ export function baseVersion(full: string = appVersion()): string {
   return dash === -1 ? full : full.slice(0, dash);
 }
 
+/**
+ * `1.5.6-beta.3` → `beta.3`, vide sur une version livrée.
+ *
+ * Le pendant complet de `buildLabel`, qui ne garde que le rang. Les deux ont
+ * leur usage : la pastille de version affiche le rang seul, faute de place, mais
+ * l'écran des mises à jour a la place de nommer le canal — et sans ce nom, un
+ * « 3 » isolé ne dit pas de quoi il est le troisième.
+ */
+export function preRelease(full: string = appVersion()): string {
+  const dash = full.indexOf("-");
+  return dash === -1 ? "" : full.slice(dash + 1);
+}
+
 /** `1.5.6-beta.3` → `3`, vide s'il n'y a pas de repère. */
 export function buildLabel(full: string = appVersion()): string {
   const dash = full.indexOf("-");
