@@ -742,6 +742,91 @@ export const LAST_RELEASED_VERSION = "1.5.5";
 export const UNRELEASED_CHANGES: Change[] = [
   {
     "kind": "feature",
+    "scope": "news",
+    "text": "Read the Haut-Bugey tourist office agenda for the plateau"
+  },
+  {
+    "kind": "feature",
+    "scope": "news",
+    "text": "Query a point on the map instead of a city agenda"
+  },
+  {
+    "kind": "feature",
+    "scope": "news",
+    "text": "Add Dijon, Nantes and Toulouse, and widen the coverage radius"
+  },
+  {
+    "kind": "feature",
+    "scope": "news",
+    "text": "Pick the city from the map, starting with Lyon and Rennes"
+  },
+  {
+    "kind": "fix",
+    "scope": "ui",
+    "text": "Make the tab pill fit its label, and say when the news key is missing"
+  },
+  {
+    "kind": "feature",
+    "scope": "news",
+    "text": "Add a what's-on tab fed by the Lyon metropolitan agenda"
+  },
+  {
+    "kind": "fix",
+    "scope": "map",
+    "text": "Move follow and share out of the sheet header"
+  },
+  {
+    "kind": "feature",
+    "scope": "home",
+    "text": "Add a followed tab to manage bookmarks"
+  },
+  {
+    "kind": "feature",
+    "scope": "app",
+    "text": "Alert on followed changes, keep filters, swipe to mark read"
+  },
+  {
+    "kind": "feature",
+    "scope": "incidents",
+    "text": "Show the bookmark in lists, and stop assuming a single city"
+  },
+  {
+    "kind": "fix",
+    "scope": "home",
+    "text": "Search my reports by description, and count the whole city"
+  },
+  {
+    "kind": "feature",
+    "scope": "home",
+    "text": "Merge the duplicated stats and report vote failures"
+  },
+  {
+    "kind": "feature",
+    "scope": "home",
+    "text": "Show the full picture in the personal record"
+  },
+  {
+    "kind": "fix",
+    "scope": "map",
+    "text": "Pull the scope filters out of the category scroller"
+  },
+  {
+    "kind": "feature",
+    "scope": "incidents",
+    "text": "Follow a report you did not create"
+  },
+  {
+    "kind": "feature",
+    "scope": "report",
+    "text": "Keep several drafts instead of overwriting the last one"
+  },
+  {
+    "kind": "feature",
+    "scope": "home",
+    "text": "Show a personal record above my reports"
+  },
+  {
+    "kind": "feature",
     "scope": "app",
     "text": "Add a first-run guide, replayable from the side menu"
   },
