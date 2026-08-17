@@ -2,6 +2,7 @@ import { SettingsModal } from "@/components/app/SettingsModal";
 import { UpdatesModal } from "@/components/app/UpdatesModal";
 import { ReleaseNotesModal } from "@/components/profile/ReleaseNotesModal";
 import { AppVersion } from "@/components/ui/AppVersion";
+import { useAuth } from "@/context/AuthContext";
 import { useAppColors } from "@/hooks/use-app-colors";
 import { useAppUpdate } from "@/hooks/use-app-update";
 import { useStrings } from "@/hooks/use-strings";
@@ -69,6 +70,7 @@ export function AppMenu({
   const { colors, isDark } = useAppColors();
   const styles = useMemo(() => makeStyles(colors, isDark), [colors, isDark]);
   const insets = useSafeAreaInsets();
+  const { logout, isAuthenticated } = useAuth();
   const [panel, setPanel] = useState<Panel | null>(null);
   const { ready: updateReady } = useAppUpdate();
   const t = useStrings();
@@ -205,6 +207,26 @@ export function AppMenu({
           </View>
 
           <View style={styles.footer}>
+            {/* La même sortie que dans le profil, au même endroit qu'on la
+                cherche : en bas du panneau. La dupliquer n'est pas une entorse au
+                partage « le panneau parle de l'application, le profil du compte »
+                — se déconnecter est le seul geste de compte qu'on veut atteindre
+                sans traverser un onglet. */}
+            {isAuthenticated && (
+              <TouchableOpacity
+                style={styles.signOut}
+                onPress={() => {
+                  onClose();
+                  void logout();
+                }}
+                activeOpacity={0.75}
+                accessibilityRole="button"
+                accessibilityLabel={t.profile.signOut}
+              >
+                <MaterialIcons name="logout" size={17} color={colors.primary} />
+                <Text style={styles.signOutLabel}>{t.profile.signOut}</Text>
+              </TouchableOpacity>
+            )}
             <AppVersion />
           </View>
         </Animated.View>
@@ -390,6 +412,19 @@ function makeStyles(colors: ReturnType<typeof useAppColors>["colors"], isDark: b
     entryLabel: { fontSize: 14.5, fontWeight: "600", color: colors.text },
     entryDetail: { fontSize: 11, color: colors.text, opacity: 0.45, marginTop: 2 },
     dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary },
-    footer: { marginTop: "auto", paddingLeft: 6 },
+    footer: { marginTop: "auto", paddingLeft: 6, gap: 12 },
+    // Bordé et non plein : c'est une sortie, pas l'action principale du panneau.
+    signOut: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+      paddingVertical: 13,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: colors.primary + "59",
+      marginRight: 6,
+    },
+    signOutLabel: { fontSize: 14, fontWeight: "700", color: colors.primary },
   });
 }
