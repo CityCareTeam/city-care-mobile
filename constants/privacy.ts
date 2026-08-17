@@ -30,6 +30,7 @@ const FR: PrivacySection[] = [
       "Vos signalements : la catégorie, votre description, les coordonnées du point choisi, l’horodatage, et les photos que vous joignez. C’est l’objet même de l’application.",
       "Votre position, si vous l’autorisez : pour centrer la carte, trier par proximité, proposer votre ville et afficher la météo locale. Base légale : votre consentement, retirable à tout moment dans Réglages → Localisation.",
       "Un identifiant de notification, si vous les acceptez : pour vous prévenir qu’un de vos signalements a changé d’état.",
+      "La date de votre dernière activité, arrondie au quart d’heure. Elle sert aux administrateurs à repérer les comptes inutilisés et à situer une décision les concernant. Nous retenons quand vous êtes venu, jamais ce que vous avez consulté. Base légale : l’intérêt légitime à administrer les comptes.",
     ],
   },
   {
@@ -87,6 +88,7 @@ const EN: PrivacySection[] = [
       "Your reports: the category, your description, the coordinates of the point you picked, the timestamp, and any photos you attach. That is what the app is for.",
       "Your location, if you allow it: to centre the map, sort by distance, suggest your town and show local weather. Legal basis: your consent, withdrawable at any time in Settings → Location.",
       "A notification identifier, if you accept notifications: to tell you when one of your reports changes state.",
+      "The date you were last active, rounded to the quarter hour. Administrators use it to spot unused accounts and to weigh a decision about one. We record when you came, never what you looked at. Legal basis: legitimate interest in administering accounts.",
     ],
   },
   {

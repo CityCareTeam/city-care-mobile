@@ -120,6 +120,8 @@ export const fr = {
     promoteConfirm: "Nommer administrateur",
     roleLabel: "Rôle",
     partialCounts: "Ces effectifs portent sur les comptes déjà chargés.",
+    lastSeen: (ago: string): string => `Vu ${ago}`,
+    neverSeen: "Jamais venu",
     selfHint: "Vous ne pouvez pas modifier votre propre compte.",
   },
 

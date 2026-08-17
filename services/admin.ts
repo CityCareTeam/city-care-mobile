@@ -60,6 +60,14 @@ export type AdminUser = {
   enabled: boolean;
   /** Nul quand le compte n'a aucun rôle applicatif. */
   role: AdminRole | null;
+  /**
+   * Dernière activité, arrondie au quart d'heure par le serveur.
+   *
+   * Nulle pour un compte créé mais jamais utilisé — l'écran dit alors « jamais
+   * vu » plutôt que d'inventer une date. C'est une date de venue, pas un suivi :
+   * le serveur retient quand, jamais quoi.
+   */
+  last_seen_at: string | null;
 };
 
 /**

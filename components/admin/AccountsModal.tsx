@@ -15,6 +15,7 @@ import {
   type AdminUser,
 } from "@/services/admin";
 import { getValidToken } from "@/storage/tokens";
+import { timeAgo } from "@/utils/format-date";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -389,6 +390,15 @@ export function AccountsModal({ visible, onClose }: { visible: boolean; onClose:
                         {user.email ?? user.username}
                       </Text>
                     </View>
+
+                    {/* La dernière venue, en clair. Un compte jamais utilisé le
+                        dit — inventer une date serait pire que n'en donner
+                        aucune. */}
+                    <Text style={styles.lastSeen} numberOfLines={1}>
+                      {user.last_seen_at
+                        ? t.admin.lastSeen(timeAgo(user.last_seen_at, t).toLowerCase())
+                        : t.admin.neverSeen}
+                    </Text>
                   </View>
 
                   {busy ? (
@@ -612,6 +622,7 @@ function makeStyles(c: ReturnType<typeof useAppColors>["colors"]) {
     nameCut: { textDecorationLine: "line-through", opacity: 0.55 },
     metaRow: { flexDirection: "row", alignItems: "center", gap: 6, minWidth: 0 },
     email: { flexShrink: 1, fontSize: 11.5, color: c.text, opacity: 0.5 },
+    lastSeen: { fontSize: 10.5, color: c.text, opacity: 0.38 },
     roleTag: {
       flexDirection: "row",
       alignItems: "center",

@@ -121,6 +121,8 @@ export const en: typeof fr = {
     promoteConfirm: "Make administrator",
     roleLabel: "Role",
     partialCounts: "These counts cover the accounts loaded so far.",
+    lastSeen: (ago: string): string => `Seen ${ago}`,
+    neverSeen: "Never seen",
     selfHint: "You can’t change your own account.",
   },
 

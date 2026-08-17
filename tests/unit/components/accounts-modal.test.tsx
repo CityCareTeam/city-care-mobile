@@ -34,6 +34,7 @@ function user(over: Partial<AdminUser> & { id: string }): AdminUser {
     display_name: over.id,
     enabled: true,
     role: 'citizen',
+    last_seen_at: null,
     ...over,
   };
 }
