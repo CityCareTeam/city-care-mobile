@@ -1,3 +1,4 @@
+import { AccountsModal } from "@/components/admin/AccountsModal";
 import { SettingsModal } from "@/components/app/SettingsModal";
 import { UpdatesModal } from "@/components/app/UpdatesModal";
 import { ReleaseNotesModal } from "@/components/profile/ReleaseNotesModal";
@@ -23,10 +24,13 @@ import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { runOnJS, useSharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-type Panel = "notes" | "updates" | "settings";
+type Panel = "notes" | "updates" | "settings" | "accounts";
 type Entry = Panel | "guide" | "privacy" | "terms";
 
 const WIDTH = Math.min(330, Dimensions.get("window").width * 0.84);
+
+/** Violet de l administration, distinct de l accent de l application. */
+const ADMIN_ACCENT = "#AF52DE";
 
 /** Au-delà, on considère que le geste voulait fermer et non hésiter. */
 const CLOSE_THRESHOLD = WIDTH * 0.35;
@@ -38,6 +42,7 @@ const ICONS: Record<Entry, React.ComponentProps<typeof MaterialIcons>["name"]> =
   settings: "tune",
   privacy: "privacy-tip",
   terms: "gavel",
+  accounts: "manage-accounts",
 };
 
 /**
@@ -70,7 +75,7 @@ export function AppMenu({
   const { colors, isDark } = useAppColors();
   const styles = useMemo(() => makeStyles(colors, isDark), [colors, isDark]);
   const insets = useSafeAreaInsets();
-  const { logout, isAuthenticated } = useAuth();
+  const { logout, isAuthenticated, isAdmin } = useAuth();
   const [panel, setPanel] = useState<Panel | null>(null);
   const { ready: updateReady } = useAppUpdate();
   const t = useStrings();
@@ -206,6 +211,32 @@ export function AppMenu({
             ))}
           </View>
 
+          {/* Une section à part, et non une entrée de plus dans la liste : ce qui
+              précède parle de l'application à qui l'utilise, ceci parle des
+              autres comptes. Les mélanger aurait rangé « nommer un agent » entre
+              « notes de version » et « conditions d'utilisation ». */}
+          {isAdmin && (
+            <View style={styles.adminBlock}>
+              <Text style={styles.sectionLabel}>{t.menu.adminSection}</Text>
+              <TouchableOpacity
+                style={[styles.entry, styles.adminEntry]}
+                onPress={() => open("accounts")}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel={t.admin.title}
+              >
+                <View style={[styles.entryIcon, { backgroundColor: ADMIN_ACCENT + "1F" }]}>
+                  <MaterialIcons name={ICONS.accounts} size={19} color={ADMIN_ACCENT} />
+                </View>
+                <View style={styles.entryText}>
+                  <Text style={styles.entryLabel}>{t.admin.title}</Text>
+                  <Text style={styles.entryDetail}>{t.admin.subtitle}</Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={20} color={colors.text + "40"} />
+              </TouchableOpacity>
+            </View>
+          )}
+
           <View style={styles.footer}>
             {/* La même sortie que dans le profil, au même endroit qu'on la
                 cherche : en bas du panneau. La dupliquer n'est pas une entorse au
@@ -235,6 +266,7 @@ export function AppMenu({
       <ReleaseNotesModal visible={panel === "notes"} onClose={() => setPanel(null)} />
       <UpdatesModal visible={panel === "updates"} onClose={() => setPanel(null)} />
       <SettingsModal visible={panel === "settings"} onClose={() => setPanel(null)} />
+      <AccountsModal visible={panel === "accounts"} onClose={() => setPanel(null)} />
     </>
   );
 }
@@ -391,6 +423,17 @@ function makeStyles(colors: ReturnType<typeof useAppColors>["colors"], isDark: b
       backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)",
     },
     entries: { gap: 10, paddingLeft: 6 },
+    adminBlock: { marginTop: 18, gap: 8, paddingLeft: 6 },
+    sectionLabel: {
+      fontSize: 10,
+      fontWeight: "800",
+      letterSpacing: 1,
+      textTransform: "uppercase",
+      color: ADMIN_ACCENT,
+      paddingLeft: 2,
+    },
+    // Bordée de violet : la section se distingue sans changer de forme.
+    adminEntry: { borderColor: ADMIN_ACCENT + "40" },
     entry: {
       flexDirection: "row",
       alignItems: "center",

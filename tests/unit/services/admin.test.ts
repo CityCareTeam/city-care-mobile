@@ -53,11 +53,20 @@ describe('comptes — lecture', () => {
 describe('comptes — écriture', () => {
   it('change le rôle sur l’identifiant Keycloak', async () => {
     mockFetch.mockResolvedValueOnce(respond(200));
-    await setUserRole('k1', 'Agent', 'jeton');
+    await setUserRole('k1', 'agent', 'jeton');
 
     const [url, options] = mockFetch.mock.calls[0] as [string, RequestInit];
     expect(url).toContain('/admin/users/k1/role');
     expect(options.method).toBe('PUT');
+    /**
+     * Lu en minuscules, écrit en capitales : `GET /admin/users` normalise le rôle
+     * Keycloak en minuscules, `PUT …/role` désérialise vers une énumération .NET
+     * dont les valeurs sont capitalisées. La traduction se fait ici, une fois.
+     *
+     * Le défaut que ce test verrouille : le mobile écrivait les deux en
+     * capitales, si bien qu'aucune comparaison de rôle ne pouvait réussir — la
+     * page n'affichait le rôle d'aucun compte.
+     */
     expect(JSON.parse(options.body as string)).toEqual({ role: 'Agent' });
   });
 
@@ -78,6 +87,6 @@ describe('comptes — écriture', () => {
    */
   it('remonte le refus du serveur', async () => {
     mockFetch.mockResolvedValueOnce(respond(400, { error: 'Vous ne pouvez pas changer votre propre rôle.' }));
-    await expect(setUserRole('moi', 'Citizen', 'jeton')).rejects.toThrow(/propre rôle/);
+    await expect(setUserRole('moi', 'citizen', 'jeton')).rejects.toThrow(/propre rôle/);
   });
 });

@@ -26,9 +26,6 @@ const MAPPING = {
   "person.fill": "person",
   "bell.fill": "notifications",
   "newspaper.fill": "newspaper",
-  // Gestion des comptes : des personnes qu'on administre, pas un engrenage — le
-  // réglage vit ailleurs, et l'onglet parle de qui, pas de comment.
-  "person.2.fill": "manage-accounts",
 } as IconMapping;
 
 /**

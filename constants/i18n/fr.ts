@@ -95,7 +95,6 @@ export const fr = {
     notifications: "Notifs",
     news: "Actus",
     profile: "Profil",
-    admin: "Comptes",
   },
 
   // ── Gestion des comptes (admin) ──
@@ -128,6 +127,7 @@ export const fr = {
     updatesDetail: "Vérifier et appliquer",
     settings: "Réglages",
     settingsDetail: "Thème, langue, retours, données",
+    adminSection: "Administration",
   },
 
   // ── Écran de secours ──

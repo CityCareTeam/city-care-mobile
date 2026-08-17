@@ -97,7 +97,6 @@ export const en: typeof fr = {
     notifications: "Alerts",
     news: "News",
     profile: "Profile",
-    admin: "Accounts",
   },
 
   admin: {
@@ -128,6 +127,7 @@ export const en: typeof fr = {
     updatesDetail: "Check and apply",
     settings: "Settings",
     settingsDetail: "Theme, language, feedback, data",
+    adminSection: "Administration",
   },
 
   crash: {

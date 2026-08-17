@@ -18,9 +18,37 @@ import { authFetch, parseApiError } from "@/services/api-client";
  * Keycloak. L'écran n'offre donc pas ces gestes sur sa propre ligne.
  */
 
-export const ADMIN_ROLES = ["Citizen", "Agent", "Admin"] as const;
+/**
+ * Les rôles tels qu'ils circulent, en minuscules.
+ *
+ * C'est ce que renvoie `GET /admin/users` — le serveur normalise le rôle
+ * Keycloak en minuscules avant de l'envoyer. Les avoir écrits en capitales ici
+ * faisait échouer toute comparaison en silence : la page n'affichait le rôle
+ * d'aucun compte, chaque pastille paraissant éteinte.
+ */
+export const ADMIN_ROLES = ["citizen", "agent", "admin"] as const;
 
 export type AdminRole = (typeof ADMIN_ROLES)[number];
+
+/**
+ * Le nom attendu à l'écriture, capitalisé.
+ *
+ * `PUT /admin/users/{id}/role` désérialise vers une énumération .NET, dont les
+ * valeurs sont `Citizen`, `Agent`, `Admin`. La lecture rend des minuscules,
+ * l'écriture veut des capitales : la traduction se fait ici, une fois, plutôt
+ * que d'obliger chaque appelant à s'en souvenir.
+ */
+const WIRE_TO_ENUM: Record<AdminRole, string> = {
+  citizen: "Citizen",
+  agent: "Agent",
+  admin: "Admin",
+};
+
+/** Clé du libellé traduit, partagée avec le reste de l'application. */
+export const ROLE_LABEL_KEY: Record<AdminRole, "Citizen" | "Agent" | "Admin"> = WIRE_TO_ENUM as Record<
+  AdminRole,
+  "Citizen" | "Agent" | "Admin"
+>;
 
 export type AdminUser = {
   /** Identifiant Keycloak — la clé de toutes les routes d'administration. */
@@ -56,7 +84,7 @@ export async function setUserRole(
 ): Promise<void> {
   const response = await authFetch(`${API_BASE_URL}/admin/users/${keycloakId}/role`, token, {
     method: "PUT",
-    body: JSON.stringify({ role }),
+    body: JSON.stringify({ role: WIRE_TO_ENUM[role] }),
   });
   if (!response.ok) throw new Error(await parseApiError(response, `Erreur ${response.status}`));
 }

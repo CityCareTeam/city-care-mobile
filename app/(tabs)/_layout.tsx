@@ -1,5 +1,5 @@
 import { AppMenuProvider } from "@/context/AppMenuContext";
-import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { AuthProvider } from "@/context/AuthContext";
 import { useStrings } from "@/hooks/use-strings";
 import { NotificationProvider, useNotificationContext } from "@/context/NotificationContext";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
@@ -28,22 +28,16 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { CityCareColors, CityCareColorsDark } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
-/**
- * Les onglets, dans l'ordre de la barre.
- *
- * `admin` ferme la marche et n'apparaît que pour les administrateurs. La route
- * existe pour tout le monde — un fichier dans `(tabs)` en crée une — mais elle
- * n'est ni affichée ni atteignable au doigt ; l'écran refuse en plus l'entrée à
- * qui n'a pas le rôle, parce qu'un lien profond ne passe pas par la barre.
- */
-const ALL_TABS = [
-  { name: "index",         key: "home" as const,          icon: "chart.bar.fill" as const,  adminOnly: false },
-  { name: "explore",       key: "map" as const,           icon: "map.fill" as const,        adminOnly: false },
-  { name: "news",          key: "news" as const,          icon: "newspaper.fill" as const,  adminOnly: false },
-  { name: "notifications", key: "notifications" as const, icon: "bell.fill" as const,       adminOnly: false },
-  { name: "profile",       key: "profile" as const,       icon: "person.fill" as const,     adminOnly: false },
-  { name: "admin",         key: "admin" as const,         icon: "person.2.fill" as const,   adminOnly: true },
+const TABS = [
+  { name: "index",         key: "home" as const,          icon: "chart.bar.fill" as const },
+  { name: "explore",       key: "map" as const,           icon: "map.fill" as const },
+  { name: "news",          key: "news" as const,          icon: "newspaper.fill" as const },
+  { name: "notifications", key: "notifications" as const, icon: "bell.fill" as const },
+  { name: "profile",       key: "profile" as const,       icon: "person.fill" as const },
 ];
+
+/** Capturé hors composant : un worklet ne doit lire que des valeurs simples. */
+const TAB_COUNT = TABS.length;
 
 const TAB_BAR_HEIGHT = 60;
 // Cinq onglets tiennent moins à l'aise que quatre : la barre reprend six points
@@ -74,44 +68,24 @@ function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
   const { bottom: bottomInset } = useSafeAreaInsets();
   const marginBottom = bottomInset + (Platform.OS === "ios" ? 0 : 8);
 
-  /**
-   * Les onglets réellement affichés.
-   *
-   * Toute la géométrie en dépend — largeur d'un onglet, course de la pastille,
-   * atterrissage du glissement — donc rien ici ne doit compter les onglets
-   * autrement qu'en lisant cette liste.
-   */
-  const { isAdmin } = useAuth();
-  const TABS = useMemo(() => ALL_TABS.filter((tab) => !tab.adminOnly || isAdmin), [isAdmin]);
-
   // `useWindowDimensions` plutôt qu'un `Dimensions.get` figé au premier rendu :
   // la barre se recalcule à la rotation.
   const { width: screenWidth } = useWindowDimensions();
   const barWidth = screenWidth - MARGIN_H * 2;
   const tabWidth = (barWidth - PAD * 2) / TABS.length;
   const restingX = (index: number) => PAD + index * tabWidth;
-  const lastIndex = TABS.length - 1;
-  const maxX = restingX(lastIndex);
+  const maxX = restingX(TABS.length - 1);
 
-  /**
-   * La barre et le routeur ne comptent pas pareil : le routeur connaît toutes
-   * les routes, la barre n'en montre qu'une partie. On passe donc par les noms,
-   * jamais par les indices — un décalage d'un rang enverrait chaque appui sur
-   * l'onglet voisin.
-   */
-  const routeName = state.routes[state.index]?.name;
-  const activeTabIndex = Math.max(0, TABS.findIndex((tab) => tab.name === routeName));
-
-  const x = useSharedValue(PAD);
+  const x = useSharedValue(restingX(state.index));
   const grabbedAt = useSharedValue(0);
   const stretch = useSharedValue(1);
   const held = useSharedValue(false);
-  const hoveredOnUi = useSharedValue(0);
+  const hoveredOnUi = useSharedValue(state.index);
 
   // Onglet sous la pastille pendant le glissement ; retombe sur l'onglet réel
   // dès qu'on lâche.
   const [hovered, setHovered] = useState<number | null>(null);
-  const activeIndex = hovered ?? activeTabIndex;
+  const activeIndex = hovered ?? state.index;
 
   /**
    * Largeur de chaque libellé, mesurée hors écran.
@@ -165,17 +139,16 @@ function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
 
   const settle = useCallback((index: number) => {
     setHovered(null);
-    const target = TABS[index]?.name;
-    if (target && routeName !== target) navigation.navigate(target);
-  }, [routeName, TABS, navigation]);
+    if (state.index !== index) navigation.navigate(state.routes[index].name);
+  }, [state.index, state.routes, navigation]);
 
   // Suit la navigation venue d'ailleurs — retour arrière, lien profond — mais
   // jamais pendant qu'un doigt tient la pastille.
   useEffect(() => {
-    if (!held.value) x.value = withSpring(restingX(activeTabIndex), SPRING);
-    hoveredOnUi.value = activeTabIndex;
+    if (!held.value) x.value = withSpring(restingX(state.index), SPRING);
+    hoveredOnUi.value = state.index;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTabIndex, tabWidth]);
+  }, [state.index, tabWidth]);
 
   /**
    * Glissement de la pastille. Tout se joue sur le thread UI : la position
@@ -208,7 +181,7 @@ function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
       .onFinalize(() => {
         if (!held.value) return;
         held.value = false;
-        const landing = Math.min(Math.max(Math.round((x.value - PAD) / tabWidth), 0), lastIndex);
+        const landing = Math.min(Math.max(Math.round((x.value - PAD) / tabWidth), 0), TAB_COUNT - 1);
         // Position recalculée sur place : `restingX` est une fonction JS
         // ordinaire, et l'appeler depuis un worklet fait planter l'application.
         x.value = withSpring(PAD + landing * tabWidth, SPRING);
@@ -217,7 +190,7 @@ function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
         runOnJS(settle)(landing);
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [tabWidth, maxX, lastIndex, tap, settle],
+    [tabWidth, maxX, tap, settle],
   );
 
   /**
@@ -326,10 +299,7 @@ export default function TabLayout() {
         screenOptions={{ headerShown: false }}
         tabBar={(props) => <LiquidTabBar {...props} />}
       >
-        {/* Toutes les routes sont déclarées, y compris celle que la barre ne
-            montre pas aux non-administrateurs : une route absente du navigateur
-            n'existe pas du tout, et l'onglet ne pourrait jamais s'afficher. */}
-        {ALL_TABS.map((tab) => (
+        {TABS.map((tab) => (
           <Tabs.Screen
             key={tab.name}
             name={tab.name}
