@@ -158,7 +158,6 @@ export const fr = {
     loadMore: "Charger la suite",
     loadMoreA11y: "Charger davantage de signalements",
     showMoreA11y: "Afficher davantage de signalements",
-    totalReports: (count: number) => `${count} signalement${count !== 1 ? "s" : ""} au total`,
     reportIncident: "Signaler un incident",
     resumeReport: "Reprendre mon signalement",
     draftBadge: "Brouillon",
@@ -196,6 +195,10 @@ export const fr = {
     cityTitle: "La communauté",
     resolutionRate: "Taux de résolution",
     resolvedOf: (resolved: number, total: number) => `${resolved} résolu${resolved > 1 ? "s" : ""} sur ${total}`,
+    backlog: (count: number) =>
+      count === 0
+        ? "Rien à traiter"
+        : `${count} signalement${count > 1 ? "s" : ""} à traiter`,
     topCategory: "Catégorie la plus signalée",
     since: (date: string) => `Premier signalement le ${date}`,
     empty: "Votre premier signalement ouvrira ce bilan.",

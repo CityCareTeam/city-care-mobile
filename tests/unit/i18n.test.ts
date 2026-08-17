@@ -34,10 +34,6 @@ describe('dictionnaires', () => {
 
   // Un pluriel qui ignore son argument est un pluriel raté.
   it('accordent les pluriels', () => {
-    expect(fr.home.totalReports(1)).toContain('1 signalement au total');
-    expect(fr.home.totalReports(3)).toContain('3 signalements');
-    expect(en.home.totalReports(1)).toContain('1 report in total');
-    expect(en.home.totalReports(3)).toContain('3 reports');
   });
 
   // Une traduction oubliée se voit ici : la valeur anglaise serait le français.

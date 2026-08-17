@@ -156,7 +156,6 @@ export const en: typeof fr = {
     loadMore: "Load more",
     loadMoreA11y: "Load more reports",
     showMoreA11y: "Show more reports",
-    totalReports: (count: number) => `${count} report${count !== 1 ? "s" : ""} in total`,
     reportIncident: "Report an incident",
     resumeReport: "Resume my report",
     draftBadge: "Draft",
@@ -192,6 +191,8 @@ export const en: typeof fr = {
     cityTitle: "The community",
     resolutionRate: "Resolution rate",
     resolvedOf: (resolved: number, total: number) => `${resolved} resolved out of ${total}`,
+    backlog: (count: number) =>
+      count === 0 ? "Nothing to handle" : `${count} report${count > 1 ? "s" : ""} to handle`,
     topCategory: "Most reported category",
     since: (date: string) => `First report on ${date}`,
     empty: "Your first report will open this record.",

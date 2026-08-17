@@ -103,30 +103,6 @@ function countByStatus(incidents: { status: string }[]) {
 
 // ── Composants partagés ───────────────────────────────────────────────────
 
-function StatCard({
-  label,
-  value,
-  color,
-  icon,
-}: {
-  label: string;
-  value: number;
-  color: string;
-  icon: React.ComponentProps<typeof MaterialIcons>["name"];
-}) {
-  const { isDark } = useAppColors();
-  const styles = isDark ? darkStyles : lightStyles;
-  return (
-    <View style={[styles.statCard, { backgroundColor: color + "1A", borderTopColor: color }]}>
-      <View style={[styles.statIconBubble, { backgroundColor: color + "28" }]}>
-        <MaterialIcons name={icon} size={15} color={color} />
-      </View>
-      <Text style={[styles.statValue, { color }]}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
-    </View>
-  );
-}
-
 /**
  * Le pendant du bouton de `IncidentList` pour les cas où il n'y a pas de liste
  * à prolonger : un filtre qui ne trouve rien dans les pages déjà ouvertes n'est
@@ -562,10 +538,13 @@ function AgentView({
     () => incidents.filter((i) => i.status === "reported" || i.status === "in_progress"),
     [incidents],
   );
-  const { reported: reportedCount, inProgress: inProgressCount } = useMemo(
-    () => countByStatus(toHandle),
-    [toHandle],
-  );
+  // Deux décomptes, et c'est voulu : celui de la ville pour le bilan, celui de
+  // la pile pour la liste en dessous.
+  const cityStats = useCityStats();
+  const loaded = useMemo(() => countByStatus(incidents), [incidents]);
+  const backlog = cityStats
+    ? cityStats.reported + cityStats.inProgress
+    : loaded.reported + loaded.inProgress;
 
   const { filterType, setFilterType, filterStatus, setFilterStatus, filteredIncidents: filteredToHandle } =
     useIncidentFilters(toHandle, "agent");
@@ -579,10 +558,23 @@ function AgentView({
 
   return (
     <>
-      <View style={styles.statRow}>
-        <StatCard label={t.home.toHandle} value={reportedCount}   color="#2196f3" icon="pending-actions" />
-        <StatCard label={t.home.inProgress}  value={inProgressCount} color="#f0a500" icon="autorenew" />
-      </View>
+      {/* Les deux compteurs portaient sur les pages chargées : ils annonçaient
+          la pagination, pas la ville. Le bilan du citoyen dit la même chose en
+          exact, et l'agent a en plus besoin du seul chiffre qui le concerne —
+          ce qui reste à traiter. */}
+      <StatusBreakdown
+        title={t.stats.cityTitle}
+        icon="location-city"
+        total={cityStats?.total ?? incidents.length}
+        resolved={cityStats?.resolved ?? loaded.resolved}
+        inProgress={cityStats?.inProgress ?? loaded.inProgress}
+        reported={cityStats?.reported ?? loaded.reported}
+      >
+        <View style={styles.backlogRow}>
+          <MaterialIcons name="pending-actions" size={15} color="#2196f3" />
+          <Text style={styles.backlogText}>{t.stats.backlog(backlog)}</Text>
+        </View>
+      </StatusBreakdown>
 
       <SectionHeader title={t.home.byCategory} />
       <View style={styles.typeRow}>
@@ -667,7 +659,8 @@ function AdminView({
   const { isDark } = useAppColors();
   const styles = isDark ? darkStyles : lightStyles;
   const t = useStrings();
-  const { reported, inProgress, resolved } = useMemo(() => countByStatus(incidents), [incidents]);
+  const cityStats = useCityStats();
+  const loaded = useMemo(() => countByStatus(incidents), [incidents]);
 
   const { filterType, setFilterType, filterStatus, setFilterStatus, filteredIncidents } =
     useIncidentFilters(incidents, "admin");
@@ -681,14 +674,17 @@ function AdminView({
 
   return (
     <>
-      <View style={styles.statRow}>
-        <StatCard label={t.home.reported} value={reported}    color="#2196f3" icon="flag" />
-        <StatCard label={t.home.inProgress} value={inProgress}  color="#f0a500" icon="autorenew" />
-        <StatCard label={t.home.resolved}  value={resolved}    color="#4caf50" icon="check-circle" />
-      </View>
-      {/* « au total » veut dire au total : c'est le compte du serveur, pas
-          celui des pages ouvertes — qui annonçait 50 quoi qu'il arrive. */}
-      <Text style={styles.totalLabel}>{t.home.totalReports(paging.totalCount)}</Text>
+      {/* Trois cartes qui comptaient les pages chargées, surmontant une ligne
+          qui donnait le vrai total : l'écran se contredisait à deux lignes
+          d'intervalle. Un seul bloc, exact, et le même que partout ailleurs. */}
+      <StatusBreakdown
+        title={t.stats.cityTitle}
+        icon="location-city"
+        total={cityStats?.total ?? paging.totalCount ?? incidents.length}
+        resolved={cityStats?.resolved ?? loaded.resolved}
+        inProgress={cityStats?.inProgress ?? loaded.inProgress}
+        reported={cityStats?.reported ?? loaded.reported}
+      />
 
       <SectionHeader title={t.home.byCategory} />
       <View style={styles.typeRow}>
@@ -1137,23 +1133,19 @@ function makeStyles(c: AppColors) {
       paddingVertical: 3,
     },
     rolePillText: { fontSize: 11, fontWeight: "700", color: "#fff" },
-    statRow: { flexDirection: "row", gap: 10, marginBottom: 24 },
-    statCard: { flex: 1, borderRadius: 12, borderTopWidth: 3, padding: 14, alignItems: "center" },
-    statIconBubble: {
-      width: 28, height: 28, borderRadius: 8,
-      alignItems: "center", justifyContent: "center",
-      marginBottom: 8,
+    // Pied du bilan de l'agent : détaché de la légende par un filet, parce
+    // qu'il ne décrit pas la même chose — la légende ventile, cette ligne
+    // désigne le travail.
+    backlogRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 7,
+      marginTop: 14,
+      paddingTop: 12,
+      borderTopWidth: 1,
+      borderTopColor: c.chipBorder,
     },
-    statValue: { fontSize: 28, fontWeight: "800", marginBottom: 2 },
-    statLabel: {
-      fontSize: 11,
-      color: c.text,
-      opacity: 0.5,
-      textAlign: "center",
-      fontWeight: "600",
-      textTransform: "uppercase",
-      letterSpacing: 0.4,
-    },
+    backlogText: { fontSize: 13, fontWeight: "700", color: c.text, opacity: 0.75 },
     reportShortcut: {
       flexDirection: "row",
       alignItems: "center",
@@ -1177,14 +1169,6 @@ function makeStyles(c: AppColors) {
       letterSpacing: 0.3,
       color: c.primary,
       textTransform: "uppercase",
-    },
-    totalLabel: {
-      fontSize: 13,
-      color: c.text,
-      opacity: 0.5,
-      textAlign: "center",
-      marginTop: -14,
-      marginBottom: 20,
     },
     sectionTitleRow: {
       flexDirection: "row",
