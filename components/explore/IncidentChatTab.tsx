@@ -23,9 +23,11 @@ type Props = {
   sending: boolean;
   dbUserId: string | undefined;
   onSend: (text: string) => Promise<void>;
+  /** Signaler le message d'un autre. Absent si la modération n'est pas offerte. */
+  onFlag?: (messageId: string) => void;
 };
 
-export function IncidentChatTab({ messages, loading, connected, sending, dbUserId, onSend }: Props) {
+export function IncidentChatTab({ messages, loading, connected, sending, dbUserId, onSend, onFlag }: Props) {
   const { colors } = useAppColors();
   const t = useStrings();
   const { bottom: bottomInset } = useSafeAreaInsets();
@@ -73,6 +75,15 @@ export function IncidentChatTab({ messages, loading, connected, sending, dbUserI
     bubbleTimeMe: { color: "rgba(255,255,255,0.55)", opacity: 1 },
     roleBadge: { borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2 },
     roleBadgeText: { fontSize: 10, fontWeight: "700" },
+    /**
+     * Un drapeau dans la ligne du nom, sur les messages des autres seulement.
+     *
+     * L'appui long est la convention des messageries, mais un geste qu'on ne voit
+     * pas ne se découvre pas — et cet écran n'a rien pour l'annoncer. La ligne
+     * porte déjà le nom et le rôle : le drapeau s'y glisse sans rien alourdir, et
+     * la zone tactile est élargie sous lui pour rester atteignable au pouce.
+     */
+    flagMsg: { paddingHorizontal: 4, paddingVertical: 3, marginLeft: -2 },
     inputBar: {
       flexDirection: "row",
       alignItems: "flex-end",
@@ -148,6 +159,18 @@ export function IncidentChatTab({ messages, loading, connected, sending, dbUserI
                             {role === "Agent" ? "Agent" : "Admin"}
                           </Text>
                         </View>
+                      )}
+                      {onFlag && (
+                        <TouchableOpacity
+                          style={s.flagMsg}
+                          onPress={() => onFlag(msg.id)}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          activeOpacity={0.6}
+                          accessibilityRole="button"
+                          accessibilityLabel={t.moderation.flagTitle}
+                        >
+                          <MaterialIcons name="flag" size={12} color={colors.text} style={{ opacity: 0.35 }} />
+                        </TouchableOpacity>
                       )}
                     </View>
                   )}

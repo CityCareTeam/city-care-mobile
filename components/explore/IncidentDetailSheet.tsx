@@ -30,8 +30,9 @@ import { distanceKm } from "@/utils/incident-search";
 import { GlassPillSelector } from "@/components/ui/GlassPillSelector";
 import { FlagContentModal } from "@/components/moderation/FlagContentModal";
 import { useContentReport } from "@/hooks/use-content-report";
+import type { FlagTarget } from "@/services/moderation";
 import { ModalShell } from "@/components/ui/ModalShell";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -84,7 +85,7 @@ export function IncidentDetailSheet({ incident, userPlace, initialTab, onClose, 
   const { followed, toggle: toggleFollow } = useFollowedIncidents();
   const isFollowed = incident ? followed.has(incident.id) : false;
   const { dbUser } = useAuth();
-  const { report } = useContentReport();
+  const { report, hiddenMessages } = useContentReport();
   const [activeTab, setActiveTab] = useState<"details" | "chat">("details");
   const [zoomedPhoto, setZoomedPhoto] = useState<string | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
@@ -92,7 +93,12 @@ export function IncidentDetailSheet({ incident, userPlace, initialTab, onClose, 
   /** Statut choisi, en attente du commentaire facultatif. */
   const [pendingStatus, setPendingStatus] = useState<string | null>(null);
   const [comment, setComment] = useState("");
-  const [flagging, setFlagging] = useState(false);
+  /**
+   * Ce qu'on est en train de signaler : la fiche elle-même, ou l'un des messages
+   * de son fil. Un simple booléen ne suffisait pas — la modale a besoin de savoir
+   * sur quoi elle porte, et deux états séparés auraient permis d'en ouvrir deux.
+   */
+  const [flagging, setFlagging] = useState<{ target: FlagTarget; id: string } | null>(null);
 
   const away =
     userPlace && incident
@@ -104,6 +110,19 @@ export function IncidentDetailSheet({ incident, userPlace, initialTab, onClose, 
   const { votes, toggling, toggleVote } = useIncidentVotes(incident?.id ?? null);
   const { messages, send, connected, loading: chatLoading } = useIncidentChat(
     activeTab === "chat" ? (incident?.id ?? null) : null
+  );
+
+  /**
+   * Le fil moins ce qu'on a soi-même signalé.
+   *
+   * Tant que le serveur n'a pas tranché, le message continue d'arriver — le
+   * masquage local est la seule chose qui prenne effet tout de suite, et c'est
+   * précisément ce que la fenêtre de signalement promet. Le filtrer côté serveur
+   * viendra avec la décision du modérateur, pour tout le monde.
+   */
+  const visibleMessages = useMemo(
+    () => messages.filter((m) => !hiddenMessages.includes(m.id)),
+    [messages, hiddenMessages],
   );
 
   useEffect(() => {
@@ -367,6 +386,27 @@ export function IncidentDetailSheet({ incident, userPlace, initialTab, onClose, 
       borderWidth: 1, borderColor: colors.statusRed,
     },
     deleteBtnText: { fontWeight: "700", fontSize: 14, color: colors.statusRed },
+    /**
+     * Discret, et en bas.
+     *
+     * Signaler n'a pas le poids de suivre ou de partager : c'est un geste rare et
+     * correctif, qu'on vient chercher une fois. Le mettre dans la rangée
+     * d'actions le proposerait à chaque ouverture de fiche — et l'en-tête a déjà
+     * été dégagé une fois pour cette raison. Il reste néanmoins visible : un
+     * signalement qu'on ne trouve pas ne se fait pas.
+     */
+    flagBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 7,
+      marginTop: 12,
+      paddingVertical: 12,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.chipBorder,
+    },
+    flagBtnText: { fontSize: 13, fontWeight: "600", color: colors.text, opacity: 0.55 },
   });
 
   return (
@@ -628,18 +668,34 @@ export function IncidentDetailSheet({ incident, userPlace, initialTab, onClose, 
                     <Text style={s.deleteBtnText}>{STRINGS.alert.deleteIncidentTitle}</Text>
                   </TouchableOpacity>
                 )}
+
+                {/* Signaler le contenu d'autrui, pas le sien : se dénoncer
+                    soi-même n'a pas de sens, et l'auteur peut déjà supprimer. */}
+                {incident.authorUserId !== dbUser?.id && (
+                  <TouchableOpacity
+                    style={s.flagBtn}
+                    onPress={() => setFlagging({ target: "incident", id: incident.id })}
+                    activeOpacity={0.75}
+                    accessibilityRole="button"
+                    accessibilityLabel={t.moderation.flagTitle}
+                  >
+                    <MaterialIcons name="flag" size={15} color={colors.text} style={{ opacity: 0.45 }} />
+                    <Text style={s.flagBtnText}>{t.moderation.flagShort}</Text>
+                  </TouchableOpacity>
+                )}
               </ScrollView>
             )}
 
             {/* Chat */}
             {activeTab === "chat" && (
               <IncidentChatTab
-                messages={messages}
+                messages={visibleMessages}
                 loading={chatLoading}
                 connected={connected}
                 sending={sending}
                 dbUserId={dbUser?.id}
                 onSend={handleSend}
+                onFlag={(id) => setFlagging({ target: "message", id })}
               />
             )}
           </View>
@@ -648,12 +704,13 @@ export function IncidentDetailSheet({ incident, userPlace, initialTab, onClose, 
         <PhotoViewer uri={zoomedPhoto} onClose={() => setZoomedPhoto(null)} />
 
         <FlagContentModal
-          visible={flagging}
-          onClose={() => setFlagging(false)}
+          visible={flagging !== null}
+          onClose={() => setFlagging(null)}
           onConfirm={async (reason) => {
-            if (!incident) return;
-            const outcome = await report("incident", incident.id, reason);
-            setFlagging(false);
+            if (!flagging) return;
+            const outcome = await report(flagging.target, flagging.id, reason);
+            const wasIncident = flagging.target === "incident";
+            setFlagging(null);
             // Trois issues, trois phrases : masqué et signalé, masqué seulement,
             // ou masqué sans que le signalement soit parti. Les confondre
             // laisserait croire qu'un modérateur a été prévenu quand personne ne
@@ -662,8 +719,10 @@ export function IncidentDetailSheet({ incident, userPlace, initialTab, onClose, 
               type: outcome === "sent" ? "success" : "error",
               text1: t.moderation[outcome === "sent" ? "sent" : outcome === "hiddenOnly" ? "hiddenOnly" : "failed"],
             });
-            // La fiche parle d'un contenu qu'on vient de masquer : on la ferme.
-            onClose();
+            // La fiche entière parle d'un contenu qu'on vient de masquer : on la
+            // ferme. Pour un message, non — le fil reste lisible, et il vient
+            // simplement de perdre une bulle.
+            if (wasIncident) onClose();
           }}
         />
 
