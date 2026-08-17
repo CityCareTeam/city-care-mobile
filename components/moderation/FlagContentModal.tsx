@@ -35,10 +35,22 @@ export function FlagContentModal({
   visible,
   onClose,
   onConfirm,
+  mode = "report",
 }: {
   visible: boolean;
   onClose: () => void;
   onConfirm: (reason: FlagReason) => Promise<void>;
+  /**
+   * `report` : un citoyen alerte, et le contenu disparaît de son appareil en
+   * attendant qu'on tranche. `moderate` : un agent tranche tout de suite, et le
+   * contenu disparaît pour tout le monde.
+   *
+   * Même fenêtre parce que la question posée est la même — « qu'est-ce qu'on
+   * reproche à ce contenu ? » — et que le motif sert dans les deux cas de trace.
+   * Seule change la portée du geste, et elle est écrite noir sur blanc : croire
+   * qu'on alerte quand on retire, ou l'inverse, serait grave.
+   */
+  mode?: "report" | "moderate";
 }) {
   const { colors } = useAppColors();
   const t = useStrings();
@@ -57,16 +69,20 @@ export function FlagContentModal({
     }
   }
 
+  const moderating = mode === "moderate";
+
   return (
     <ModalShell
       visible={visible}
-      title={t.moderation.flagTitle}
+      title={moderating ? t.moderation.hideTitle : t.moderation.flagTitle}
       onClose={() => {
         setReason(null);
         onClose();
       }}
     >
-      <Text style={styles.intro}>{t.moderation.flagIntro}</Text>
+      <Text style={styles.intro}>
+        {moderating ? t.moderation.hideIntro : t.moderation.flagIntro}
+      </Text>
 
       <View style={styles.reasons}>
         {FLAG_REASONS.map((option) => {
@@ -95,11 +111,14 @@ export function FlagContentModal({
       </View>
 
       {/* Dit avant l'appui, pas après : on doit savoir si l'on dénonce ou si
-          l'on se protège — ici, les deux. */}
-      <Text style={styles.effect}>{t.moderation.flagEffect}</Text>
+          l'on se protège — pour un citoyen, les deux. Pour un agent, la portée
+          n'est pas la même du tout, et c'est ici qu'elle s'écrit. */}
+      <Text style={styles.effect}>
+        {moderating ? t.moderation.hideEffect : t.moderation.flagEffect}
+      </Text>
 
       <TouchableOpacity
-        style={[styles.send, !reason && { opacity: 0.4 }]}
+        style={[styles.send, moderating && styles.sendDanger, !reason && { opacity: 0.4 }]}
         onPress={() => void confirm()}
         disabled={!reason || sending}
         activeOpacity={0.85}
@@ -108,7 +127,9 @@ export function FlagContentModal({
         {sending ? (
           <ActivityIndicator size="small" color="#fff" />
         ) : (
-          <Text style={styles.sendLabel}>{t.moderation.flagSend}</Text>
+          <Text style={styles.sendLabel}>
+            {moderating ? t.moderation.hide : t.moderation.flagSend}
+          </Text>
         )}
       </TouchableOpacity>
     </ModalShell>
@@ -149,6 +170,9 @@ function makeStyles(c: ReturnType<typeof useAppColors>["colors"]) {
       backgroundColor: c.primary,
       minHeight: 48,
     },
+    // Rouge quand le geste retire pour tout le monde : la couleur dit la portée
+    // avant qu'on ait lu le libellé.
+    sendDanger: { backgroundColor: "#e53e3e" },
     sendLabel: { fontSize: 14, fontWeight: "700", color: "#fff" },
   });
 }

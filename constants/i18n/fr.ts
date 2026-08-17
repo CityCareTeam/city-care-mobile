@@ -569,6 +569,13 @@ export const fr = {
     flagIntro: "Dites en quoi ce contenu enfreint les conditions d’utilisation. Un motif précis permet à un modérateur de trancher ; « inapproprié » ne lui apprend rien.",
     flagEffect: "Le contenu disparaîtra de cet appareil immédiatement. Un modérateur décidera ensuite de le retirer pour tout le monde ou de le garder.",
     flagShort: "Signaler",
+    // ── Masquage direct, pour les agents et les administrateurs ──
+    hideTitle: "Masquer ce contenu",
+    hideIntro:
+      "Dites en quoi ce contenu enfreint les conditions d’utilisation. Le motif reste attaché à votre décision : c’est ce qui permet de la justifier plus tard.",
+    hideEffect:
+      "Le contenu sera retiré pour tout le monde, immédiatement. Vous pourrez le rendre visible depuis l’onglet « Masqués ».",
+    hidden: "Contenu masqué",
     flagSend: "Signaler",
     reasons: {
       hateful: "Propos injurieux, haineux ou menaçants",

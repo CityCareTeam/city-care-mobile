@@ -69,3 +69,33 @@ describe('IncidentChatTab — signalement d’un message', () => {
     expect(screen.getByText('Message d’un autre')).toBeTruthy();
   });
 });
+
+/**
+ * La règle : un agent ne signale pas, il tranche — comme il ne vote pas. Mais
+ * lui retirer le geste sans rien mettre à la place aurait fait un trou : la file
+ * ne se remplit que de signalements, il n'aurait plus eu aucun levier sur un
+ * contenu qu'il repère lui-même.
+ */
+describe('IncidentChatTab — le geste dépend du rôle', () => {
+  it('parle de masquage à un modérateur, pas de signalement', () => {
+    render(<IncidentChatTab {...BASE} messages={[THEIRS]} onFlag={jest.fn()} moderating />);
+
+    expect(screen.getByLabelText(t.moderation.hideTitle)).toBeTruthy();
+    expect(screen.queryByLabelText(t.moderation.flagTitle)).toBeNull();
+  });
+
+  it('parle de signalement à un citoyen', () => {
+    render(<IncidentChatTab {...BASE} messages={[THEIRS]} onFlag={jest.fn()} />);
+
+    expect(screen.getByLabelText(t.moderation.flagTitle)).toBeTruthy();
+    expect(screen.queryByLabelText(t.moderation.hideTitle)).toBeNull();
+  });
+
+  it('atteint le même rappel dans les deux cas', () => {
+    const onFlag = jest.fn();
+    render(<IncidentChatTab {...BASE} messages={[THEIRS]} onFlag={onFlag} moderating />);
+
+    fireEvent.press(screen.getByLabelText(t.moderation.hideTitle));
+    expect(onFlag).toHaveBeenCalledWith('m-theirs');
+  });
+});

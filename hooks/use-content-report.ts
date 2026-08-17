@@ -1,6 +1,7 @@
 import { getStrings } from "@/constants/i18n";
 import {
   flagContent,
+  hideContent,
   MODERATION_UNAVAILABLE,
   type FlagReason,
   type FlagTarget,
@@ -54,12 +55,41 @@ export function useContentReport() {
     [],
   );
 
+  /**
+   * Masquer, pour un modérateur.
+   *
+   * Rien n'est caché localement au préalable, contrairement au signalement : ici
+   * le serveur retire le contenu pour tout le monde, et l'échec doit donc être un
+   * échec. Masquer chez soi un contenu qu'on croit avoir retiré partout serait le
+   * pire des deux mondes.
+   */
+  const moderate = useCallback(
+    async (target: FlagTarget, id: string, reason: FlagReason): Promise<boolean> => {
+      try {
+        const token = await getValidToken();
+        if (!token) throw new Error(getStrings().api.unauthenticated);
+        await hideContent(target, id, reason, token);
+        // Masqué localement **après** la réussite, et non avant : le contenu est
+        // réellement retiré, l'appareil ne fait que refléter ce qui est. C'est
+        // aussi ce qui fait disparaître la bulle du fil sans attendre un
+        // rechargement.
+        setHidden(await hide(target === "incident" ? "incidents" : "messages", id));
+        warned();
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    [],
+  );
+
   const restore = useCallback(async (target: FlagTarget, id: string) => {
     setHidden(await unhide(target === "incident" ? "incidents" : "messages", id));
   }, []);
 
   return {
     report,
+    moderate,
     restore,
     hiddenIncidents: hidden.incidents,
     hiddenMessages: hidden.messages,

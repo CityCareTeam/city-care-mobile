@@ -85,7 +85,7 @@ export function IncidentDetailSheet({ incident, userPlace, initialTab, onClose, 
   const { followed, toggle: toggleFollow } = useFollowedIncidents();
   const isFollowed = incident ? followed.has(incident.id) : false;
   const { dbUser } = useAuth();
-  const { report, hiddenMessages } = useContentReport();
+  const { report, moderate, hiddenMessages } = useContentReport();
   const [activeTab, setActiveTab] = useState<"details" | "chat">("details");
   const [zoomedPhoto, setZoomedPhoto] = useState<string | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
@@ -105,7 +105,7 @@ export function IncidentDetailSheet({ incident, userPlace, initialTab, onClose, 
       ? formatDistance(distanceKm(userPlace, incident), t.locale)
       : "";
 
-  const { canAccessChat, canChangeStatus, canDeleteIncident, canDeletePhoto, canVote } = useIncidentPermissions(incident);
+  const { canAccessChat, canChangeStatus, canDeleteIncident, canDeletePhoto, canVote, canFlagContent, canHideContent } = useIncidentPermissions(incident);
   const { photos, photosLoading, photosError, statusHistory, reloadHistory, handleDeletePhoto } = useIncidentPhotos(incident?.id ?? null);
   const { votes, toggling, toggleVote } = useIncidentVotes(incident?.id ?? null);
   const { messages, send, connected, loading: chatLoading } = useIncidentChat(
@@ -409,6 +409,7 @@ export function IncidentDetailSheet({ incident, userPlace, initialTab, onClose, 
       borderWidth: 1, borderColor: colors.inputBorder,
       marginRight: 6,
     },
+    hideBtn: { borderColor: colors.statusRed + "66", backgroundColor: colors.statusRed + "12" },
   });
 
   return (
@@ -438,18 +439,27 @@ export function IncidentDetailSheet({ incident, userPlace, initialTab, onClose, 
               </View>
               {/* Juste à gauche du vote : les deux jugent le signalement — l'un
                   l'approuve, l'autre le conteste — quand suivre, partager et
-                  itinéraire, en dessous, en font quelque chose. Masqué pour
-                  l'auteur : se signaler soi-même n'a pas de sens, et il peut déjà
-                  supprimer. */}
-              {incident.authorUserId !== dbUser?.id && (
+                  itinéraire, en dessous, en font quelque chose.
+
+                  Un geste ou l'autre, jamais les deux. Un agent ne signale pas :
+                  il tranche déjà, s'écrire à soi-même n'apporte rien — et c'est
+                  la règle que suit déjà le vote. Il masque donc directement, en
+                  rouge parce que la portée n'est pas la même. Un citoyen signale.
+                  Personne ne fait ni l'un ni l'autre sur son propre contenu. */}
+              {incident.authorUserId !== dbUser?.id && (canFlagContent || canHideContent) && (
                 <TouchableOpacity
-                  style={s.flagBtn}
+                  style={[s.flagBtn, canHideContent && s.hideBtn]}
                   onPress={() => setFlagging({ target: "incident", id: incident.id })}
                   activeOpacity={0.75}
                   accessibilityRole="button"
-                  accessibilityLabel={t.moderation.flagTitle}
+                  accessibilityLabel={canHideContent ? t.moderation.hideTitle : t.moderation.flagTitle}
                 >
-                  <MaterialIcons name="flag" size={15} color={colors.text} style={{ opacity: 0.45 }} />
+                  <MaterialIcons
+                    name={canHideContent ? "visibility-off" : "flag"}
+                    size={15}
+                    color={canHideContent ? colors.statusRed : colors.text}
+                    style={!canHideContent && { opacity: 0.45 }}
+                  />
                 </TouchableOpacity>
               )}
               <TouchableOpacity
@@ -709,7 +719,13 @@ export function IncidentDetailSheet({ incident, userPlace, initialTab, onClose, 
                 sending={sending}
                 dbUserId={dbUser?.id}
                 onSend={handleSend}
-                onFlag={(id) => setFlagging({ target: "message", id })}
+                // Absent pour qui n'a ni l'un ni l'autre des deux gestes.
+                onFlag={
+                  canFlagContent || canHideContent
+                    ? (id) => setFlagging({ target: "message", id })
+                    : undefined
+                }
+                moderating={canHideContent}
               />
             )}
           </View>
@@ -720,10 +736,26 @@ export function IncidentDetailSheet({ incident, userPlace, initialTab, onClose, 
         <FlagContentModal
           visible={flagging !== null}
           onClose={() => setFlagging(null)}
+          mode={canHideContent ? "moderate" : "report"}
           onConfirm={async (reason) => {
             if (!flagging) return;
-            const outcome = await report(flagging.target, flagging.id, reason);
             const wasIncident = flagging.target === "incident";
+
+            if (canHideContent) {
+              // Le retrait vaut pour tout le monde : un échec est un échec, il
+              // n'y a rien à conserver localement pour faire semblant.
+              const done = await moderate(flagging.target, flagging.id, reason);
+              setFlagging(null);
+              Toast.show({
+                type: done ? "success" : "error",
+                text1: done ? t.moderation.hidden : t.alert.errorTitle,
+                text2: done ? undefined : t.moderation.decideFailed,
+              });
+              if (done && wasIncident) onClose();
+              return;
+            }
+
+            const outcome = await report(flagging.target, flagging.id, reason);
             setFlagging(null);
             // Trois issues, trois phrases : masqué et signalé, masqué seulement,
             // ou masqué sans que le signalement soit parti. Les confondre

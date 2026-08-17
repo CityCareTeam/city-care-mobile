@@ -25,9 +25,15 @@ type Props = {
   onSend: (text: string) => Promise<void>;
   /** Signaler le message d'un autre. Absent si la modération n'est pas offerte. */
   onFlag?: (messageId: string) => void;
+  /**
+   * Le geste offert retire pour tout le monde au lieu d'alerter : c'est celui
+   * d'un agent. L'icône et le libellé changent en conséquence — un drapeau
+   * laisserait croire qu'on prévient quelqu'un alors qu'on tranche.
+   */
+  moderating?: boolean;
 };
 
-export function IncidentChatTab({ messages, loading, connected, sending, dbUserId, onSend, onFlag }: Props) {
+export function IncidentChatTab({ messages, loading, connected, sending, dbUserId, onSend, onFlag, moderating }: Props) {
   const { colors } = useAppColors();
   const t = useStrings();
   const { bottom: bottomInset } = useSafeAreaInsets();
@@ -167,9 +173,14 @@ export function IncidentChatTab({ messages, loading, connected, sending, dbUserI
                           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                           activeOpacity={0.6}
                           accessibilityRole="button"
-                          accessibilityLabel={t.moderation.flagTitle}
+                          accessibilityLabel={moderating ? t.moderation.hideTitle : t.moderation.flagTitle}
                         >
-                          <MaterialIcons name="flag" size={12} color={colors.text} style={{ opacity: 0.35 }} />
+                          <MaterialIcons
+                            name={moderating ? "visibility-off" : "flag"}
+                            size={12}
+                            color={moderating ? "#e53e3e" : colors.text}
+                            style={!moderating && { opacity: 0.35 }}
+                          />
                         </TouchableOpacity>
                       )}
                     </View>

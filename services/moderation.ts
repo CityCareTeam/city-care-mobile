@@ -5,6 +5,7 @@ import { authFetch } from "@/services/api-client";
  * Modération : le contrat du serveur.
  *
  *   POST   /moderation/flags          { targetType, targetId, reason }        → 201
+ *   POST   /moderation/hide  { targetType, targetId, reason, comment? }       → 204 (agent)
  *   GET    /moderation/queue                                                 → 200 [FlaggedContent]
  *   GET    /moderation/queue/count                                           → 200 { count }
  *   POST   /moderation/queue/{id}/hide   { comment? }                        → 204
@@ -149,6 +150,33 @@ export async function getModerationCount(token: string): Promise<number> {
   } catch {
     return 0;
   }
+}
+
+/**
+ * Masquer directement, sans passer par un signalement.
+ *
+ * C'est ce qu'un agent a à la place du signalement : il tranche déjà, se signaler
+ * à soi-même n'apporterait rien. Mais la file ne se remplit que de signalements —
+ * sans ce geste, un agent qui repère un contenu de ses propres yeux devrait
+ * attendre qu'un citoyen le signale pour pouvoir agir.
+ *
+ * Le motif est demandé comme pour un signalement : c'est lui qui devient la
+ * trace, avec la date et le nom du modérateur.
+ */
+export async function hideContent(
+  target: FlagTarget,
+  targetId: string,
+  reason: FlagReason,
+  token: string,
+  comment?: string,
+): Promise<void> {
+  const response = await authFetch(`${API_BASE_URL}/moderation/hide`, token, {
+    method: "POST",
+    body: JSON.stringify({ targetType: target, targetId, reason, comment }),
+  });
+
+  if (unavailable(response.status)) throw new Error(MODERATION_UNAVAILABLE);
+  if (!response.ok) throw new Error(`Masquage impossible (${response.status})`);
 }
 
 /** Un contenu masqué par la modération, avec la décision qui l'a masqué. */

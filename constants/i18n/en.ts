@@ -537,6 +537,12 @@ export const en: typeof fr = {
     flagIntro: "Tell us how this content breaks the terms of use. A precise reason lets a moderator decide; “inappropriate” tells them nothing.",
     flagEffect: "The content will disappear from this device straight away. A moderator will then decide whether to remove it for everyone or keep it.",
     flagShort: "Report",
+    hideTitle: "Hide this content",
+    hideIntro:
+      "Say how this content breaks the terms of use. The reason stays attached to your decision — it is what lets you justify it later.",
+    hideEffect:
+      "The content will be removed for everyone, immediately. You can make it visible again from the “Hidden” tab.",
+    hidden: "Content hidden",
     flagSend: "Report",
     reasons: {
       hateful: "Insulting, hateful or threatening language",
