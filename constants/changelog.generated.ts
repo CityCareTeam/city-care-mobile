@@ -741,6 +741,26 @@ export const LAST_RELEASED_VERSION = "1.5.5";
 /** Changements accumulés depuis, donc embarqués par les pré-versions. */
 export const UNRELEASED_CHANGES: Change[] = [
   {
+    "kind": "feature",
+    "scope": "moderation",
+    "text": "Citizens can report content, agents get a queue"
+  },
+  {
+    "kind": "feature",
+    "scope": "legal",
+    "text": "Terms of use, and an acceptance box at signup"
+  },
+  {
+    "kind": "feature",
+    "scope": "privacy",
+    "text": "A policy in the app, and real consent for location"
+  },
+  {
+    "kind": "fix",
+    "scope": "weather",
+    "text": "Honour the location switch"
+  },
+  {
     "kind": "improvement",
     "scope": "news",
     "text": "Keep the chevron, and lift the share block out of the flow"
