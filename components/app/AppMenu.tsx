@@ -23,7 +23,7 @@ import { runOnJS, useSharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type Panel = "notes" | "updates" | "settings";
-type Entry = Panel | "guide" | "privacy";
+type Entry = Panel | "guide" | "privacy" | "terms";
 
 const WIDTH = Math.min(330, Dimensions.get("window").width * 0.84);
 
@@ -36,6 +36,7 @@ const ICONS: Record<Entry, React.ComponentProps<typeof MaterialIcons>["name"]> =
   updates: "system-update",
   settings: "tune",
   privacy: "privacy-tip",
+  terms: "gavel",
 };
 
 /**
@@ -58,12 +59,12 @@ export function AppMenu({
   visible,
   onClose,
   onOpenGuide,
-  onOpenPrivacy,
+  onOpenLegal,
 }: {
   visible: boolean;
   onClose: () => void;
   onOpenGuide: () => void;
-  onOpenPrivacy: () => void;
+  onOpenLegal: (document: "privacy" | "terms") => void;
 }) {
   const { colors, isDark } = useAppColors();
   const styles = useMemo(() => makeStyles(colors, isDark), [colors, isDark]);
@@ -79,6 +80,10 @@ export function AppMenu({
     { key: "notes", label: t.menu.releaseNotes, detail: t.menu.releaseNotesDetail },
     { key: "updates", label: t.menu.updates, detail: t.menu.updatesDetail },
     { key: "settings", label: t.menu.settings, detail: t.menu.settingsDetail },
+    // Les deux documents en dernier, mais présents : ils doivent rester
+    // consultables après acceptation, et pas seulement au moment de s'inscrire.
+    { key: "privacy", label: t.privacy.title, detail: t.privacy.menuDetail },
+    { key: "terms", label: t.terms.title, detail: t.terms.menuDetail },
   ];
 
   // `0` panneau ouvert, `WIDTH` panneau sorti de l'écran par la droite. Le geste
@@ -122,7 +127,7 @@ export function AppMenu({
     // seuls — le guide au premier lancement, la politique depuis la fenêtre de
     // consentement.
     if (next === "guide") onOpenGuide();
-    else if (next === "privacy") onOpenPrivacy();
+    else if (next === "privacy" || next === "terms") onOpenLegal(next);
     else setPanel(next);
   }
 

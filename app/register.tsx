@@ -1,3 +1,5 @@
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { LegalModal, type LegalDocument } from "@/components/app/LegalModal";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Logo } from "@/components/ui/Logo";
@@ -17,6 +19,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -52,6 +55,21 @@ function makeStyles(c: AppColors) {
     strengthLabel: { fontSize: 11, fontWeight: "700", minWidth: 36, textAlign: "right" },
     confirmError: { fontSize: 12, color: "#e53e3e", marginTop: -10, marginBottom: 12 },
     btnTop: { marginTop: 8, marginBottom: 12 },
+    acceptRow: { flexDirection: "row", alignItems: "flex-start", gap: 10, marginTop: 18 },
+    checkbox: {
+      width: 22,
+      height: 22,
+      borderRadius: 6,
+      borderWidth: 1.5,
+      borderColor: c.inputBorder,
+      alignItems: "center",
+      justifyContent: "center",
+      marginTop: 1,
+    },
+    checkboxOn: { backgroundColor: c.primary, borderColor: c.primary },
+    acceptText: { flex: 1, fontSize: 12.5, color: c.text, opacity: 0.75, lineHeight: 18 },
+    acceptLink: { color: c.primary, fontWeight: "700", textDecorationLine: "underline" },
+    acceptHint: { fontSize: 11.5, color: c.text, opacity: 0.5, textAlign: "center", marginTop: -6 },
     divider: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 12 },
     dividerLine: { flex: 1, height: 1, backgroundColor: c.inputBorder },
     dividerText: { fontSize: 12, color: c.text, opacity: 0.35, fontWeight: "500" },
@@ -72,6 +90,8 @@ export default function RegisterScreen() {
   const [lastName, setLastName]   = useState("");
   const [password, setPassword]   = useState("");
   const [confirm, setConfirm]     = useState("");
+  const [accepted, setAccepted]   = useState(false);
+  const [legal, setLegal]         = useState<LegalDocument | null>(null);
   const [loading, setLoading]     = useState(false);
 
   const strength       = getStrength(password);
@@ -218,13 +238,48 @@ export default function RegisterScreen() {
             error={confirmMismatch ? t.auth.passwordsDiffer : undefined}
           />
 
+          {/* ── Acceptation ──
+              La case porte sur les conditions — un contrat — et signale qu'on a
+              pris connaissance de la politique. Elle ne porte pas « consentement
+              au traitement des données » : ce qui fait fonctionner le service
+              repose sur l'exécution du contrat, et seule la localisation relève
+              du consentement, demandé à part.
+
+              Jamais pré-cochée, et le bouton reste inerte tant qu'elle ne l'est
+              pas : une case déjà cochée n'est pas une acceptation, c'est une
+              présomption. */}
+          <TouchableOpacity
+            style={styles.acceptRow}
+            onPress={() => setAccepted((yes) => !yes)}
+            activeOpacity={0.75}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: accepted }}
+            accessibilityLabel={`${t.terms.accept} ${t.terms.link}`}
+          >
+            <View style={[styles.checkbox, accepted && styles.checkboxOn]}>
+              {accepted && <MaterialIcons name="check" size={14} color="#fff" />}
+            </View>
+            <Text style={styles.acceptText}>
+              {t.terms.accept}{" "}
+              <Text style={styles.acceptLink} onPress={() => setLegal("terms")}>
+                {t.terms.link}
+              </Text>
+              {" "}{t.terms.acceptAnd}{" "}
+              <Text style={styles.acceptLink} onPress={() => setLegal("privacy")}>
+                {t.privacy.link.toLowerCase()}
+              </Text>
+              .
+            </Text>
+          </TouchableOpacity>
+
           <Button
             label={t.auth.signUpAction}
             onPress={handleRegister}
             loading={loading}
-            disabled={confirmMismatch}
+            disabled={confirmMismatch || !accepted}
             style={styles.btnTop}
           />
+          {!accepted && <Text style={styles.acceptHint}>{t.terms.mustAccept}</Text>}
 
           <View style={styles.divider}>
             <View style={styles.dividerLine} />
@@ -240,6 +295,11 @@ export default function RegisterScreen() {
           />
         </View>
       </ScrollView>
+
+      {/* Les deux documents s'ouvrent depuis la case, sans quitter le
+          formulaire : partir les lire ailleurs, c'est revenir à un formulaire
+          vidé — et donc ne pas les lire. */}
+      <LegalModal visible={legal !== null} document={legal ?? "terms"} onClose={() => setLegal(null)} />
     </KeyboardAvoidingView>
   );
 }

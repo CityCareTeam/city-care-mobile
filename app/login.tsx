@@ -1,5 +1,5 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { PrivacyModal } from "@/components/app/PrivacyModal";
+import { LegalModal } from "@/components/app/LegalModal";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { AppVersion } from "@/components/ui/AppVersion";
@@ -217,7 +217,7 @@ export default function LoginScreen() {
         </View>
       </ScrollView>
 
-      <PrivacyModal visible={privacyOpen} onClose={() => setPrivacyOpen(false)} />
+      <LegalModal visible={privacyOpen} document="privacy" onClose={() => setPrivacyOpen(false)} />
     </KeyboardAvoidingView>
   );
 }

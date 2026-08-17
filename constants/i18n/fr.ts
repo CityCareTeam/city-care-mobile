@@ -562,6 +562,20 @@ export const fr = {
     link: "Politique de confidentialité",
   },
 
+  // ── Conditions d’utilisation ──
+  terms: {
+    title: "Conditions d’utilisation",
+    menuDetail: "Les règles du service",
+    link: "conditions d’utilisation",
+    // La case porte sur le contrat, pas sur le traitement des données : celui
+    // qui fait fonctionner le service repose sur l’exécution du contrat, pas sur
+    // un consentement. On accepte les unes, on prend connaissance de l’autre —
+    // et la nuance n’est pas cosmétique, elle décide de ce qu’un refus permet.
+    accept: "J’accepte les",
+    acceptAnd: "et j’ai pris connaissance de la",
+    mustAccept: "Acceptez les conditions d’utilisation pour créer votre compte.",
+  },
+
   // ── Consentement à la localisation ──
   consent: {
     title: "Utiliser votre position ?",

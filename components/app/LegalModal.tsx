@@ -1,35 +1,53 @@
 import { ModalShell } from "@/components/ui/ModalShell";
 import { resolveLanguage } from "@/constants/i18n";
 import { PRIVACY_UPDATED, privacySections } from "@/constants/privacy";
+import { TERMS_UPDATED, termsSections } from "@/constants/terms";
 import { usePreferences } from "@/context/PreferencesContext";
 import { useAppColors } from "@/hooks/use-app-colors";
 import { useStrings } from "@/hooks/use-strings";
 import { useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
+/** Les deux documents que l'application doit tenir à disposition. */
+export type LegalDocument = "privacy" | "terms";
+
 /**
- * Politique de confidentialité.
+ * Politique de confidentialité et conditions d'utilisation.
  *
- * Elle vit dans l'application et non derrière un lien : un document qu'on ne
- * peut lire qu'en ligne n'est pas lisible sur le terrain, et c'est précisément
- * là qu'on décide d'autoriser sa position.
+ * Un seul écran pour les deux : ils ont la même forme — des sections titrées, une
+ * date de révision — et deux composants jumeaux auraient divergé au premier
+ * ajustement de mise en page.
  *
- * Atteignable depuis deux endroits, et les deux comptent : les réglages, pour
- * qui la cherche ; l'écran de connexion, pour qui n'a pas encore de compte —
- * l'information doit précéder le consentement, pas le suivre.
+ * Ils vivent dans l'application et non derrière un lien : un document qu'on ne
+ * peut lire qu'en ligne n'est pas lisible sur le terrain, et c'est précisément là
+ * qu'on décide d'autoriser sa position ou de créer un compte.
+ *
+ * Atteignables avant l'inscription, et pas seulement après : l'information doit
+ * précéder l'engagement.
  */
-export function PrivacyModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+export function LegalModal({
+  visible,
+  document,
+  onClose,
+}: {
+  visible: boolean;
+  document: LegalDocument;
+  onClose: () => void;
+}) {
   const { colors } = useAppColors();
   const { language } = usePreferences();
   const t = useStrings();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
-  const sections = privacySections(resolveLanguage(language));
+  const language_ = resolveLanguage(language);
+  const isPrivacy = document === "privacy";
+  const sections = isPrivacy ? privacySections(language_) : termsSections(language_);
+  const updated = isPrivacy ? PRIVACY_UPDATED : TERMS_UPDATED;
 
   return (
-    <ModalShell visible={visible} title={t.privacy.title} onClose={onClose}>
+    <ModalShell visible={visible} title={isPrivacy ? t.privacy.title : t.terms.title} onClose={onClose}>
       {/* La date en tête : sans elle, on ne sait pas ce qu'on a accepté. */}
-      <Text style={styles.updated}>{t.privacy.updated(PRIVACY_UPDATED)}</Text>
+      <Text style={styles.updated}>{t.privacy.updated(updated)}</Text>
 
       {sections.map((section) => (
         <View key={section.title} style={styles.section}>

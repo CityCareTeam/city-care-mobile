@@ -1,7 +1,7 @@
 import { AppMenu, MenuSwipeArea } from "@/components/app/AppMenu";
 import { GuideModal } from "@/components/app/GuideModal";
 import { LocationConsentModal } from "@/components/app/LocationConsentModal";
-import { PrivacyModal } from "@/components/app/PrivacyModal";
+import { LegalModal, type LegalDocument } from "@/components/app/LegalModal";
 import { usePreferences } from "@/context/PreferencesContext";
 import { locationAsked, markLocationAsked } from "@/storage/consent";
 import { hasSeenGuide, markGuideSeen } from "@/storage/onboarding";
@@ -10,13 +10,13 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 type AppMenuValue = {
   open: () => void;
   openGuide: () => void;
-  openPrivacy: () => void;
+  openLegal: (document: LegalDocument) => void;
 };
 
 const AppMenuContext = createContext<AppMenuValue>({
   open: () => {},
   openGuide: () => {},
-  openPrivacy: () => {},
+  openLegal: () => {},
 });
 
 /**
@@ -33,14 +33,14 @@ const AppMenuContext = createContext<AppMenuValue>({
 export function AppMenuProvider({ children }: { children: React.ReactNode }) {
   const [visible, setVisible] = useState(false);
   const [guideVisible, setGuideVisible] = useState(false);
-  const [privacyVisible, setPrivacyVisible] = useState(false);
+  const [legal, setLegal] = useState<LegalDocument | null>(null);
   const [consentVisible, setConsentVisible] = useState(false);
   const { setLocation } = usePreferences();
 
   const open = useCallback(() => setVisible(true), []);
   const close = useCallback(() => setVisible(false), []);
   const openGuide = useCallback(() => setGuideVisible(true), []);
-  const openPrivacy = useCallback(() => setPrivacyVisible(true), []);
+  const openLegal = useCallback((document: LegalDocument) => setLegal(document), []);
 
   /**
    * Le guide se montre une fois par appareil, au premier passage dans
@@ -91,23 +91,23 @@ export function AppMenuProvider({ children }: { children: React.ReactNode }) {
 
   const closeGuide = useCallback(() => setGuideVisible(false), []);
   const value = useMemo(
-    () => ({ open, openGuide, openPrivacy }),
-    [open, openGuide, openPrivacy],
+    () => ({ open, openGuide, openLegal }),
+    [open, openGuide, openLegal],
   );
 
   return (
     <AppMenuContext.Provider value={value}>
       <MenuSwipeArea onOpen={open}>{children}</MenuSwipeArea>
-      <AppMenu visible={visible} onClose={close} onOpenGuide={openGuide} onOpenPrivacy={openPrivacy} />
+      <AppMenu visible={visible} onClose={close} onOpenGuide={openGuide} onOpenLegal={openLegal} />
       <GuideModal visible={guideVisible} onClose={closeGuide} />
       <LocationConsentModal
         visible={consentVisible}
         onDecide={decideLocation}
         // La politique par-dessus le consentement : on la lit sans avoir à
         // répondre d'abord, ce qui serait répondre à l'aveugle.
-        onReadPolicy={openPrivacy}
+        onReadPolicy={() => openLegal("privacy")}
       />
-      <PrivacyModal visible={privacyVisible} onClose={() => setPrivacyVisible(false)} />
+      <LegalModal visible={legal !== null} document={legal ?? "privacy"} onClose={() => setLegal(null)} />
     </AppMenuContext.Provider>
   );
 }

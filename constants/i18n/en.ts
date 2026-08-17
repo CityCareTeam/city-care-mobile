@@ -531,6 +531,15 @@ export const en: typeof fr = {
     link: "Privacy policy",
   },
 
+  terms: {
+    title: "Terms of use",
+    menuDetail: "The rules of the service",
+    link: "terms of use",
+    accept: "I accept the",
+    acceptAnd: "and I have read the",
+    mustAccept: "Accept the terms of use to create your account.",
+  },
+
   consent: {
     title: "Use your location?",
     intro: "You can say no: the app works without it, and you can change your mind at any time.",
