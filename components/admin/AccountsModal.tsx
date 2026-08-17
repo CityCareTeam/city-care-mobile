@@ -1,4 +1,5 @@
 import { ModalShell } from "@/components/ui/ModalShell";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { Toast } from "@/components/ui/ToastMessage";
 import { useAuth } from "@/context/AuthContext";
 import { useAppColors } from "@/hooks/use-app-colors";
@@ -39,12 +40,22 @@ const ROLE_ICON: Record<AdminRole, React.ComponentProps<typeof MaterialIcons>["n
 };
 
 /**
+ * L'ordre d'affichage : le personnel d'abord, les comptes coupés en dernier.
+ *
+ * Une liste de comptes se parcourt pour deux raisons — vérifier qui a des droits,
+ * et retrouver quelqu'un. Le tri alphabétique ne sert ni l'un ni l'autre : les
+ * trois agents d'une ville se perdent au milieu de deux cents citoyens. Les
+ * désactivés ferment la marche parce qu'ils ne participent plus.
+ */
+const ROLE_WEIGHT: Record<AdminRole, number> = { admin: 0, agent: 1, citizen: 2 };
+
+type Filter = AdminRole | "all";
+
+/**
  * Gestion des comptes — rôles et accès.
  *
  * Vit dans le menu latéral et non dans la barre du bas : celle-ci porte ce qu'on
- * fait tous les jours, et nommer un agent n'arrive pas tous les jours. Un
- * sixième onglet aurait rétréci les cinq autres pour une page qu'on ouvre une
- * fois par mois.
+ * fait tous les jours, et nommer un agent n'arrive pas tous les jours.
  *
  * Deux gestes, et deux seulement. Changer le rôle, qui décide de ce qu'une
  * personne peut faire. Désactiver le compte, qui l'empêche de se connecter sans
@@ -59,6 +70,7 @@ export function AccountsModal({ visible, onClose }: { visible: boolean; onClose:
 
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<Filter>("all");
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -86,7 +98,26 @@ export function AccountsModal({ visible, onClose }: { visible: boolean; onClose:
     return () => clearTimeout(timer);
   }, [visible, search, load]);
 
-  async function changeRole(user: AdminUser, role: AdminRole) {
+  /** Les effectifs par rôle, sur ce que le serveur vient de renvoyer. */
+  const counts = useMemo(() => {
+    const acc: Record<Filter, number> = { all: users.length, citizen: 0, agent: 0, admin: 0 };
+    for (const user of users) acc[user.role ?? "citizen"] += 1;
+    return acc;
+  }, [users]);
+
+  const shown = useMemo(() => {
+    const kept = filter === "all" ? users : users.filter((u) => (u.role ?? "citizen") === filter);
+    return [...kept].sort((a, b) => {
+      // Coupé ou non d'abord : un compte inactif n'est plus une personne à qui
+      // l'on confie quelque chose.
+      if (a.enabled !== b.enabled) return a.enabled ? -1 : 1;
+      const weight = ROLE_WEIGHT[a.role ?? "citizen"] - ROLE_WEIGHT[b.role ?? "citizen"];
+      if (weight !== 0) return weight;
+      return (a.display_name || a.username).localeCompare(b.display_name || b.username);
+    });
+  }, [users, filter]);
+
+  async function applyRole(user: AdminUser, role: AdminRole) {
     setBusyId(user.id);
     try {
       const token = await getValidToken();
@@ -103,6 +134,26 @@ export function AccountsModal({ visible, onClose }: { visible: boolean; onClose:
     } finally {
       setBusyId(null);
     }
+  }
+
+  /**
+   * Donner les pleins pouvoirs demande confirmation ; le reste non.
+   *
+   * Un administrateur peut tout faire, y compris rétrograder celui qui vient de
+   * le nommer. Ce geste-là mérite la même friction que couper un accès — et
+   * seulement celui-là : demander confirmation à chaque changement de rôle
+   * apprendrait surtout à appuyer sur « oui » sans lire.
+   */
+  function changeRole(user: AdminUser, role: AdminRole) {
+    if (role !== "admin") {
+      void applyRole(user, role);
+      return;
+    }
+
+    Alert.alert(t.admin.promoteTitle, t.admin.promoteMessage(user.display_name || user.username), [
+      { text: t.alert.cancel, style: "cancel" },
+      { text: t.admin.promoteConfirm, onPress: () => void applyRole(user, role) },
+    ]);
   }
 
   /**
@@ -138,7 +189,7 @@ export function AccountsModal({ visible, onClose }: { visible: boolean; onClose:
       return;
     }
 
-    Alert.alert(t.admin.disableTitle, t.admin.disableMessage(user.display_name), [
+    Alert.alert(t.admin.disableTitle, t.admin.disableMessage(user.display_name || user.username), [
       { text: t.alert.cancel, style: "cancel" },
       { text: t.admin.disable, style: "destructive", onPress: () => void apply() },
     ]);
@@ -169,9 +220,52 @@ export function AccountsModal({ visible, onClose }: { visible: boolean; onClose:
         )}
       </View>
 
+      {/* Filtrer par rôle répond à la question qu'on se pose vraiment en ouvrant
+          cette page : qui a des droits ? Les effectifs sont sur les puces —
+          « Agents 3 » se lit sans avoir à appuyer dessus. */}
+      {!failed && (
+        <View style={styles.filters}>
+          {(["all", ...ADMIN_ROLES] as Filter[]).map((option) => {
+            const active = filter === option;
+            const color = option === "all" ? colors.primary : ROLE_COLOR[option];
+            return (
+              <TouchableOpacity
+                key={option}
+                style={[styles.filter, active && { backgroundColor: color, borderColor: color }]}
+                onPress={() => setFilter(option)}
+                activeOpacity={0.8}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: active }}
+              >
+                <Text
+                  style={[styles.filterLabel, active ? styles.filterLabelActive : { color }]}
+                  numberOfLines={1}
+                >
+                  {option === "all" ? t.home.allFilter : t.roles[ROLE_LABEL_KEY[option]]}
+                </Text>
+                <Text style={[styles.filterCount, active ? styles.filterLabelActive : { color }]}>
+                  {counts[option]}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      )}
+
       {loading && (
-        <View style={styles.center}>
-          <ActivityIndicator color={colors.primary} />
+        <View style={styles.skeletons}>
+          {[0, 1, 2].map((i) => (
+            <View key={i} style={styles.card}>
+              <View style={styles.identityRow}>
+                <Skeleton style={styles.skeletonAvatar} />
+                <View style={styles.identity}>
+                  <Skeleton style={styles.skeletonName} />
+                  <Skeleton style={styles.skeletonEmail} />
+                </View>
+              </View>
+              <Skeleton style={styles.skeletonRoles} />
+            </View>
+          ))}
         </View>
       )}
 
@@ -185,7 +279,7 @@ export function AccountsModal({ visible, onClose }: { visible: boolean; onClose:
         </View>
       )}
 
-      {!loading && !failed && users.length === 0 && (
+      {!loading && !failed && shown.length === 0 && (
         <View style={styles.center}>
           <MaterialIcons name="person-search" size={28} color={colors.text + "40"} />
           <Text style={styles.notice}>{t.admin.noUsers}</Text>
@@ -194,7 +288,7 @@ export function AccountsModal({ visible, onClose }: { visible: boolean; onClose:
 
       {!loading &&
         !failed &&
-        users.map((user) => {
+        shown.map((user) => {
           // Le serveur refuse déjà qu'on agisse sur soi ; ne pas l'offrir évite
           // de présenter un bouton qui ne peut que répondre non.
           const isSelf = keycloakUser?.sub === user.id;
@@ -211,7 +305,13 @@ export function AccountsModal({ visible, onClose }: { visible: boolean; onClose:
                   <Text style={[styles.avatarText, { color: accent }]}>
                     {(user.display_name || user.username || "?").charAt(0).toUpperCase()}
                   </Text>
+                  {!user.enabled && (
+                    <View style={styles.avatarCut}>
+                      <MaterialIcons name="block" size={11} color="#fff" />
+                    </View>
+                  )}
                 </View>
+
                 <View style={styles.identity}>
                   <View style={styles.nameRow}>
                     <Text style={styles.name} numberOfLines={1}>
@@ -223,62 +323,71 @@ export function AccountsModal({ visible, onClose }: { visible: boolean; onClose:
                     {user.email ?? user.username}
                   </Text>
                 </View>
-                {!user.enabled && (
-                  <View style={styles.disabledBadge}>
-                    <MaterialIcons name="block" size={11} color="#fff" />
-                    <Text style={styles.disabledBadgeText}>{t.admin.disabledTag}</Text>
+
+                {/* Le rôle en toutes lettres, en plus des segments en dessous :
+                    lire un état demande moins d'effort que déduire lequel des
+                    trois boutons est rempli. */}
+                <View style={[styles.roleTag, { backgroundColor: accent + "1A" }]}>
+                  <MaterialIcons name={ROLE_ICON[role]} size={11} color={accent} />
+                  <Text style={[styles.roleTagText, { color: accent }]} numberOfLines={1}>
+                    {t.roles[ROLE_LABEL_KEY[role]]}
+                  </Text>
+                </View>
+              </View>
+
+              {busy ? (
+                <View style={styles.busy}>
+                  <ActivityIndicator size="small" color={colors.primary} />
+                </View>
+              ) : (
+                <>
+                  <View style={styles.roles}>
+                    {ADMIN_ROLES.map((option) => {
+                      const active = role === option;
+                      const color = ROLE_COLOR[option];
+                      return (
+                        <TouchableOpacity
+                          key={option}
+                          style={[
+                            styles.role,
+                            active && { backgroundColor: color, borderColor: color },
+                            isSelf && !active && styles.roleLocked,
+                          ]}
+                          onPress={() => changeRole(user, option)}
+                          disabled={active || isSelf}
+                          activeOpacity={0.8}
+                          accessibilityRole="radio"
+                          accessibilityState={{ selected: active, disabled: isSelf }}
+                          accessibilityLabel={t.roles[ROLE_LABEL_KEY[option]]}
+                        >
+                          <MaterialIcons
+                            name={ROLE_ICON[option]}
+                            size={13}
+                            color={active ? "#fff" : color}
+                            style={!active && { opacity: 0.75 }}
+                          />
+                          <Text
+                            style={[styles.roleLabel, active ? styles.roleLabelActive : { color }]}
+                            numberOfLines={1}
+                          >
+                            {t.roles[ROLE_LABEL_KEY[option]]}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
                   </View>
-                )}
-              </View>
 
-              <View style={styles.roles}>
-                {ADMIN_ROLES.map((option) => {
-                  const active = role === option;
-                  const color = ROLE_COLOR[option];
-                  return (
-                    <TouchableOpacity
-                      key={option}
-                      style={[
-                        styles.role,
-                        active && { backgroundColor: color, borderColor: color },
-                        isSelf && !active && styles.roleLocked,
-                      ]}
-                      onPress={() => void changeRole(user, option)}
-                      disabled={active || isSelf || busy}
-                      activeOpacity={0.8}
-                      accessibilityRole="radio"
-                      accessibilityState={{ selected: active, disabled: isSelf }}
-                      accessibilityLabel={t.roles[ROLE_LABEL_KEY[option]]}
-                    >
-                      <MaterialIcons
-                        name={ROLE_ICON[option]}
-                        size={13}
-                        color={active ? "#fff" : color}
-                        style={!active && { opacity: 0.75 }}
-                      />
-                      <Text
-                        style={[styles.roleLabel, active ? styles.roleLabelActive : { color }]}
-                        numberOfLines={1}
-                      >
-                        {t.roles[ROLE_LABEL_KEY[option]]}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-
-              {!isSelf && (
-                <TouchableOpacity
-                  style={[styles.access, user.enabled ? styles.accessCut : styles.accessGive]}
-                  onPress={() => toggleEnabled(user)}
-                  disabled={busy}
-                  activeOpacity={0.8}
-                  accessibilityRole="button"
-                >
-                  {busy ? (
-                    <ActivityIndicator size="small" color={colors.text} />
+                  {isSelf ? (
+                    // Dire pourquoi les boutons sont éteints vaut mieux que de les
+                    // éteindre sans un mot : on cherche sinon ce qui ne va pas.
+                    <Text style={styles.selfHint}>{t.admin.selfHint}</Text>
                   ) : (
-                    <>
+                    <TouchableOpacity
+                      style={[styles.access, user.enabled ? styles.accessCut : styles.accessGive]}
+                      onPress={() => toggleEnabled(user)}
+                      activeOpacity={0.8}
+                      accessibilityRole="button"
+                    >
                       <MaterialIcons
                         name={user.enabled ? "block" : "lock-open"}
                         size={15}
@@ -292,9 +401,9 @@ export function AccountsModal({ visible, onClose }: { visible: boolean; onClose:
                       >
                         {user.enabled ? t.admin.disable : t.admin.enable}
                       </Text>
-                    </>
+                    </TouchableOpacity>
                   )}
-                </TouchableOpacity>
+                </>
               )}
             </View>
           );
@@ -314,7 +423,7 @@ function makeStyles(c: ReturnType<typeof useAppColors>["colors"]) {
       flexDirection: "row",
       alignItems: "center",
       gap: 9,
-      marginBottom: 14,
+      marginBottom: 10,
       paddingHorizontal: 13,
       paddingVertical: 10,
       borderRadius: 14,
@@ -323,6 +432,30 @@ function makeStyles(c: ReturnType<typeof useAppColors>["colors"]) {
       borderColor: c.chipBorder,
     },
     searchInput: { flex: 1, fontSize: 14, color: c.text, padding: 0 },
+
+    filters: { flexDirection: "row", gap: 5, marginBottom: 14 },
+    filter: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 4,
+      paddingVertical: 7,
+      paddingHorizontal: 3,
+      borderRadius: 11,
+      borderWidth: 1,
+      borderColor: c.chipBorder,
+      backgroundColor: c.chipBg,
+    },
+    filterLabel: { flexShrink: 1, fontSize: 11, fontWeight: "700" },
+    filterCount: { fontSize: 11, fontWeight: "800", opacity: 0.75 },
+    filterLabelActive: { color: "#fff", opacity: 1 },
+
+    skeletons: { gap: 10 },
+    skeletonAvatar: { width: 38, height: 38, borderRadius: 13 },
+    skeletonName: { width: "55%", height: 13, borderRadius: 5 },
+    skeletonEmail: { width: "75%", height: 10, borderRadius: 5, marginTop: 6 },
+    skeletonRoles: { width: "100%", height: 32, borderRadius: 11 },
 
     card: {
       borderRadius: 16,
@@ -339,6 +472,21 @@ function makeStyles(c: ReturnType<typeof useAppColors>["colors"]) {
     identityRow: { flexDirection: "row", alignItems: "center", gap: 11 },
     avatar: { width: 38, height: 38, borderRadius: 13, alignItems: "center", justifyContent: "center" },
     avatarText: { fontSize: 16, fontWeight: "800" },
+    // Le pictogramme mord sur le coin de la pastille : l'état du compte tient
+    // ainsi dans le même espace que son initiale.
+    avatarCut: {
+      position: "absolute",
+      right: -4,
+      bottom: -4,
+      width: 18,
+      height: 18,
+      borderRadius: 9,
+      backgroundColor: c.statusRed,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 2,
+      borderColor: c.white,
+    },
     identity: { flex: 1, gap: 2, minWidth: 0 },
     nameRow: { flexDirection: "row", alignItems: "center", gap: 6 },
     name: { flexShrink: 1, fontSize: 14.5, fontWeight: "700", color: c.text },
@@ -350,16 +498,18 @@ function makeStyles(c: ReturnType<typeof useAppColors>["colors"]) {
       color: c.primary,
     },
     email: { fontSize: 11.5, color: c.text, opacity: 0.5 },
-    disabledBadge: {
+    roleTag: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 3,
-      paddingHorizontal: 7,
-      paddingVertical: 3,
+      gap: 4,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
       borderRadius: 9,
-      backgroundColor: c.statusRed,
+      maxWidth: 118,
     },
-    disabledBadgeText: { fontSize: 10, fontWeight: "800", color: "#fff" },
+    roleTagText: { flexShrink: 1, fontSize: 10.5, fontWeight: "800" },
+
+    busy: { alignItems: "center", justifyContent: "center", minHeight: 78 },
 
     roles: { flexDirection: "row", gap: 6 },
     role: {
@@ -380,6 +530,7 @@ function makeStyles(c: ReturnType<typeof useAppColors>["colors"]) {
     roleLocked: { opacity: 0.35 },
     roleLabel: { flexShrink: 1, fontSize: 11.5, fontWeight: "700" },
     roleLabelActive: { color: "#fff" },
+    selfHint: { fontSize: 11.5, color: c.text, opacity: 0.45, textAlign: "center", lineHeight: 16 },
 
     access: {
       flexDirection: "row",

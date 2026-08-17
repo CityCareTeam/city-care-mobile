@@ -115,6 +115,11 @@ export const en: typeof fr = {
     disableTitle: "Disable this account?",
     disableMessage: (name: string): string =>
       `${name} will no longer be able to sign in. Their reports and messages stay online.`,
+    promoteTitle: "Grant administrator rights?",
+    promoteMessage: (name: string): string =>
+      `${name} will be able to manage accounts, roles and access — including removing yours.`,
+    promoteConfirm: "Make administrator",
+    selfHint: "You can’t change your own account.",
   },
 
   menu: {

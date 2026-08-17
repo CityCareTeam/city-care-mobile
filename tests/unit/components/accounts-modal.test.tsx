@@ -1,0 +1,140 @@
+import { AccountsModal } from '@/components/admin/AccountsModal';
+import { getStrings } from '@/constants/i18n';
+import type { AdminUser } from '@/services/admin';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { Alert } from 'react-native';
+
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+}));
+
+jest.mock('@/storage/tokens', () => ({ getValidToken: () => Promise.resolve('jeton') }));
+
+jest.mock('@/context/AuthContext', () => ({
+  useAuth: () => ({ keycloakUser: { sub: 'moi' } }),
+}));
+
+// Préfixés `mock` : jest interdit à une fabrique de mock de refermer sur une
+// variable ordinaire.
+const mockUsers = jest.fn();
+const mockRole = jest.fn();
+jest.mock('@/services/admin', () => ({
+  ...jest.requireActual('@/services/admin'),
+  getAdminUsers: (...args: unknown[]) => mockUsers(...args),
+  setUserRole: (...args: unknown[]) => mockRole(...args),
+  setUserEnabled: () => Promise.resolve(),
+}));
+
+const t = getStrings();
+
+function user(over: Partial<AdminUser> & { id: string }): AdminUser {
+  return {
+    username: over.id,
+    email: `${over.id}@ville.fr`,
+    display_name: over.id,
+    enabled: true,
+    role: 'citizen',
+    ...over,
+  };
+}
+
+const ZOE = user({ id: 'zoe', display_name: 'Zoé', role: 'citizen' });
+const ANNA = user({ id: 'anna', display_name: 'Anna', role: 'agent' });
+const BOB = user({ id: 'bob', display_name: 'Bob', role: 'admin' });
+const COUPE = user({ id: 'coupe', display_name: 'Coupé', role: 'agent', enabled: false });
+
+beforeEach(() => {
+  mockUsers.mockReset().mockResolvedValue([ZOE, ANNA, BOB, COUPE]);
+  mockRole.mockReset().mockResolvedValue(undefined);
+  jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+});
+
+afterEach(() => jest.restoreAllMocks());
+
+function open() {
+  render(<AccountsModal visible onClose={() => {}} />);
+}
+
+describe('AccountsModal — lire la liste', () => {
+  /**
+   * Le défaut d'origine : le serveur renvoie les rôles en minuscules et le
+   * mobile comparait à des capitales. Aucune pastille ne s'allumait, la page ne
+   * disait le rôle d'aucun compte.
+   */
+  it('montre le rôle de chaque compte', async () => {
+    open();
+    await screen.findByText('Zoé');
+
+    // Deux fois chacun : l'étiquette de l'en-tête et le segment correspondant.
+    expect(screen.getAllByText(t.roles.Agent).length).toBeGreaterThan(1);
+    expect(screen.getAllByText(t.roles.Admin).length).toBeGreaterThan(1);
+  });
+
+  /**
+   * Le personnel d'abord, les comptes coupés en dernier : les trois agents d'une
+   * ville se perdraient sinon au milieu de deux cents citoyens.
+   */
+  it('classe le personnel devant, les comptes coupés derrière', async () => {
+    open();
+    await screen.findByText('Zoé');
+
+    const order = ['Bob', 'Anna', 'Zoé', 'Coupé'].map((name) =>
+      screen.getByText(name).props.children,
+    );
+    expect(order).toEqual(['Bob', 'Anna', 'Zoé', 'Coupé']);
+  });
+
+  it('filtre par rôle, effectifs à l’appui', async () => {
+    open();
+    await screen.findByText('Zoé');
+
+    // Les puces de filtre sont les seuls éléments de rôle « tab » : le libellé
+    // « Agent municipal » apparaît aussi en étiquette et en segment sur chaque
+    // carte. L'ordre est « Tous, Citoyen, Agent, Admin ».
+    fireEvent.press(screen.getAllByRole('tab')[2]);
+    await waitFor(() => expect(screen.queryByText('Zoé')).toBeNull());
+    expect(screen.getByText('Anna')).toBeTruthy();
+    expect(screen.getByText('Coupé')).toBeTruthy();
+  });
+});
+
+describe('AccountsModal — agir', () => {
+  it('change un rôle sans cérémonie', async () => {
+    open();
+    await screen.findByText('Zoé');
+
+    // Le segment « Agent » de la carte de Zoé. L'ordre trié est Bob, Anna, Zoé,
+    // Coupé : on vise le troisième, parce que le segment du rôle déjà porté est
+    // désactivé et qu'appuyer dessus ne ferait rien.
+    fireEvent.press(screen.getAllByLabelText(t.roles.Agent)[2]);
+
+    await waitFor(() => expect(mockRole).toHaveBeenCalled());
+    expect(Alert.alert).not.toHaveBeenCalled();
+  });
+
+  /**
+   * Sauf pour les pleins pouvoirs : un administrateur peut tout faire, y compris
+   * rétrograder celui qui vient de le nommer. Ce geste-là mérite la même friction
+   * que couper un accès — et seulement celui-là, sinon on apprend à appuyer sur
+   * « oui » sans lire.
+   */
+  it('demande confirmation avant de nommer un administrateur', async () => {
+    open();
+    await screen.findByText('Zoé');
+
+    fireEvent.press(screen.getAllByLabelText(t.roles.Admin)[2]);
+
+    expect(Alert.alert).toHaveBeenCalled();
+    expect(mockRole).not.toHaveBeenCalled();
+  });
+
+  // On ne peut pas se rétrograder ni se couper l'accès — le serveur le refuse.
+  // L'écran le dit au lieu d'éteindre des boutons sans un mot.
+  it('explique pourquoi sa propre ligne est verrouillée', async () => {
+    mockUsers.mockResolvedValue([user({ id: 'moi', display_name: 'Moi', role: 'admin' })]);
+    open();
+
+    expect(await screen.findByText(t.admin.selfHint)).toBeTruthy();
+    expect(screen.queryByText(t.admin.disable)).toBeNull();
+  });
+});

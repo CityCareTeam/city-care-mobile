@@ -114,6 +114,11 @@ export const fr = {
     disableTitle: "Désactiver ce compte ?",
     disableMessage: (name: string): string =>
       `${name} ne pourra plus se connecter. Ses signalements et ses messages restent en ligne.`,
+    promoteTitle: "Donner les droits d’administration ?",
+    promoteMessage: (name: string): string =>
+      `${name} pourra gérer les comptes, les rôles et les accès — y compris retirer les vôtres.`,
+    promoteConfirm: "Nommer administrateur",
+    selfHint: "Vous ne pouvez pas modifier votre propre compte.",
   },
 
   // ── Menu de l'application ──
