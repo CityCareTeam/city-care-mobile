@@ -62,6 +62,43 @@ export function useIncidentSearch<T extends Searchable>(incidents: T[]) {
     void setSort(defaultSort);
   }, [defaultSort, setSort, allowed]);
 
+  /**
+   * La position, quand elle est déjà accordée.
+   *
+   * L'origine ne servait qu'au tri, et n'était donc obtenue qu'en choisissant
+   * « Proches » : la distance n'apparaissait sur les lignes qu'à ce moment-là,
+   * alors qu'elle renseigne quel que soit l'ordre. Elle est maintenant cherchée
+   * d'emblée — mais seulement si la permission est **déjà** accordée et que
+   * l'interrupteur de l'application est ouvert.
+   *
+   * `getForegroundPermissionsAsync` lit l'autorisation sans jamais la demander :
+   * c'est ce qui préserve la règle d'origine — on ne réclame la position que
+   * lorsque l'utilisateur demande explicitement « ce qui est près de moi ». Ici on
+   * ne réclame rien, on se sert de ce qui a déjà été donné.
+   */
+  useEffect(() => {
+    if (origin || !allowed) return;
+    let alive = true;
+
+    void (async () => {
+      try {
+        const { granted } = await Location.getForegroundPermissionsAsync();
+        if (!granted || !alive) return;
+        const position =
+          (await Location.getLastKnownPositionAsync()) ??
+          (await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }));
+        if (alive) setOrigin({ latitude: position.coords.latitude, longitude: position.coords.longitude });
+      } catch {
+        // Position indisponible : les lignes se taisent sur la distance, et le
+        // tri par proximité la redemandera le moment venu. Rien à dire ici.
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [origin, allowed]);
+
   const results = useMemo(() => {
     const found = query.trim() ? incidents.filter((incident) => matchesQuery(incident, query)) : incidents;
     return sortIncidents(found, sort, origin);

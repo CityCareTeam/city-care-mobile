@@ -85,7 +85,7 @@ export function IncidentDetailSheet({ incident, userPlace, initialTab, onClose, 
   const { followed, toggle: toggleFollow } = useFollowedIncidents();
   const isFollowed = incident ? followed.has(incident.id) : false;
   const { dbUser } = useAuth();
-  const { report, moderate, hiddenMessages } = useContentReport();
+  const { report, moderate, hiddenIncidents, hiddenMessages } = useContentReport();
   const [activeTab, setActiveTab] = useState<"details" | "chat">("details");
   const [zoomedPhoto, setZoomedPhoto] = useState<string | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
@@ -124,6 +124,18 @@ export function IncidentDetailSheet({ incident, userPlace, initialTab, onClose, 
     () => messages.filter((m) => !hiddenMessages.includes(m.id)),
     [messages, hiddenMessages],
   );
+
+  /**
+   * Déjà signalé par cette personne — le serveur n'en accepte qu'un.
+   *
+   * Le bouton disparaît alors, au lieu de laisser refaire un geste que le serveur
+   * refuse (409) et que l'application présentait comme un envoi réussi : on
+   * croyait avoir signalé deux fois, et on ne l'avait fait qu'une.
+   *
+   * Les messages n'ont pas besoin du même garde-fou : signalés, ils quittent le
+   * fil, donc leur drapeau n'est plus atteignable.
+   */
+  const alreadyFlagged = incident ? hiddenIncidents.includes(incident.id) : false;
 
   useEffect(() => {
     setActiveTab(initialTab ?? "details");
@@ -446,7 +458,7 @@ export function IncidentDetailSheet({ incident, userPlace, initialTab, onClose, 
                   la règle que suit déjà le vote. Il masque donc directement, en
                   rouge parce que la portée n'est pas la même. Un citoyen signale.
                   Personne ne fait ni l'un ni l'autre sur son propre contenu. */}
-              {incident.authorUserId !== dbUser?.id && (canFlagContent || canHideContent) && (
+              {incident.authorUserId !== dbUser?.id && (canFlagContent || canHideContent) && !alreadyFlagged && (
                 <TouchableOpacity
                   style={[s.flagBtn, canHideContent && s.hideBtn]}
                   onPress={() => setFlagging({ target: "incident", id: incident.id })}

@@ -34,6 +34,7 @@ import { useAutoRefresh } from "@/hooks/use-auto-refresh";
 import { INCIDENTS_PAGE_SIZE, POLL_INTERVAL_MS } from "@/constants/config";
 import { applyFilters, useIncidentFilters } from "@/hooks/use-incident-filters";
 import { getIncidents } from "@/services/incidents";
+import { useContentReport } from "@/hooks/use-content-report";
 import { getMyIncidents } from "@/services/users";
 import { getValidToken } from "@/storage/tokens";
 import { loadIncidentsCache, saveIncidentsCache } from "@/storage/incidents-cache";
@@ -240,6 +241,11 @@ function IncidentList({
       {visible.map((inc, idx) => (
         <View key={inc.id}>
           {idx > 0 && <View style={styles.incDivider} />}
+          {/* `isMine` a deux sources parce que les listes ne savent pas la même
+              chose : l'onglet « Les miens » l'affirme pour toute la liste, le fil
+              de la ville le décide ligne par ligne. La propriété de la liste était
+              déclarée mais jamais transmise — le badge manquait donc partout où
+              elle était le seul indice. */}
           <IncidentRow
             id={inc.id}
             type={inc.type}
@@ -248,7 +254,7 @@ function IncidentList({
             address={inc.address}
             createdAt={inc.createdAt}
             onPress={onPress}
-            isMine={myIds?.has(inc.id)}
+            isMine={isMine || myIds?.has(inc.id)}
             isFollowed={followedIds?.has(inc.id)}
             onToggleFollow={onToggleFollow}
             distanceKm={inc.distanceKm}
@@ -825,6 +831,23 @@ export default function HomeScreen() {
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const { pending, rejected, flush, dismissRejected } = usePendingReports();
 
+  /**
+   * Le fil du citoyen, moins ce qu'il a lui-même signalé.
+   *
+   * La carte filtrait déjà, l'accueil non : le contenu signalé y restait, et
+   * rouvrir sa fiche laissait le signaler une seconde fois — que le serveur
+   * refuse (409) mais que l'application présentait comme un envoi réussi. On ne
+   * signale pas deux fois, et surtout on ne le voit pas deux fois.
+   *
+   * Seulement pour les citoyens : un agent doit continuer à voir ce qu'il a
+   * masqué, c'est sa file de travail.
+   */
+  const { hiddenIncidents } = useContentReport();
+  const citizenFeed = useMemo(
+    () => allIncidents.filter((incident) => !hiddenIncidents.includes(incident.id)),
+    [allIncidents, hiddenIncidents],
+  );
+
   const { active: dogActive, onTap: onLogoTap, dismiss: dismissDog } = useEasterEgg();
   const { open: openMenu } = useAppMenu();
   const draftCount = useDraftCount();
@@ -1087,7 +1110,7 @@ export default function HomeScreen() {
       {role === "Citizen" && (
         <CitizenView
           incidents={myIncidents}
-          allIncidents={allIncidents}
+          allIncidents={citizenFeed}
           onPress={navigateToIncident}
           paging={paging}
         />

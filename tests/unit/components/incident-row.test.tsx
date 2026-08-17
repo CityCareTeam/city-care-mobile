@@ -107,3 +107,31 @@ describe('IncidentRow — contenu masqué', () => {
     expect(onPress).toHaveBeenCalledWith('1');
   });
 });
+
+describe('IncidentRow — badge « le mien »', () => {
+  const t = getStrings();
+
+  /**
+   * Le défaut que ce test verrouille : `IncidentList` recevait `isMine` pour
+   * toute une liste et ne le transmettait jamais aux lignes — seul l'ensemble
+   * `myIds` était consulté. Le badge manquait donc partout où la liste était le
+   * seul indice, quel que soit le tri.
+   */
+  it('se voit quand la ligne est à soi', () => {
+    render(<IncidentRow {...BASE} isMine />);
+    expect(screen.getByText(t.incident.mine)).toBeTruthy();
+  });
+
+  it('reste absent sinon', () => {
+    render(<IncidentRow {...BASE} />);
+    expect(screen.queryByText(t.incident.mine)).toBeNull();
+  });
+
+  // Masqué, le contenu ne porte plus que cet état : « le mien » sur une ligne
+  // rouge ajouterait un badge sans rien apprendre.
+  it('cède la place au masquage', () => {
+    render(<IncidentRow {...BASE} isMine hidden />);
+    expect(screen.queryByText(t.incident.mine)).toBeNull();
+    expect(screen.getByText(t.moderation.hiddenTag)).toBeTruthy();
+  });
+});
