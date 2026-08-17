@@ -5,6 +5,7 @@ import { getValidToken } from "@/storage/tokens";
 import { usePushToken } from "@/hooks/use-push-token";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { router } from "expo-router";
 
 // Les push distants ne fonctionnent pas dans Expo Go depuis SDK 53
 const isExpoGo = Constants.appOwnership === "expo";
@@ -64,8 +65,31 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     let unsub: (() => void) | undefined;
     if (!isExpoGo) {
       const Notifications = require("expo-notifications") as typeof import("expo-notifications");
-      const sub = Notifications.addNotificationReceivedListener(() => void fetchCount());
-      unsub = () => sub.remove();
+      const received = Notifications.addNotificationReceivedListener(() => void fetchCount());
+
+      /**
+       * Appuyer sur une notification n'ouvrait rien — ni celles du serveur, ni
+       * les alertes de proximité. L'application se contentait de passer au
+       * premier plan, sur l'écran où on l'avait laissée, et il fallait
+       * retrouver soi-même ce dont on venait d'être prévenu.
+       *
+       * Le lien passe par `data.incidentId`, que les deux sources posent.
+       */
+      const tapped = Notifications.addNotificationResponseReceivedListener((response) => {
+        const data = response.notification.request.content.data as
+          | { incidentId?: string | number }
+          | undefined;
+        const id = data?.incidentId;
+        if (id !== undefined && id !== null && `${id}`.length > 0) {
+          router.push({ pathname: "/(tabs)/explore", params: { selectId: `${id}` } });
+        }
+        void fetchCount();
+      });
+
+      unsub = () => {
+        received.remove();
+        tapped.remove();
+      };
     }
 
     return () => {

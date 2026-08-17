@@ -99,7 +99,7 @@ export const fr = {
     updates: "Mises à jour",
     updatesDetail: "Vérifier et appliquer",
     settings: "Réglages",
-    settingsDetail: "Thème, langue",
+    settingsDetail: "Thème, langue, retours, données",
   },
 
   // ── Écran de secours ──
@@ -513,6 +513,15 @@ export const fr = {
     ],
   },
 
+  // ── Alerte de proximité ──
+  nearby: {
+    title: "Signalement près de vous",
+    // Le lieu en dernier : les notifications Android coupent la fin, et une
+    // adresse tronquée reste lisible là où un type tronqué ne dit plus rien.
+    body: (type: string, away: string, place: string | null) =>
+      place ? `${type} à ${away} — ${place}` : `${type} à ${away}`,
+  },
+
   // ── Réglages ──
   settings: {
     title: "Réglages",
@@ -527,6 +536,11 @@ export const fr = {
     languageFollowsDevice: "L’application suit la langue de votre téléphone.",
     languageFixed: "Choix fixé pour cet appareil, quelle que soit la langue du téléphone.",
 
+    nearby: "Alerte de proximité",
+    nearbyAlerts: "Me prévenir des signalements proches",
+    nearbyAlertsDetail: "Une notification quand un signalement apparaît près de vous.",
+    nearbyLimit:
+      "Fonctionne quand l'application est ouverte, et se tait entre 22 h et 7 h. Jamais plus de trois notifications d'affilée.",
     feedback: "Retours",
     haptics: "Vibrations",
     hapticsDetail: "Un retour discret sur les gestes qui comptent.",

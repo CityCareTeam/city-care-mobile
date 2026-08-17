@@ -23,6 +23,8 @@ import { useAppMenu } from "@/context/AppMenuContext";
 import { useAppRefreshControl } from "@/components/ui/AppRefreshControl";
 import { useAppUpdate } from "@/hooks/use-app-update";
 import { useDraftCount } from "@/hooks/use-draft-indicator";
+import { useNearbyAlerts } from "@/hooks/use-nearby-alerts";
+import { useUserLocation } from "@/hooks/use-user-location";
 import { useWeather } from "@/hooks/use-weather";
 import { formatTemperature, weatherIcon } from "@/utils/weather-code";
 import { useStrings } from "@/hooks/use-strings";
@@ -820,6 +822,17 @@ export default function HomeScreen() {
   const weather = useWeather();
   const t = useStrings();
   const { ready: updateReady } = useAppUpdate();
+
+  /**
+   * L'alerte de proximité se greffe ici plutôt que d'avoir son propre timer :
+   * cet écran rafraîchit déjà le fil toutes les quinze secondes, et c'est
+   * exactement ce qu'il faut regarder. Elle ne demande pas la position
+   * elle-même — la météo l'a déjà, et une seconde demande pour la même chose
+   * serait discourtoise.
+   */
+  const { coords: here, precise: hereIsReal } = useUserLocation();
+  const { dbUser } = useAuth();
+  useNearbyAlerts(allIncidents, hereIsReal ? here : null, dbUser?.id);
 
   // Le dernier état connu, le temps que le réseau réponde — et à la place de
   // l'écran vide s'il ne répond pas.

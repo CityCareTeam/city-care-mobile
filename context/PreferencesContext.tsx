@@ -16,11 +16,15 @@ type PreferencesValue = {
   haptics: boolean;
   sounds: boolean;
   defaultSort: SortPreference;
+  nearbyAlerts: boolean;
+  nearbyRadiusKm: number;
   setTheme: (theme: ThemePreference) => void;
   setLanguage: (language: LanguagePreference) => void;
   setHaptics: (on: boolean) => void;
   setSounds: (on: boolean) => void;
   setDefaultSort: (sort: SortPreference) => void;
+  setNearbyAlerts: (on: boolean) => void;
+  setNearbyRadiusKm: (km: number) => void;
   /** Vrai tant que le disque n'a pas répondu — le temps d'un battement au démarrage. */
   loading: boolean;
 };
@@ -32,6 +36,8 @@ const PreferencesContext = createContext<PreferencesValue>({
   setHaptics: () => {},
   setSounds: () => {},
   setDefaultSort: () => {},
+  setNearbyAlerts: () => {},
+  setNearbyRadiusKm: () => {},
   loading: true,
 });
 
@@ -92,9 +98,15 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
     [update],
   );
 
+  const setNearbyAlerts = useCallback((nearbyAlerts: boolean) => update({ nearbyAlerts }), [update]);
+  const setNearbyRadiusKm = useCallback(
+    (nearbyRadiusKm: number) => update({ nearbyRadiusKm }),
+    [update],
+  );
+
   const value = useMemo(
-    () => ({ ...preferences, setTheme, setLanguage, setHaptics, setSounds, setDefaultSort, loading }),
-    [preferences, setTheme, setLanguage, setHaptics, setSounds, setDefaultSort, loading],
+    () => ({ ...preferences, setTheme, setLanguage, setHaptics, setSounds, setDefaultSort, setNearbyAlerts, setNearbyRadiusKm, loading }),
+    [preferences, setTheme, setLanguage, setHaptics, setSounds, setDefaultSort, setNearbyAlerts, setNearbyRadiusKm, loading],
   );
 
   return <PreferencesContext.Provider value={value}>{children}</PreferencesContext.Provider>;

@@ -100,7 +100,7 @@ export const en: typeof fr = {
     updates: "Updates",
     updatesDetail: "Check and apply",
     settings: "Settings",
-    settingsDetail: "Theme, language",
+    settingsDetail: "Theme, language, feedback, data",
   },
 
   crash: {
@@ -487,6 +487,12 @@ export const en: typeof fr = {
     ],
   },
 
+  nearby: {
+    title: "Reported near you",
+    body: (type: string, away: string, place: string | null) =>
+      place ? `${type}, ${away} away — ${place}` : `${type}, ${away} away`,
+  },
+
   settings: {
     title: "Settings",
     theme: "Theme",
@@ -500,6 +506,11 @@ export const en: typeof fr = {
     languageFollowsDevice: "The app follows your phone’s language.",
     languageFixed: "Fixed for this device, whatever your phone is set to.",
 
+    nearby: "Nearby alerts",
+    nearbyAlerts: "Tell me about nearby reports",
+    nearbyAlertsDetail: "A notification when a report appears close to you.",
+    nearbyLimit:
+      "Works while the app is open, and stays quiet between 10pm and 7am. Never more than three notifications in a row.",
     feedback: "Feedback",
     haptics: "Vibration",
     hapticsDetail: "A quiet nudge on the gestures that matter.",

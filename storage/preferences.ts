@@ -27,6 +27,15 @@ export type Preferences = {
   /** Sons courts de l'interface, muets par défaut. */
   sounds: boolean;
   defaultSort: SortPreference;
+  /**
+   * Prévenir quand un signalement apparaît à côté de soi.
+   *
+   * Éteint par défaut : une application qui se met à notifier sans qu'on l'ait
+   * demandé se fait retirer ses autorisations, pas régler.
+   */
+  nearbyAlerts: boolean;
+  /** Rayon de ces alertes, en kilomètres. */
+  nearbyRadiusKm: number;
 };
 
 /**
@@ -41,11 +50,16 @@ export const DEFAULT_PREFERENCES: Preferences = {
   haptics: true,
   sounds: false,
   defaultSort: "recent",
+  nearbyAlerts: false,
+  nearbyRadiusKm: 1,
 };
 
 const THEMES: ThemePreference[] = ["light", "dark", "system"];
 const LANGUAGES: LanguagePreference[] = ["fr", "en", "system"];
 const SORTS: SortPreference[] = ["recent", "oldest", "nearest"];
+
+/** Rayons proposés : au-delà, « près de moi » ne veut plus rien dire. */
+export const NEARBY_RADII = [0.5, 1, 3] as const;
 
 /**
  * Réglages d'application — ceux qui n'appartiennent pas au compte.
@@ -75,6 +89,15 @@ export async function loadPreferences(): Promise<Preferences> {
     defaultSort: SORTS.includes(stored?.defaultSort as SortPreference)
       ? (stored?.defaultSort as SortPreference)
       : DEFAULT_PREFERENCES.defaultSort,
+    nearbyAlerts:
+      typeof stored?.nearbyAlerts === "boolean"
+        ? stored.nearbyAlerts
+        : DEFAULT_PREFERENCES.nearbyAlerts,
+    // Un rayon hors de la liste proposée viendrait d'un format antérieur ou
+    // d'une écriture manuelle : on ne le suit pas.
+    nearbyRadiusKm: (NEARBY_RADII as readonly number[]).includes(stored?.nearbyRadiusKm as number)
+      ? (stored?.nearbyRadiusKm as number)
+      : DEFAULT_PREFERENCES.nearbyRadiusKm,
   };
 }
 
