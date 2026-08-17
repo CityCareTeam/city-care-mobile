@@ -1,7 +1,8 @@
 import { DEFAULT_LOCATION } from "@/constants/config";
 import { matchesQuery, sortIncidents, type Searchable, type SortMode } from "@/utils/incident-search";
 import * as Location from "expo-location";
-import { useCallback, useMemo, useState } from "react";
+import { usePreferences } from "@/context/PreferencesContext";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 /**
  * Recherche et tri du fil.
@@ -17,9 +18,21 @@ import { useCallback, useMemo, useState } from "react";
  * choisi, on ne demande rien.
  */
 export function useIncidentSearch<T extends Searchable>(incidents: T[]) {
+  const { defaultSort } = usePreferences();
   const [query, setQuery] = useState("");
-  const [sort, setSortMode] = useState<SortMode>("recent");
+  const [sort, setSortMode] = useState<SortMode>(defaultSort);
   const [origin, setOrigin] = useState<{ latitude: number; longitude: number } | null>(null);
+
+  /**
+   * Le tri retenu s'applique à l'ouverture, y compris quand il réclame la
+   * position — la préférence *est* la demande, il n'y a pas à la redemander à
+   * chaque fois.
+   *
+   * Le réglage arrive après le premier rendu, le temps d'une lecture disque : ce
+   * n'est donc pas une valeur initiale, mais un rattrapage. Il ne s'applique
+   * qu'une fois, et jamais par-dessus un choix fait à l'écran.
+   */
+  const adopted = useRef(false);
 
   const setSort = useCallback(async (next: SortMode) => {
     setSortMode(next);
@@ -41,6 +54,12 @@ export function useIncidentSearch<T extends Searchable>(incidents: T[]) {
       setOrigin(DEFAULT_LOCATION);
     }
   }, [origin]);
+
+  useEffect(() => {
+    if (adopted.current || defaultSort === "recent") return;
+    adopted.current = true;
+    void setSort(defaultSort);
+  }, [defaultSort, setSort]);
 
   const results = useMemo(() => {
     const found = query.trim() ? incidents.filter((incident) => matchesQuery(incident, query)) : incidents;

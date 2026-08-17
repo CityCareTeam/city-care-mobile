@@ -14,7 +14,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useAppColors } from "@/hooks/use-app-colors";
 import { useStrings } from "@/hooks/use-strings";
 import { useFollowedIncidents } from "@/hooks/use-followed-incidents";
-import { warned } from "@/utils/haptics";
+import { warned } from "@/utils/feedback";
 import { openDirections } from "@/utils/directions";
 import { incidentShareMessage } from "@/utils/share-incident";
 import { useIncidentChat } from "@/hooks/use-incident-chat";

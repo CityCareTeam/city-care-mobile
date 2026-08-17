@@ -13,7 +13,7 @@ import { enqueueReport } from "@/storage/pending-reports";
 import { clearDraft, isWorthSaving, latestDraft, listDrafts, saveDraft, type ReportDraft } from "@/storage/report-draft";
 import { getValidToken } from "@/storage/tokens";
 import { mixHex } from "@/utils/color";
-import { succeeded } from "@/utils/haptics";
+import { succeeded } from "@/utils/feedback";
 import type { IncidentType } from "@/types/incidents";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";

@@ -1,9 +1,11 @@
 import { setActiveLanguage, type LanguagePreference } from "@/constants/i18n";
+import { setFeedbackPreferences } from "@/utils/feedback";
 import {
   DEFAULT_PREFERENCES,
   loadPreferences,
   savePreferences,
   type Preferences,
+  type SortPreference,
   type ThemePreference,
 } from "@/storage/preferences";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
@@ -11,8 +13,14 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 type PreferencesValue = {
   theme: ThemePreference;
   language: LanguagePreference;
+  haptics: boolean;
+  sounds: boolean;
+  defaultSort: SortPreference;
   setTheme: (theme: ThemePreference) => void;
   setLanguage: (language: LanguagePreference) => void;
+  setHaptics: (on: boolean) => void;
+  setSounds: (on: boolean) => void;
+  setDefaultSort: (sort: SortPreference) => void;
   /** Vrai tant que le disque n'a pas répondu — le temps d'un battement au démarrage. */
   loading: boolean;
 };
@@ -21,6 +29,9 @@ const PreferencesContext = createContext<PreferencesValue>({
   ...DEFAULT_PREFERENCES,
   setTheme: () => {},
   setLanguage: () => {},
+  setHaptics: () => {},
+  setSounds: () => {},
+  setDefaultSort: () => {},
   loading: true,
 });
 
@@ -46,6 +57,7 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
       const stored = await loadPreferences();
       setPreferences(stored);
       setActiveLanguage(stored.language);
+      setFeedbackPreferences(stored);
       setLoading(false);
     })();
   }, []);
@@ -58,6 +70,10 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
       // Les textes lus hors composant — alertes, services — passent par la
       // langue active plutôt que par le contexte : elle se met à jour ici.
       if (patch.language) setActiveLanguage(next.language);
+      // Vibrations et sons se déclenchent depuis des gestionnaires et des
+      // services, hors de tout composant : ils reçoivent l'état plutôt que de
+      // lire le contexte.
+      if (patch.haptics !== undefined || patch.sounds !== undefined) setFeedbackPreferences(next);
       void savePreferences(next);
       return next;
     });
@@ -69,9 +85,16 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
     [update],
   );
 
+  const setHaptics = useCallback((haptics: boolean) => update({ haptics }), [update]);
+  const setSounds = useCallback((sounds: boolean) => update({ sounds }), [update]);
+  const setDefaultSort = useCallback(
+    (defaultSort: SortPreference) => update({ defaultSort }),
+    [update],
+  );
+
   const value = useMemo(
-    () => ({ ...preferences, setTheme, setLanguage, loading }),
-    [preferences, setTheme, setLanguage, loading],
+    () => ({ ...preferences, setTheme, setLanguage, setHaptics, setSounds, setDefaultSort, loading }),
+    [preferences, setTheme, setLanguage, setHaptics, setSounds, setDefaultSort, loading],
   );
 
   return <PreferencesContext.Provider value={value}>{children}</PreferencesContext.Provider>;

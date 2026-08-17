@@ -14,6 +14,20 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
 
+// 1 bis. Même raison, un cran plus loin : `PreferencesContext` pilote désormais
+//    les retours haptiques et sonores, donc importe `expo-audio` — un module
+//    natif qui n'existe pas dans l'environnement de test et qui y explose à
+//    l'import. Le lecteur simulé se contente d'exister ; les tests qui
+//    voudraient vérifier qu'un son part le mockent eux-mêmes.
+jest.mock('expo-audio', () => ({
+  createAudioPlayer: () => ({
+    play: jest.fn(),
+    seekTo: jest.fn(() => Promise.resolve()),
+    remove: jest.fn(),
+    volume: 1,
+  }),
+}));
+
 // 2. La langue par défaut de l'application est celle de l'appareil, lue via
 //    `Intl`. En test, « l'appareil » est la machine qui exécute la suite : elle
 //    passait en français sur nos postes et en anglais sur le runner CI, où

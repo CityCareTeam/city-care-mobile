@@ -4,10 +4,28 @@ import { usePreferences } from "@/context/PreferencesContext";
 import { useAppColors } from "@/hooks/use-app-colors";
 import { useStrings } from "@/hooks/use-strings";
 import { resolveLanguage, type Language } from "@/constants/i18n";
-import type { ThemePreference } from "@/storage/preferences";
+import type { SortPreference, ThemePreference } from "@/storage/preferences";
+import { clearLocalData } from "@/storage/local-reset";
+import { previewSound, warned } from "@/utils/feedback";
+import { Toast } from "@/components/ui/ToastMessage";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { useMemo } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useMemo, useState } from "react";
+import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+
+const DANGER = "#e53e3e";
+
+/** Les trois ordres du fil, dans l'ordre où ils apparaissent sur l'écran. */
+const SORTS: SortPreference[] = ["recent", "oldest", "nearest"];
+
+/**
+ * Les libellés viennent de ceux de l'accueil : le réglage doit nommer les
+ * boutons exactement comme l'écran qu'il commande, sinon on choisit à l'aveugle.
+ */
+const SORT_LABELS: Record<SortPreference, "sortRecent" | "sortOldest" | "sortNearest"> = {
+  recent: "sortRecent",
+  oldest: "sortOldest",
+  nearest: "sortNearest",
+};
 
 /**
  * Deux langues, deux cartes — et pas de troisième pour « Système ».
@@ -30,9 +48,47 @@ const LANGUAGES: { value: Language; label: string; flag: string }[] = [
 export function SettingsModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const { colors } = useAppColors();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { theme, setTheme, language, setLanguage } = usePreferences();
+  const {
+    theme, setTheme,
+    language, setLanguage,
+    haptics, setHaptics,
+    sounds, setSounds,
+    defaultSort, setDefaultSort,
+  } = usePreferences();
   const effective = resolveLanguage(language);
   const s = useStrings();
+  const [clearing, setClearing] = useState(false);
+
+  /**
+   * Le son s'essaie en même temps qu'on l'active.
+   *
+   * Un interrupteur sonore muet est une promesse sur parole : on ne sait qu'au
+   * prochain signalement s'il marche, si le volume est monté, si le son plaît.
+   * L'entendre à l'instant du choix répond aux trois questions.
+   */
+  function toggleSounds(next: boolean) {
+    setSounds(next);
+    if (next) previewSound();
+  }
+
+  function confirmClear() {
+    Alert.alert(s.settings.clearLocalData, s.settings.clearConfirm, [
+      { text: s.alert.cancel, style: "cancel" },
+      {
+        text: s.settings.clearConfirmAction,
+        style: "destructive",
+        onPress: () => {
+          setClearing(true);
+          void clearLocalData()
+            .then(() => {
+              warned();
+              Toast.show({ type: "success", text1: s.settings.cleared });
+            })
+            .finally(() => setClearing(false));
+        },
+      },
+    ]);
+  }
 
   const themes: { value: ThemePreference; label: string }[] = [
     { value: "system", label: s.settings.themeSystem },
@@ -92,7 +148,131 @@ export function SettingsModal({ visible, onClose }: { visible: boolean; onClose:
           );
         })}
       </View>
+
+      <View style={styles.divider} />
+
+      {/* ── Retours ──
+          Vibration et son ensemble : ils répondent aux mêmes gestes et se
+          règlent du même mouvement. Le son démarre éteint — une application qui
+          se met à sonner sans qu'on l'ait demandé se fait couper le volume,
+          pas régler. */}
+      <Text style={styles.label}>{s.settings.feedback}</Text>
+      <Switch
+        icon="vibration"
+        label={s.settings.haptics}
+        detail={s.settings.hapticsDetail}
+        value={haptics}
+        onToggle={setHaptics}
+        styles={styles}
+        accent={colors.primary}
+      />
+      <Switch
+        icon="volume-up"
+        label={s.settings.sounds}
+        detail={s.settings.soundsDetail}
+        value={sounds}
+        onToggle={toggleSounds}
+        styles={styles}
+        accent={colors.primary}
+      />
+
+      <View style={styles.divider} />
+
+      {/* ── Tri par défaut ──
+          « Proches » demande la position ; le choisir ici, c'est la demander
+          une fois pour toutes au lieu de la redemander à chaque ouverture. */}
+      <Text style={styles.label}>{s.settings.defaultSort}</Text>
+      <View style={styles.sorts}>
+        {SORTS.map((option) => {
+          const active = defaultSort === option;
+          return (
+            <TouchableOpacity
+              key={option}
+              style={[styles.sortChip, active && { borderColor: colors.primary, backgroundColor: colors.primary + "14" }]}
+              onPress={() => setDefaultSort(option)}
+              activeOpacity={0.8}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: active }}
+            >
+              <Text style={[styles.sortLabel, active && { color: colors.primary, fontWeight: "800" }]}>
+                {s.home[SORT_LABELS[option]]}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+      {defaultSort === "nearest" && <Text style={styles.hint}>{s.settings.sortNearestHint}</Text>}
+
+      <View style={styles.divider} />
+
+      {/* ── Données locales ──
+          Brouillons, favoris, caches et guide vu vivent sur l'appareil, et rien
+          ne permettait d'y faire le ménage. Destructif, donc confirmé — comme
+          toutes les actions irréversibles de l'application. */}
+      <Text style={styles.label}>{s.settings.localData}</Text>
+      <Text style={[styles.hint, { marginBottom: 12 }]}>{s.settings.localDataDetail}</Text>
+      <TouchableOpacity
+        style={styles.danger}
+        onPress={confirmClear}
+        disabled={clearing}
+        activeOpacity={0.8}
+        accessibilityRole="button"
+      >
+        {clearing ? (
+          <ActivityIndicator size="small" color={DANGER} />
+        ) : (
+          <>
+            <MaterialIcons name="delete-sweep" size={18} color={DANGER} />
+            <Text style={styles.dangerLabel}>{s.settings.clearLocalData}</Text>
+          </>
+        )}
+      </TouchableOpacity>
     </ModalShell>
+  );
+}
+
+/**
+ * Un interrupteur maison plutôt que le `Switch` de React Native.
+ *
+ * Celui du système ignore la charte : il prend la couleur d'accent d'Android et
+ * ne s'accorde ni au thème sombre de l'application ni à ses arrondis. Celui-ci
+ * est un rail et une bille, dans les couleurs de la maison.
+ */
+function Switch({
+  icon,
+  label,
+  detail,
+  value,
+  onToggle,
+  styles,
+  accent,
+}: {
+  icon: React.ComponentProps<typeof MaterialIcons>["name"];
+  label: string;
+  detail: string;
+  value: boolean;
+  onToggle: (next: boolean) => void;
+  styles: ReturnType<typeof makeStyles>;
+  accent: string;
+}) {
+  return (
+    <TouchableOpacity
+      style={styles.switchRow}
+      onPress={() => onToggle(!value)}
+      activeOpacity={0.75}
+      accessibilityRole="switch"
+      accessibilityState={{ checked: value }}
+      accessibilityLabel={label}
+    >
+      <MaterialIcons name={icon} size={19} color={value ? accent : styles.switchDetail.color} />
+      <View style={styles.switchText}>
+        <Text style={styles.switchLabel}>{label}</Text>
+        <Text style={styles.switchDetail}>{detail}</Text>
+      </View>
+      <View style={[styles.track, value && { backgroundColor: accent }]}>
+        <View style={[styles.knob, value && styles.knobOn]} />
+      </View>
+    </TouchableOpacity>
   );
 }
 
@@ -231,5 +411,62 @@ function makeStyles(colors: ReturnType<typeof useAppColors>["colors"]) {
     },
     langFlag: { fontSize: 20 },
     langName: { fontSize: 14, fontWeight: "600", color: colors.text },
+
+    // ── Interrupteurs ──
+    switchRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      paddingVertical: 11,
+    },
+    switchText: { flex: 1, gap: 1 },
+    switchLabel: { fontSize: 14, fontWeight: "600", color: colors.text },
+    switchDetail: { fontSize: 11.5, color: colors.text + "8C" },
+    track: {
+      width: 44,
+      height: 26,
+      borderRadius: 13,
+      backgroundColor: colors.chipBorder,
+      padding: 3,
+      justifyContent: "center",
+    },
+    knob: {
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      backgroundColor: colors.white,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.2,
+      shadowRadius: 2,
+      elevation: 2,
+    },
+    knobOn: { alignSelf: "flex-end" },
+
+    // ── Tri par défaut ──
+    sorts: { flexDirection: "row", gap: 8, marginBottom: 10 },
+    sortChip: {
+      flex: 1,
+      alignItems: "center",
+      paddingVertical: 11,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.chipBorder,
+      backgroundColor: colors.white,
+    },
+    sortLabel: { fontSize: 13, fontWeight: "600", color: colors.text },
+
+    // ── Données locales ──
+    danger: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+      paddingVertical: 13,
+      borderRadius: 14,
+      backgroundColor: DANGER + "14",
+      minHeight: 46,
+    },
+    dangerLabel: { fontSize: 14, fontWeight: "700", color: DANGER },
   });
 }

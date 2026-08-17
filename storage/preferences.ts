@@ -10,15 +10,42 @@ const KEY = "app_preferences";
  */
 export type ThemePreference = "light" | "dark" | "system";
 
+/**
+ * Ordre du fil au premier affichage.
+ *
+ * `nearest` demande la position, et c'est pourquoi ce n'est pas le défaut : une
+ * application qui réclame la géolocalisation avant qu'on lui ait rien demandé
+ * commence mal. Le choisir ici, c'est le demander explicitement.
+ */
+export type SortPreference = "recent" | "oldest" | "nearest";
+
 export type Preferences = {
   theme: ThemePreference;
   language: LanguagePreference;
+  /** Retour haptique des gestes qui comptent. */
+  haptics: boolean;
+  /** Sons courts de l'interface, muets par défaut. */
+  sounds: boolean;
+  defaultSort: SortPreference;
 };
 
-export const DEFAULT_PREFERENCES: Preferences = { theme: "system", language: "system" };
+/**
+ * Le son est le seul de ces réglages à commencer désactivé.
+ *
+ * Une application qui se met à sonner sans qu'on l'ait demandé se fait couper
+ * le volume, pas régler. La vibration, elle, est discrète et attendue.
+ */
+export const DEFAULT_PREFERENCES: Preferences = {
+  theme: "system",
+  language: "system",
+  haptics: true,
+  sounds: false,
+  defaultSort: "recent",
+};
 
 const THEMES: ThemePreference[] = ["light", "dark", "system"];
 const LANGUAGES: LanguagePreference[] = ["fr", "en", "system"];
+const SORTS: SortPreference[] = ["recent", "oldest", "nearest"];
 
 /**
  * Réglages d'application — ceux qui n'appartiennent pas au compte.
@@ -40,6 +67,14 @@ export async function loadPreferences(): Promise<Preferences> {
     language: LANGUAGES.includes(language as LanguagePreference)
       ? (language as LanguagePreference)
       : "system",
+    // Les réglages arrivés après coup sont absents des enregistrements
+    // existants : on retombe sur le défaut plutôt que sur `undefined`, qui
+    // passerait pour « désactivé » à la première lecture booléenne.
+    haptics: typeof stored?.haptics === "boolean" ? stored.haptics : DEFAULT_PREFERENCES.haptics,
+    sounds: typeof stored?.sounds === "boolean" ? stored.sounds : DEFAULT_PREFERENCES.sounds,
+    defaultSort: SORTS.includes(stored?.defaultSort as SortPreference)
+      ? (stored?.defaultSort as SortPreference)
+      : DEFAULT_PREFERENCES.defaultSort,
   };
 }
 

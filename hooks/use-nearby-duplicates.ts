@@ -38,10 +38,15 @@ export function useNearbyDuplicates(
 
   useEffect(() => {
     if (!type || asked.current.has(type)) return;
-    asked.current.add(type);
 
     let alive = true;
     const timer = setTimeout(() => {
+      // Marqué ici, et non à l'entrée de l'effet : la requête est différée, et
+      // marquer avant de la lancer promettait un résultat qui n'arrivait jamais
+      // si l'effet était démonté entre-temps. Le type restait alors noté comme
+      // « déjà demandé » pour toute la vie de l'écran, et l'avertissement ne
+      // reparaissait plus — reprendre un brouillon suffisait à le perdre.
+      asked.current.add(type);
       void (async () => {
         try {
           const response = await getIncidents({ type, pageSize: INCIDENTS_PAGE_SIZE.load });

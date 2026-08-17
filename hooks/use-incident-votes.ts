@@ -3,7 +3,7 @@ import { addVote, getVotes, removeVote } from "@/services/incidents";
 import { Toast } from "@/components/ui/ToastMessage";
 import { getStrings } from "@/constants/i18n";
 import { getValidToken } from "@/storage/tokens";
-import { tapped } from "@/utils/haptics";
+import { tapped } from "@/utils/feedback";
 import type { VoteResponse } from "@/types/incidents";
 import { useEffect, useState } from "react";
 

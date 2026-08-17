@@ -526,5 +526,23 @@ export const fr = {
     languageSystem: "Système",
     languageFollowsDevice: "L’application suit la langue de votre téléphone.",
     languageFixed: "Choix fixé pour cet appareil, quelle que soit la langue du téléphone.",
+
+    feedback: "Retours",
+    haptics: "Vibrations",
+    hapticsDetail: "Un retour discret sur les gestes qui comptent.",
+    sounds: "Sons",
+    soundsDetail: "Un son court à l’envoi, au vote, à la suppression.",
+
+    defaultSort: "Ordre du fil à l’ouverture",
+    sortNearestHint: "L’application demandera votre position à l’ouverture du fil.",
+
+    localData: "Données de cet appareil",
+    localDataDetail:
+      "Brouillons, favoris, signalements en attente d’envoi et données gardées hors ligne. Vos réglages et votre session ne sont pas touchés.",
+    clearLocalData: "Effacer les données locales",
+    clearConfirm:
+      "Brouillons, favoris et signalements en attente d’envoi seront perdus. Cette action est définitive.",
+    clearConfirmAction: "Effacer",
+    cleared: "Données locales effacées",
   },
 };

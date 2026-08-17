@@ -1,5 +1,5 @@
 import { listFollowed, toggleFollowed } from "@/storage/followed-incidents";
-import { tapped } from "@/utils/haptics";
+import { tapped } from "@/utils/feedback";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useState } from "react";
 

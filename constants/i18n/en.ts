@@ -499,5 +499,23 @@ export const en: typeof fr = {
     languageSystem: "System",
     languageFollowsDevice: "The app follows your phone’s language.",
     languageFixed: "Fixed for this device, whatever your phone is set to.",
+
+    feedback: "Feedback",
+    haptics: "Vibration",
+    hapticsDetail: "A quiet nudge on the gestures that matter.",
+    sounds: "Sounds",
+    soundsDetail: "A short sound when you send, vote or delete.",
+
+    defaultSort: "Feed order on opening",
+    sortNearestHint: "The app will ask for your location when the feed opens.",
+
+    localData: "This device’s data",
+    localDataDetail:
+      "Drafts, bookmarks, reports waiting to be sent, and anything kept for offline use. Your settings and session are left alone.",
+    clearLocalData: "Clear local data",
+    clearConfirm:
+      "Drafts, bookmarks and reports waiting to be sent will be lost. This can’t be undone.",
+    clearConfirmAction: "Clear",
+    cleared: "Local data cleared",
   },
 };

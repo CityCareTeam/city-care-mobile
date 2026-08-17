@@ -1,8 +1,9 @@
 {
-  "version": "1",
+  "version": "2",
   "nativeModules": [
     "@react-native-async-storage/async-storage",
     "expo",
+    "expo-audio",
     "expo-blur",
     "expo-constants",
     "expo-font",
