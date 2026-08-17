@@ -7,12 +7,12 @@ import { GlassPillSelector, PillOption } from "@/components/ui/GlassPillSelector
 import { GlassSurface } from "@/components/ui/GlassSurface";
 import { useMemo } from "react";
 import {
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
 } from "react-native";
+import { Text } from "@/components/ui/AppText";
 
 type Props = {
   filterStatus: string | null;

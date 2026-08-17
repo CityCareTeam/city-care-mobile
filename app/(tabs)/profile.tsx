@@ -20,14 +20,14 @@ import { formatDate } from "@/utils/format-date";
 import { router } from "expo-router";
 import { type ComponentProps, useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
 } from "react-native";
+import { Text } from "@/components/ui/AppText";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // ─── Styles ────────────────────────────────────────────────────────────────────

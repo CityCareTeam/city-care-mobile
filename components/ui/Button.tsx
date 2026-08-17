@@ -2,12 +2,12 @@ import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
 import { useMemo } from "react";
 import {
-    ActivityIndicator,
-    Pressable,
-    StyleSheet,
-    Text,
-    ViewStyle,
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  ViewStyle,
 } from "react-native";
+import { Text } from "@/components/ui/AppText";
 
 type ButtonVariant = "primary" | "secondary";
 

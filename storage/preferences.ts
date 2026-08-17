@@ -19,6 +19,16 @@ export type ThemePreference = "light" | "dark" | "system";
  */
 export type SortPreference = "recent" | "oldest" | "nearest";
 
+/**
+ * Taille du texte, en plus de celle du système.
+ *
+ * `system` est le défaut et signifie « rien de plus » : le réglage
+ * d'accessibilité d'Android s'applique déjà à toute l'application. Les deux
+ * autres crans servent à qui veut grossir cette application-ci sans grossir tout
+ * son téléphone.
+ */
+export type TextScale = "system" | "large" | "larger";
+
 export type Preferences = {
   theme: ThemePreference;
   language: LanguagePreference;
@@ -55,6 +65,7 @@ export type Preferences = {
    * intervalles sans rien couper : on voit les mêmes choses, un peu plus tard.
    */
   batterySaver: boolean;
+  textScale: TextScale;
 };
 
 /**
@@ -73,11 +84,13 @@ export const DEFAULT_PREFERENCES: Preferences = {
   nearbyRadiusKm: 1,
   location: true,
   batterySaver: false,
+  textScale: "system",
 };
 
 const THEMES: ThemePreference[] = ["light", "dark", "system"];
 const LANGUAGES: LanguagePreference[] = ["fr", "en", "system"];
 const SORTS: SortPreference[] = ["recent", "oldest", "nearest"];
+const TEXT_SCALES: TextScale[] = ["system", "large", "larger"];
 
 /** Rayons proposés : au-delà, « près de moi » ne veut plus rien dire. */
 export const NEARBY_RADII = [0.5, 1, 3] as const;
@@ -124,6 +137,9 @@ export async function loadPreferences(): Promise<Preferences> {
       typeof stored?.batterySaver === "boolean"
         ? stored.batterySaver
         : DEFAULT_PREFERENCES.batterySaver,
+    textScale: TEXT_SCALES.includes(stored?.textScale as TextScale)
+      ? (stored?.textScale as TextScale)
+      : DEFAULT_PREFERENCES.textScale,
   };
 }
 

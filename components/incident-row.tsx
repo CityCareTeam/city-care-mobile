@@ -7,7 +7,8 @@ import { extractCity, UNKNOWN_CITY } from "@/utils/format-address";
 import { formatDateShort } from "@/utils/format-date";
 import { formatDistance } from "@/utils/format-distance";
 import { memo, useMemo } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, TouchableOpacity, View } from "react-native";
+import { Text } from "@/components/ui/AppText";
 
 type Props = {
   id: string;

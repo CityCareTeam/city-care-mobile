@@ -5,7 +5,8 @@ import { useStrings } from "@/hooks/use-strings";
 import type { SortMode } from "@/utils/incident-search";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useMemo } from "react";
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
+import { Text } from "@/components/ui/AppText";
 
 type Props = {
   query: string;

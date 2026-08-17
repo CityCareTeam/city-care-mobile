@@ -4,13 +4,13 @@ import { useAppColors } from "@/hooks/use-app-colors";
 import { useStrings } from "@/hooks/use-strings";
 import { useMemo, useState } from "react";
 import {
-    StyleSheet,
-    Text,
-    TextInput,
-    type TextInputProps,
-    TouchableOpacity,
-    View,
+  StyleSheet,
+  TextInput,
+  type TextInputProps,
+  TouchableOpacity,
+  View,
 } from "react-native";
+import { Text } from "@/components/ui/AppText";
 
 type InputProps = TextInputProps & {
   label: string;

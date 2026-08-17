@@ -11,7 +11,8 @@ import { usePreferences } from "@/context/PreferencesContext";
 import { NEARBY_RADII } from "@/storage/preferences";
 import { formatDistance } from "@/utils/format-distance";
 import { useMemo } from "react";
-import { ActivityIndicator, StyleSheet, Switch, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, StyleSheet, Switch, TouchableOpacity, View } from "react-native";
+import { Text } from "@/components/ui/AppText";
 
 type Props = {
   visible: boolean;

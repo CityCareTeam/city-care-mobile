@@ -4,7 +4,8 @@ import { useStrings } from "@/hooks/use-strings";
 import { searchPlaces, type PlaceSuggestion } from "@/services/geocoding";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
+import { Text } from "@/components/ui/AppText";
 
 /** Nominatim demande de ne pas dépasser une requête par seconde. */
 const DEBOUNCE_MS = 400;

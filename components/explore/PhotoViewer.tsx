@@ -1,5 +1,6 @@
 import { Image } from "expo-image";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, TouchableOpacity, View } from "react-native";
+import { Text } from "@/components/ui/AppText";
 
 type Props = {
   uri: string | null;

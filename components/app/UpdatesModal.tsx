@@ -7,7 +7,8 @@ import { mixHex } from "@/utils/color";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import * as Updates from "expo-updates";
 import { useMemo, useState } from "react";
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Text } from "@/components/ui/AppText";
 
 type Status = "idle" | "checking" | "up-to-date" | "downloaded" | "unavailable" | "failed";
 

@@ -17,7 +17,8 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { Image } from "expo-image";
 import * as WebBrowser from "expo-web-browser";
 import { memo, useCallback, useMemo, useState } from "react";
-import { Pressable, SectionList, Share, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Pressable, SectionList, Share, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Text } from "@/components/ui/AppText";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 /**

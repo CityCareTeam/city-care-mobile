@@ -4,7 +4,8 @@ import { useStrings } from "@/hooks/use-strings";
 import { FLAG_REASONS, type FlagReason } from "@/services/moderation";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useMemo, useState } from "react";
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Text } from "@/components/ui/AppText";
 
 /**
  * Une icône par motif. Elles vivent ici et non dans les traductions : une icône

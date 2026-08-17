@@ -8,7 +8,8 @@ import { getStrength } from "@/utils/password-strength";
 import { updateMe } from "@/services/users";
 import { getValidToken } from "@/storage/tokens";
 import { useEffect, useState } from "react";
-import { Alert, StyleSheet, Text, View } from "react-native";
+import { Alert, StyleSheet, View } from "react-native";
+import { Text } from "@/components/ui/AppText";
 
 type Props = {
   visible: boolean;

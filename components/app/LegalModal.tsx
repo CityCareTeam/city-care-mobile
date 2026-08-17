@@ -6,7 +6,8 @@ import { usePreferences } from "@/context/PreferencesContext";
 import { useAppColors } from "@/hooks/use-app-colors";
 import { useStrings } from "@/hooks/use-strings";
 import { useMemo } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
+import { Text } from "@/components/ui/AppText";
 
 /** Les deux documents que l'application doit tenir à disposition. */
 export type LegalDocument = "privacy" | "terms";

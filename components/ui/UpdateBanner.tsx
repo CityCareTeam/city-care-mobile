@@ -5,7 +5,8 @@ import { useStrings } from "@/hooks/use-strings";
 import type { AppColors } from "@/types/theme";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useEffect, useMemo } from "react";
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Text } from "@/components/ui/AppText";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,

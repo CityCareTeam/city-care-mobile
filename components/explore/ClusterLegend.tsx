@@ -3,7 +3,8 @@ import type { CLUSTER_DENSITY } from "@/constants/incidents";
 import { useAppColors } from "@/hooks/use-app-colors";
 import { useStrings } from "@/hooks/use-strings";
 import { useMemo } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
+import { Text } from "@/components/ui/AppText";
 
 type DensityTier = (typeof CLUSTER_DENSITY)[number];
 

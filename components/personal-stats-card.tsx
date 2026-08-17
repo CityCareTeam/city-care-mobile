@@ -5,7 +5,8 @@ import { useStrings } from "@/hooks/use-strings";
 import { formatDate } from "@/utils/format-date";
 import { personalStats } from "@/utils/personal-stats";
 import { useMemo } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
+import { Text } from "@/components/ui/AppText";
 
 type Props = {
   incidents: { type: string; status: string; created_at: string }[];

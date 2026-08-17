@@ -2,7 +2,8 @@ import { useRunningUpdate } from "@/hooks/use-app-update";
 import { useAppColors } from "@/hooks/use-app-colors";
 import { baseVersion, buildLabel, releaseTag } from "@/utils/app-version";
 import { Fragment, useMemo } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
+import { Text } from "@/components/ui/AppText";
 
 /**
  * Version de l'application, suivie du badge de canal sur les builds hors

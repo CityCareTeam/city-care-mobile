@@ -16,7 +16,8 @@ import { getValidToken } from "@/storage/tokens";
 import { timeAgo } from "@/utils/format-date";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Text } from "@/components/ui/AppText";
 
 type State = "loading" | "ready" | "unavailable" | "failed";
 type Tab = "queue" | "hidden";

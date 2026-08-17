@@ -4,7 +4,8 @@ import { useStrings } from "@/hooks/use-strings";
 import type { Dictionary } from "@/constants/i18n";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useMemo } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, TouchableOpacity, View } from "react-native";
+import { Text } from "@/components/ui/AppText";
 
 export type MapNoticeKind = "offline" | "stale" | "empty" | "filtered";
 

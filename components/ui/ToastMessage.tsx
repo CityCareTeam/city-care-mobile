@@ -1,6 +1,7 @@
 import { CityCareColors } from "@/constants/theme";
 import { useEffect, useRef, useState } from "react";
-import { Animated, StyleSheet, Text } from "react-native";
+import { Animated, StyleSheet } from "react-native";
+import { Text } from "@/components/ui/AppText";
 
 type ToastType = "success" | "error";
 type ToastData = { type: ToastType; text1: string; text2?: string } | null;

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
-import { Animated, Modal, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Animated, Modal, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "@/components/ui/AppText";
 
 const DOG = `⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣠⣤⣶⣶⣶⣶⣶⣤⣄⡀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⣠⣴⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣶⣄⡀⠀⠀⠀⠀⠀

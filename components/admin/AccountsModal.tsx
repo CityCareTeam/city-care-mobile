@@ -21,11 +21,11 @@ import {
   ActivityIndicator,
   Alert,
   StyleSheet,
-  Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { Text } from "@/components/ui/AppText";
 
 /** Une couleur par rôle, et la même que partout ailleurs dans l'application. */
 const ROLE_COLOR: Record<AdminRole, string> = {

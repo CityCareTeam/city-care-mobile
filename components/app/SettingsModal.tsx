@@ -4,7 +4,7 @@ import { usePreferences } from "@/context/PreferencesContext";
 import { useAppColors } from "@/hooks/use-app-colors";
 import { useStrings } from "@/hooks/use-strings";
 import { resolveLanguage, type Language } from "@/constants/i18n";
-import type { SortPreference, ThemePreference } from "@/storage/preferences";
+import type { SortPreference, TextScale, ThemePreference } from "@/storage/preferences";
 import { clearLocalData } from "@/storage/local-reset";
 import { forgetGuide } from "@/storage/onboarding";
 import { exportMyData } from "@/services/data-export";
@@ -13,12 +13,19 @@ import { previewSound, warned } from "@/utils/feedback";
 import { Toast } from "@/components/ui/ToastMessage";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useMemo, useState } from "react";
-import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Text } from "@/components/ui/AppText";
 
 const DANGER = "#e53e3e";
 
 /** Les trois ordres du fil, dans l'ordre où ils apparaissent sur l'écran. */
 const SORTS: SortPreference[] = ["recent", "oldest", "nearest"];
+
+/** Les trois crans, dans l ordre croissant. */
+const TEXT_SCALES: TextScale[] = ["system", "large", "larger"];
+
+/** Taille de l aperçu de chaque carte — elle montre ce qu elle propose. */
+const TEXT_SAMPLE_SIZE: Record<TextScale, number> = { system: 13, large: 15, larger: 17 };
 
 /**
  * Les libellés viennent de ceux de l'accueil : le réglage doit nommer les
@@ -59,6 +66,8 @@ export function SettingsModal({ visible, onClose }: { visible: boolean; onClose:
     defaultSort, setDefaultSort,
     location, setLocation,
     batterySaver, setBatterySaver,
+    textScale, setTextScale,
+    resetPreferences,
   } = usePreferences();
   const effective = resolveLanguage(language);
   const s = useStrings();
@@ -119,6 +128,27 @@ export function SettingsModal({ visible, onClose }: { visible: boolean; onClose:
     } finally {
       setExporting(false);
     }
+  }
+
+  /**
+   * Confirmée, comme tout ce qui défait un travail.
+   *
+   * Rien n'est perdu — ni brouillon, ni favori, ni signalement — mais reprendre
+   * un thème, une langue et six interrupteurs à la main est assez pénible pour
+   * qu'un appui malheureux se regrette.
+   */
+  function confirmReset() {
+    Alert.alert(s.settings.resetSettings, s.settings.resetConfirm, [
+      { text: s.alert.cancel, style: "cancel" },
+      {
+        text: s.settings.resetConfirmAction,
+        onPress: () => {
+          resetPreferences();
+          warned();
+          Toast.show({ type: "success", text1: s.settings.resetDone });
+        },
+      },
+    ]);
   }
 
   function confirmClear() {
@@ -192,6 +222,51 @@ export function SettingsModal({ visible, onClose }: { visible: boolean; onClose:
                   ne cherche pas « Anglais » quand on veut passer à l'anglais. */}
               <Text style={[styles.langName, active && { color: colors.primary, fontWeight: "700" }]}>
                 {option.label}
+              </Text>
+              {active && <MaterialIcons name="check-circle" size={15} color={colors.primary} />}
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      <View style={styles.divider} />
+
+      {/* ── Taille du texte ──
+          Le réglage d'accessibilité d'Android s'applique déjà à toute
+          l'application : « Système » ne fait donc rien de plus, et c'est le
+          défaut. Les deux autres crans servent à qui veut grossir cette
+          application-ci sans grossir tout son téléphone.
+
+          Chaque carte s'affiche à la taille qu'elle propose : on voit ce qu'on
+          choisit avant de choisir. */}
+      <Text style={styles.label}>{s.settings.textSize}</Text>
+      <View style={styles.langs}>
+        {TEXT_SCALES.map((option) => {
+          const active = textScale === option;
+          return (
+            <TouchableOpacity
+              key={option}
+              style={[
+                styles.langCard,
+                active && { borderColor: colors.primary, borderWidth: 2, backgroundColor: colors.primary + "0F" },
+              ]}
+              onPress={() => setTextScale(option)}
+              activeOpacity={0.85}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: active }}
+              accessibilityLabel={s.settings.textSizes[option]}
+            >
+              {/* `allowFontScaling={false}` : l'aperçu doit montrer le rapport
+                  entre les trois crans, pas subir celui qui est actif. */}
+              <Text
+                allowFontScaling={false}
+                style={[
+                  styles.langName,
+                  { fontSize: TEXT_SAMPLE_SIZE[option] },
+                  active && { color: colors.primary, fontWeight: "700" },
+                ]}
+              >
+                {s.settings.textSizes[option]}
               </Text>
               {active && <MaterialIcons name="check-circle" size={15} color={colors.primary} />}
             </TouchableOpacity>
@@ -342,6 +417,20 @@ export function SettingsModal({ visible, onClose }: { visible: boolean; onClose:
           toutes les actions irréversibles de l'application. */}
       <Text style={styles.label}>{s.settings.localData}</Text>
       <Text style={[styles.hint, { marginBottom: 12 }]}>{s.settings.localDataDetail}</Text>
+      {/* Remettre les réglages par défaut ne touche pas aux données : c'est la
+          différence avec le bouton rouge en dessous. Un thème, une langue et une
+          demi-douzaine d'interrupteurs se retrouvent d'un geste, sans perdre ses
+          brouillons. */}
+      <TouchableOpacity
+        style={[styles.secondary, { marginBottom: 12 }]}
+        onPress={confirmReset}
+        activeOpacity={0.8}
+        accessibilityRole="button"
+      >
+        <MaterialIcons name="settings-backup-restore" size={17} color={colors.primary} />
+        <Text style={styles.secondaryLabel}>{s.settings.resetSettings}</Text>
+      </TouchableOpacity>
+
       <TouchableOpacity
         style={styles.danger}
         onPress={confirmClear}

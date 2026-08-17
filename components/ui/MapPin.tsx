@@ -1,6 +1,7 @@
 import { TYPE_ICON } from "@/constants/incidents";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { Platform, Text, View } from "react-native";
+import { Platform, View } from "react-native";
+import { Text } from "@/components/ui/AppText";
 
 // react-native-maps rasterise la vue du marker dans un bitmap Android. Une
 // seule construction s'est avérée rendre correctement, et les trois formes

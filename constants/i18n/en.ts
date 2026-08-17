@@ -684,6 +684,17 @@ export const en: typeof fr = {
     exportReady: "File ready",
     exportNoTarget: "No app can receive the file.",
     exportFailed: "The export failed.",
+    textSize: "Text size",
+    textSizes: {
+      system: "System",
+      large: "Large",
+      larger: "Extra large",
+    },
+    resetSettings: "Reset settings",
+    resetConfirm:
+      "Theme, language, text size, feedback and location will return to their original values. Your drafts, bookmarks and reports are untouched.",
+    resetConfirmAction: "Reset",
+    resetDone: "Settings reset",
 
     localData: "This device’s data",
     localDataDetail:

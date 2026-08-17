@@ -4,7 +4,8 @@ import { useStrings } from "@/hooks/use-strings";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import * as Updates from "expo-updates";
 import { Component, useMemo, useState, type ReactNode } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Text } from "@/components/ui/AppText";
 
 type Props = { children: ReactNode };
 type State = { error: Error | null; attempt: number };

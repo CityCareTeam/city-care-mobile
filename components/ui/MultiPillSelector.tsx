@@ -1,5 +1,6 @@
 import { useAppColors } from "@/hooks/use-app-colors";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
+import { Text } from "@/components/ui/AppText";
 
 export type MultiPillOption = {
   label: string;

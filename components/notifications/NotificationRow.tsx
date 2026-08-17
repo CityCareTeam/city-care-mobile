@@ -6,7 +6,8 @@ import { mixHex } from "@/utils/color";
 import { timeAgo } from "@/utils/format-date";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { memo } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, TouchableOpacity, View } from "react-native";
+import { Text } from "@/components/ui/AppText";
 import { Swipeable } from "react-native-gesture-handler";
 
 type IconConfig = {

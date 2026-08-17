@@ -728,6 +728,17 @@ export const fr = {
     exportReady: "Fichier prêt",
     exportNoTarget: "Aucune application ne peut recevoir le fichier.",
     exportFailed: "L’export a échoué.",
+    textSize: "Taille du texte",
+    textSizes: {
+      system: "Système",
+      large: "Grand",
+      larger: "Très grand",
+    },
+    resetSettings: "Réinitialiser les réglages",
+    resetConfirm:
+      "Thème, langue, taille du texte, retours et localisation reviendront à leur valeur d’origine. Vos brouillons, favoris et signalements ne sont pas touchés.",
+    resetConfirmAction: "Réinitialiser",
+    resetDone: "Réglages réinitialisés",
 
     localData: "Données de cet appareil",
     localDataDetail:

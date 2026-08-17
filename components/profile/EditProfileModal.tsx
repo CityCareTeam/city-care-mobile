@@ -8,7 +8,8 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { updateMe } from "@/services/users";
 import { getValidToken } from "@/storage/tokens";
 import { useEffect, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
+import { Text } from "@/components/ui/AppText";
 
 type InitialValues = {
   firstName: string;

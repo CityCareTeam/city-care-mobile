@@ -6,6 +6,7 @@ import {
   savePreferences,
   type Preferences,
   type SortPreference,
+  type TextScale,
   type ThemePreference,
 } from "@/storage/preferences";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
@@ -20,6 +21,7 @@ type PreferencesValue = {
   nearbyRadiusKm: number;
   location: boolean;
   batterySaver: boolean;
+  textScale: TextScale;
   setTheme: (theme: ThemePreference) => void;
   setLanguage: (language: LanguagePreference) => void;
   setHaptics: (on: boolean) => void;
@@ -29,6 +31,9 @@ type PreferencesValue = {
   setNearbyRadiusKm: (km: number) => void;
   setLocation: (on: boolean) => void;
   setBatterySaver: (on: boolean) => void;
+  setTextScale: (scale: TextScale) => void;
+  /** Remet tous les réglages à leur valeur d'origine. Ne touche à aucune donnée. */
+  resetPreferences: () => void;
   /** Vrai tant que le disque n'a pas répondu — le temps d'un battement au démarrage. */
   loading: boolean;
 };
@@ -44,6 +49,8 @@ const PreferencesContext = createContext<PreferencesValue>({
   setNearbyRadiusKm: () => {},
   setLocation: () => {},
   setBatterySaver: () => {},
+  setTextScale: () => {},
+  resetPreferences: () => {},
   loading: true,
 });
 
@@ -112,10 +119,12 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
 
   const setLocation = useCallback((location: boolean) => update({ location }), [update]);
   const setBatterySaver = useCallback((batterySaver: boolean) => update({ batterySaver }), [update]);
+  const setTextScale = useCallback((textScale: TextScale) => update({ textScale }), [update]);
+  const resetPreferences = useCallback(() => update(DEFAULT_PREFERENCES), [update]);
 
   const value = useMemo(
-    () => ({ ...preferences, setTheme, setLanguage, setHaptics, setSounds, setDefaultSort, setNearbyAlerts, setNearbyRadiusKm, setLocation, setBatterySaver, loading }),
-    [preferences, setTheme, setLanguage, setHaptics, setSounds, setDefaultSort, setNearbyAlerts, setNearbyRadiusKm, setLocation, setBatterySaver, loading],
+    () => ({ ...preferences, setTheme, setLanguage, setHaptics, setSounds, setDefaultSort, setNearbyAlerts, setNearbyRadiusKm, setLocation, setBatterySaver, setTextScale, resetPreferences, loading }),
+    [preferences, setTheme, setLanguage, setHaptics, setSounds, setDefaultSort, setNearbyAlerts, setNearbyRadiusKm, setLocation, setBatterySaver, setTextScale, resetPreferences, loading],
   );
 
   return <PreferencesContext.Provider value={value}>{children}</PreferencesContext.Provider>;

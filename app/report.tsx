@@ -32,11 +32,11 @@ import {
   Alert,
   ScrollView,
   StyleSheet,
-  Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { Text } from "@/components/ui/AppText";
 import MapView, { Marker, Region } from "react-native-maps";
 
 type PickedPhoto = {
