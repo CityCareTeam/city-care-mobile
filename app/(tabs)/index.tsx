@@ -210,6 +210,8 @@ function IncidentList({
     description?: string;
     address: string | null;
     createdAt: string;
+    /** Absente tant qu'on ne connaît pas la position de l'utilisateur. */
+    distanceKm?: number;
   }[];
   onPress: (id: string) => void;
   pageSize?: number;
@@ -245,6 +247,7 @@ function IncidentList({
             isMine={myIds?.has(inc.id)}
             isFollowed={followedIds?.has(inc.id)}
             onToggleFollow={onToggleFollow}
+            distanceKm={inc.distanceKm}
           />
         </View>
       ))}
