@@ -53,7 +53,11 @@ export function useIncidentSearch<T extends Searchable>(incidents: T[]) {
     } catch {
       setOrigin(DEFAULT_LOCATION);
     }
-  }, [origin, allowed]);
+    // `allowed` n'a pas sa place ici, et ce n'est pas un oubli : la barre de
+    // recherche ne propose « Proches » que si le réglage est ouvert, donc cette
+    // fonction ne peut pas être appelée avec « nearest » quand il est coupé. Le
+    // garde-fou est en amont, à l'endroit où l'option existe ou non.
+  }, [origin]);
 
   useEffect(() => {
     if (adopted.current || defaultSort === "recent") return;
