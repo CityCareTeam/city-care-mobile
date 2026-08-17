@@ -7,8 +7,11 @@ import { useAuth } from "@/context/AuthContext";
 import { useAppColors } from "@/hooks/use-app-colors";
 import { useStrings } from "@/hooks/use-strings";
 import { useNotificationSettings } from "@/hooks/use-notification-settings";
+import { usePreferences } from "@/context/PreferencesContext";
+import { NEARBY_RADII } from "@/storage/preferences";
+import { formatDistance } from "@/utils/format-distance";
 import { useMemo } from "react";
-import { ActivityIndicator, StyleSheet, Switch, Text, View } from "react-native";
+import { ActivityIndicator, StyleSheet, Switch, Text, TouchableOpacity, View } from "react-native";
 
 type Props = {
   visible: boolean;
@@ -20,6 +23,8 @@ export function NotificationSettingsModal({ visible, onClose }: Props) {
   const t = useStrings();
   const { keycloakUser } = useAuth();
   const { settings, loadError, toggle, toggleType } = useNotificationSettings(visible);
+  // Locale et non serveur : cette alerte-là est calculée par ce téléphone-ci.
+  const { nearbyAlerts, setNearbyAlerts, nearbyRadiusKm, setNearbyRadiusKm } = usePreferences();
 
   const isCitizen = keycloakUser?.mainRole === "Citizen";
 
@@ -62,6 +67,24 @@ export function NotificationSettingsModal({ visible, onClose }: Props) {
     },
     comingSoonText: { fontSize: 10, fontWeight: "700", color: colors.text, opacity: 0.4, letterSpacing: 0.3 },
     errorText: { color: "#e53e3e", fontSize: 13, textAlign: "center", marginVertical: 12 },
+    radii: { flexDirection: "row", gap: 8, padding: 12 },
+    radius: {
+      flex: 1,
+      alignItems: "center",
+      paddingVertical: 9,
+      borderRadius: 11,
+      borderWidth: 1,
+      borderColor: colors.chipBorder,
+    },
+    radiusLabel: { fontSize: 12.5, fontWeight: "600", color: colors.text },
+    deviceHint: {
+      fontSize: 11.5,
+      color: colors.text,
+      opacity: 0.5,
+      lineHeight: 16,
+      marginTop: -4,
+      marginBottom: 4,
+    },
   }), [colors, isDark]);
 
   const SectionHeader = ({ label, dim }: { label: string; dim?: boolean }) => (
@@ -165,6 +188,62 @@ export function NotificationSettingsModal({ visible, onClose }: Props) {
               </View>
             </View>
           </View>
+
+          {/* ── Sur cet appareil ──
+              L'alerte de proximité vivait dans les réglages de l'application,
+              au nom d'une règle défendable : elle décrit ce téléphone-ci, pas le
+              compte. Sauf que personne ne cherche une notification en pensant
+              « compte ou appareil » — on la cherche là où sont les
+              notifications. Elle est donc affichée ici, tout en restant stockée
+              localement, et la distinction est dite plutôt que devinée. */}
+          <SectionHeader label={t.notifSettings.thisDevice} />
+          <View style={s.group}>
+            <View style={s.row}>
+              <View style={[s.iconBubble, { backgroundColor: "#f6aa5422" }]}>
+                <MaterialIcons name="my-location" size={20} color="#f6aa54" />
+              </View>
+              <View style={s.rowText}>
+                <Text style={s.rowLabel}>{t.settings.nearbyAlerts}</Text>
+                <Text style={s.rowSub}>{t.settings.nearbyAlertsDetail}</Text>
+              </View>
+              <Switch
+                value={nearbyAlerts}
+                onValueChange={setNearbyAlerts}
+                trackColor={{ false: colors.secondary, true: "#f6aa5470" }}
+                thumbColor={nearbyAlerts ? "#f6aa54" : colors.text + "40"}
+              />
+            </View>
+            {nearbyAlerts && (
+              <>
+                <View style={s.divider} />
+                <View style={s.radii}>
+                  {NEARBY_RADII.map((km) => {
+                    const active = nearbyRadiusKm === km;
+                    return (
+                      <TouchableOpacity
+                        key={km}
+                        style={[
+                          s.radius,
+                          active && { borderColor: colors.primary, backgroundColor: colors.primary + "14" },
+                        ]}
+                        onPress={() => setNearbyRadiusKm(km)}
+                        activeOpacity={0.8}
+                        accessibilityRole="radio"
+                        accessibilityState={{ selected: active }}
+                      >
+                        <Text
+                          style={[s.radiusLabel, active && { color: colors.primary, fontWeight: "800" }]}
+                        >
+                          {formatDistance(km, t.locale)}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </>
+            )}
+          </View>
+          {nearbyAlerts && <Text style={s.deviceHint}>{t.settings.nearbyLimit}</Text>}
 
           {isCitizen && (
             <>

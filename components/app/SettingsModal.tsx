@@ -4,8 +4,7 @@ import { usePreferences } from "@/context/PreferencesContext";
 import { useAppColors } from "@/hooks/use-app-colors";
 import { useStrings } from "@/hooks/use-strings";
 import { resolveLanguage, type Language } from "@/constants/i18n";
-import { NEARBY_RADII, type SortPreference, type ThemePreference } from "@/storage/preferences";
-import { formatDistance } from "@/utils/format-distance";
+import type { SortPreference, ThemePreference } from "@/storage/preferences";
 import { clearLocalData } from "@/storage/local-reset";
 import { previewSound, warned } from "@/utils/feedback";
 import { Toast } from "@/components/ui/ToastMessage";
@@ -55,8 +54,6 @@ export function SettingsModal({ visible, onClose }: { visible: boolean; onClose:
     haptics, setHaptics,
     sounds, setSounds,
     defaultSort, setDefaultSort,
-    nearbyAlerts, setNearbyAlerts,
-    nearbyRadiusKm, setNearbyRadiusKm,
   } = usePreferences();
   const effective = resolveLanguage(language);
   const s = useStrings();
@@ -178,50 +175,6 @@ export function SettingsModal({ visible, onClose }: { visible: boolean; onClose:
         styles={styles}
         accent={colors.primary}
       />
-
-      <View style={styles.divider} />
-
-      {/* ── Alerte de proximité ──
-          Éteinte par défaut, et le rayon ne s'affiche qu'une fois allumée : un
-          réglage qui ne sert à rien tant que l'interrupteur est fermé n'a pas à
-          occuper l'écran. */}
-      <Text style={styles.label}>{s.settings.nearby}</Text>
-      <Switch
-        icon="notifications-active"
-        label={s.settings.nearbyAlerts}
-        detail={s.settings.nearbyAlertsDetail}
-        value={nearbyAlerts}
-        onToggle={setNearbyAlerts}
-        styles={styles}
-        accent={colors.primary}
-      />
-      {nearbyAlerts && (
-        <>
-          <View style={styles.sorts}>
-            {NEARBY_RADII.map((km) => {
-              const active = nearbyRadiusKm === km;
-              return (
-                <TouchableOpacity
-                  key={km}
-                  style={[styles.sortChip, active && { borderColor: colors.primary, backgroundColor: colors.primary + "14" }]}
-                  onPress={() => setNearbyRadiusKm(km)}
-                  activeOpacity={0.8}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: active }}
-                >
-                  <Text style={[styles.sortLabel, active && { color: colors.primary, fontWeight: "800" }]}>
-                    {formatDistance(km, s.locale)}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-          {/* La limite est dite, parce qu'elle serait autrement découverte comme
-              une panne : personne ne devine qu'une alerte demande l'application
-              ouverte. */}
-          <Text style={styles.hint}>{s.settings.nearbyLimit}</Text>
-        </>
-      )}
 
       <View style={styles.divider} />
 

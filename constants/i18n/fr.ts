@@ -265,6 +265,11 @@ export const fr = {
     changeCity: "Changer de ville",
     pickTitle: "Ville",
     open: "Voir la fiche",
+    today: "Aujourd’hui",
+    thisWeek: "Cette semaine",
+    thisMonth: "Ce mois-ci",
+    later: "Plus tard",
+    undated: "Sans date",
     empty: "Aucun événement à venir pour le moment.",
     failed: "Impossible de charger les actualités.",
     // On lit la page d'un office de tourisme : la citer n'est pas une
@@ -456,6 +461,7 @@ export const fr = {
     messagesDetail: "Nouvelles discussions",
     emailNotifications: "Notifications par email",
     soon: "Bientôt",
+    thisDevice: "Sur cet appareil",
     followedTypes: "Types d'incidents suivis",
   },
 
@@ -547,7 +553,6 @@ export const fr = {
     languageFollowsDevice: "L’application suit la langue de votre téléphone.",
     languageFixed: "Choix fixé pour cet appareil, quelle que soit la langue du téléphone.",
 
-    nearby: "Alerte de proximité",
     nearbyAlerts: "Me prévenir des signalements proches",
     nearbyAlertsDetail: "Une notification quand un signalement apparaît près de vous.",
     nearbyLimit:

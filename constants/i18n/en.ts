@@ -253,6 +253,11 @@ export const en: typeof fr = {
     changeCity: "Change city",
     pickTitle: "City",
     open: "View details",
+    today: "Today",
+    thisWeek: "This week",
+    thisMonth: "This month",
+    later: "Later",
+    undated: "Undated",
     empty: "No upcoming event right now.",
     failed: "Couldn’t load the news.",
     sources: (parts: string) => `Sources: ${parts}`,
@@ -433,6 +438,7 @@ export const en: typeof fr = {
     messagesDetail: "New discussions",
     emailNotifications: "Email notifications",
     soon: "Soon",
+    thisDevice: "On this device",
     followedTypes: "Incident types you follow",
   },
 
@@ -516,7 +522,6 @@ export const en: typeof fr = {
     languageFollowsDevice: "The app follows your phone’s language.",
     languageFixed: "Fixed for this device, whatever your phone is set to.",
 
-    nearby: "Nearby alerts",
     nearbyAlerts: "Tell me about nearby reports",
     nearbyAlertsDetail: "A notification when a report appears close to you.",
     nearbyLimit:

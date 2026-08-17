@@ -11,11 +11,12 @@ import type { NewsItem } from "@/services/news";
 import { mixHex } from "@/utils/color";
 import { countdown } from "@/utils/countdown";
 import { getTabBarScrollPadding } from "@/utils/layout";
+import { groupByPeriod } from "@/utils/news-groups";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { Image } from "expo-image";
 import * as WebBrowser from "expo-web-browser";
 import { memo, useMemo, useState } from "react";
-import { FlatList, Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Pressable, SectionList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 /**
@@ -42,6 +43,8 @@ export default function NewsScreen() {
   const { items, failed, refreshing, refresh } = useNews(city);
   const [picking, setPicking] = useState(false);
 
+  const sections = useMemo(() => groupByPeriod(items ?? [], t), [items, t]);
+
   const refreshControl = useAppRefreshControl({
     refreshing,
     onRefresh: () => void refresh(),
@@ -62,13 +65,24 @@ export default function NewsScreen() {
 
   return (
     <>
-      <FlatList
-        data={items ?? []}
+      <SectionList
+        sections={sections}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.container}
         refreshControl={refreshControl}
+        stickySectionHeadersEnabled
         renderItem={({ item }) => (
           <NewsCard item={item} styles={styles} openLabel={t.news.open} soon={countdown(item.startsAt, t)} />
+        )}
+        /* Vingt-cinq dates à la file, de demain à novembre : il fallait lire
+           chaque ligne pour savoir où s'arrêtait ce week-end. Un agenda se
+           parcourt par périodes. */
+        renderSectionHeader={({ section }) => (
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>{section.title}</Text>
+            <Text style={styles.sectionCount}>{section.data.length}</Text>
+            <View style={styles.sectionLine} />
+          </View>
         )}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListHeaderComponent={
@@ -228,11 +242,18 @@ const NewsCard = memo(function NewsCard({
       accessibilityRole={open ? "link" : undefined}
       accessibilityLabel={open ? `${item.title}. ${openLabel}` : undefined}
     >
-      {/* L'image est facultative : beaucoup d'événements n'en ont pas, et une
-          carte sans illustration doit rester une carte, pas un trou. */}
-      {item.imageUrl && (
-        <Image source={{ uri: item.imageUrl }} style={styles.image} contentFit="cover" transition={150} />
+      {/* Une vignette carrée, et un carré teinté quand l'événement n'a pas
+          d'image — beaucoup n'en ont pas. Sans ce repli, le bord gauche de la
+          liste devenait irrégulier d'une ligne à l'autre, ce qui se remarque
+          bien plus qu'une image manquante. */}
+      {item.imageUrl ? (
+        <Image source={{ uri: item.imageUrl }} style={styles.thumb} contentFit="cover" transition={150} />
+      ) : (
+        <View style={[styles.thumb, styles.thumbEmpty]}>
+          <MaterialIcons name="event" size={26} color={styles.place.color} />
+        </View>
       )}
+
       <View style={styles.body}>
         {/* La date et le délai sur la même ligne. La source donne « Samedi 19
             septembre » ; savoir s'il faut compter sur ses doigts pour situer ce
@@ -248,23 +269,22 @@ const NewsCard = memo(function NewsCard({
           </View>
         ) : null}
         <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
-        {item.summary ? (
-          <Text style={styles.summaryText} numberOfLines={3}>{item.summary}</Text>
-        ) : null}
+        {/* Le résumé est parti à la fiche. Une liste d'agenda se parcourt — date,
+            titre, lieu — et trois lignes de description par événement faisaient
+            tenir quatre entrées à l'écran au lieu de sept. */}
         {item.place ? (
           <View style={styles.placeRow}>
-            <MaterialIcons name="place" size={13} color={styles.place.color} />
+            <MaterialIcons name="place" size={12} color={styles.place.color} />
             <Text style={styles.place} numberOfLines={1}>{item.place}</Text>
           </View>
         ) : null}
-        {/* Discret, mais il faut que l'appui se devine avant d'être tenté. */}
-        {open && (
-          <View style={styles.openRow}>
-            <Text style={styles.openLabel}>{openLabel}</Text>
-            <MaterialIcons name="open-in-new" size={13} color={styles.openLabel.color} />
-          </View>
-        )}
       </View>
+
+      {/* Un chevron plutôt qu'une ligne « Voir la fiche » sur chaque carte : le
+          geste se devine tout autant et ne coûte pas une ligne par événement. */}
+      {open && (
+        <MaterialIcons name="chevron-right" size={20} color={styles.place.color} />
+      )}
     </Pressable>
   );
 });
@@ -335,21 +355,52 @@ function makeStyles(c: AppColors, bottomInset: number) {
     cityRowSelected: { backgroundColor: mixHex(c.white, c.primary, 0.12), borderColor: c.primary },
     cityRowLabel: { flex: 1, fontSize: 15, fontWeight: "600", color: c.text },
 
-    separator: { height: 12 },
+    separator: { height: 10 },
+
+    // ── Intertitres ──
+    // Sur le fond et non sur une carte : ils séparent, ils ne s'ajoutent pas à
+    // la liste. Collants, pour qu'on sache toujours dans quelle période on est.
+    sectionHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      paddingTop: 16,
+      paddingBottom: 8,
+      backgroundColor: c.background,
+    },
+    sectionTitle: {
+      fontSize: 11.5,
+      fontWeight: "800",
+      letterSpacing: 0.8,
+      textTransform: "uppercase",
+      color: c.text,
+      opacity: 0.45,
+    },
+    sectionCount: { fontSize: 11.5, fontWeight: "700", color: c.primary },
+    sectionLine: { flex: 1, height: 1, backgroundColor: c.chipBorder },
+
+    // ── Carte ──
+    // Une rangée et non une affiche : la vignette à gauche, le texte à droite.
+    // L'image pleine largeur faisait tenir quatre événements à l'écran ; il en
+    // tient sept, ce qui est ce qu'on attend d'un agenda.
     card: {
-      borderRadius: 18,
-      overflow: "hidden",
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      padding: 10,
+      borderRadius: 16,
       backgroundColor: c.white,
       borderWidth: 1,
       borderColor: c.chipBorder,
       shadowColor: "#000",
       shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.05,
-      shadowRadius: 4,
-      elevation: 2,
+      shadowOpacity: 0.04,
+      shadowRadius: 3,
+      elevation: 1,
     },
-    image: { width: "100%", height: 150, backgroundColor: c.chipBg },
-    body: { padding: 14, gap: 5 },
+    thumb: { width: 76, height: 76, borderRadius: 12, backgroundColor: c.chipBg, flexShrink: 0 },
+    thumbEmpty: { alignItems: "center", justifyContent: "center" },
+    body: { flex: 1, minWidth: 0, gap: 4 },
     whenRow: { flexDirection: "row", alignItems: "center", gap: 7, flexWrap: "wrap" },
     // La date en petites majuscules colorées, le délai en pastille pleine : le
     // second se remarque, le premier se lit.
@@ -374,11 +425,8 @@ function makeStyles(c: AppColors, bottomInset: number) {
       color: c.primary,
     },
     cardPressed: { opacity: 0.7 },
-    openRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 6 },
-    openLabel: { fontSize: 11.5, fontWeight: "700", color: c.primary },
-    cardTitle: { fontSize: 15.5, fontWeight: "700", color: c.text, lineHeight: 21 },
-    summaryText: { fontSize: 13, color: c.text, opacity: 0.6, lineHeight: 19 },
-    placeRow: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 3 },
+    cardTitle: { fontSize: 14.5, fontWeight: "700", color: c.text, lineHeight: 19 },
+    placeRow: { flexDirection: "row", alignItems: "center", gap: 4 },
     place: { fontSize: 12, color: c.text, opacity: 0.5, flexShrink: 1 },
 
     // ── Vide ──
