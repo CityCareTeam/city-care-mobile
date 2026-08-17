@@ -23,7 +23,7 @@ import { runOnJS, useSharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type Panel = "notes" | "updates" | "settings";
-type Entry = Panel | "guide";
+type Entry = Panel | "guide" | "privacy";
 
 const WIDTH = Math.min(330, Dimensions.get("window").width * 0.84);
 
@@ -35,6 +35,7 @@ const ICONS: Record<Entry, React.ComponentProps<typeof MaterialIcons>["name"]> =
   notes: "history",
   updates: "system-update",
   settings: "tune",
+  privacy: "privacy-tip",
 };
 
 /**
@@ -57,10 +58,12 @@ export function AppMenu({
   visible,
   onClose,
   onOpenGuide,
+  onOpenPrivacy,
 }: {
   visible: boolean;
   onClose: () => void;
   onOpenGuide: () => void;
+  onOpenPrivacy: () => void;
 }) {
   const { colors, isDark } = useAppColors();
   const styles = useMemo(() => makeStyles(colors, isDark), [colors, isDark]);
@@ -114,9 +117,12 @@ export function AppMenu({
   function open(next: Entry) {
     // On referme d'abord : deux fenêtres superposées se gênent sur Android.
     onClose();
-    // Le guide n'appartient pas au panneau : il est monté au-dessus des onglets,
-    // parce qu'il doit aussi pouvoir s'ouvrir tout seul au premier lancement.
+    // Le guide et la confidentialité n'appartiennent pas au panneau : ils sont
+    // montés au-dessus des onglets, parce qu'ils doivent aussi pouvoir s'ouvrir
+    // seuls — le guide au premier lancement, la politique depuis la fenêtre de
+    // consentement.
     if (next === "guide") onOpenGuide();
+    else if (next === "privacy") onOpenPrivacy();
     else setPanel(next);
   }
 

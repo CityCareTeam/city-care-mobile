@@ -524,6 +524,31 @@ export const en: typeof fr = {
       place ? `${type}, ${away} away — ${place}` : `${type}, ${away} away`,
   },
 
+  privacy: {
+    title: "Privacy",
+    menuDetail: "What the app knows about you",
+    updated: (date: string) => `Last revised: ${date}`,
+    link: "Privacy policy",
+  },
+
+  consent: {
+    title: "Use your location?",
+    intro: "You can say no: the app works without it, and you can change your mind at any time.",
+    uses: [
+      "Open the map where you are.",
+      "Sort reports by distance, and show how far they are.",
+      "Suggest your town in the News tab.",
+      "Show your town’s weather.",
+      "Tell you about a nearby report, if you turn that alert on.",
+    ],
+    leaves: "What leaves the device: approximate coordinates to Open-Meteo for the temperature, and to our servers to name the town. Never your identity with them.",
+    refuse: "If you decline: the map opens on the city centre, you pick your town by hand, and everything else works — reporting, following, chatting, browsing.",
+    readPolicy: "Read the privacy policy",
+    allow: "Allow",
+    deny: "Without my location",
+    changeLater: "Settings → Location, at any time.",
+  },
+
   settings: {
     title: "Settings",
     theme: "Theme",

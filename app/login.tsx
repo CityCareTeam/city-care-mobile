@@ -1,3 +1,5 @@
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { PrivacyModal } from "@/components/app/PrivacyModal";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { AppVersion } from "@/components/ui/AppVersion";
@@ -78,6 +80,15 @@ function makeStyles(c: AppColors) {
     },
     dividerLine: { flex: 1, height: 1, backgroundColor: c.inputBorder },
     dividerText: { fontSize: 12, color: c.text, opacity: 0.35, fontWeight: "500" },
+    privacyLink: {
+      flexDirection: "row",
+      alignItems: "center",
+      alignSelf: "center",
+      gap: 5,
+      paddingVertical: 14,
+    },
+    privacyLabel: { fontSize: 12.5, color: c.text, opacity: 0.5, fontWeight: "600" },
+
     debug: { marginTop: 4, fontSize: 10, color: c.text, opacity: 0.4, fontFamily: "monospace" },
   });
 }
@@ -90,6 +101,7 @@ export default function LoginScreen() {
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [privacyOpen, setPrivacyOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [debugError, setDebugError] = useState("");
   const [debugInfo, setDebugInfo] = useState<{ status?: number; duration?: number } | null>(null);
@@ -175,6 +187,17 @@ export default function LoginScreen() {
             disabled={loading}
           />
 
+          {/* Avant l'inscription, et non dans un recoin des réglages : on ne
+              peut pas consentir à un traitement qu'on découvrira après. */}
+          <TouchableOpacity
+            style={styles.privacyLink}
+            onPress={() => setPrivacyOpen(true)}
+            accessibilityRole="link"
+          >
+            <MaterialIcons name="privacy-tip" size={13} color={colors.text + "80"} />
+            <Text style={styles.privacyLabel}>{t.privacy.link}</Text>
+          </TouchableOpacity>
+
           <AppVersion />
 
           {DEBUG_NETWORK && (
@@ -193,6 +216,8 @@ export default function LoginScreen() {
           )}
         </View>
       </ScrollView>
+
+      <PrivacyModal visible={privacyOpen} onClose={() => setPrivacyOpen(false)} />
     </KeyboardAvoidingView>
   );
 }

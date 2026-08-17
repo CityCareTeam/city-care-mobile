@@ -554,6 +554,33 @@ export const fr = {
       place ? `${type} à ${away} — ${place}` : `${type} à ${away}`,
   },
 
+  // ── Politique de confidentialité ──
+  privacy: {
+    title: "Confidentialité",
+    menuDetail: "Ce que l’application sait de vous",
+    updated: (date: string) => `Dernière révision : ${date}`,
+    link: "Politique de confidentialité",
+  },
+
+  // ── Consentement à la localisation ──
+  consent: {
+    title: "Utiliser votre position ?",
+    intro: "Vous pouvez refuser : l’application marche sans, et vous pourrez changer d’avis à tout moment.",
+    uses: [
+      "Ouvrir la carte là où vous êtes.",
+      "Trier les signalements par proximité et afficher leur distance.",
+      "Proposer votre ville dans l’onglet Actus.",
+      "Afficher la météo de votre commune.",
+      "Vous prévenir d’un signalement proche, si vous activez cette alerte.",
+    ],
+    leaves: "Ce qui quitte l’appareil : des coordonnées approximatives vers Open-Meteo pour la température, et vers nos serveurs pour nommer la commune. Jamais votre identité avec.",
+    refuse: "Si vous refusez : la carte s’ouvre sur le centre-ville, vous choisissez votre ville à la main, et tout le reste fonctionne — signaler, suivre, discuter, consulter.",
+    readPolicy: "Lire la politique de confidentialité",
+    allow: "Autoriser",
+    deny: "Sans ma position",
+    changeLater: "Réglages → Localisation, à tout moment.",
+  },
+
   // ── Réglages ──
   settings: {
     title: "Réglages",
