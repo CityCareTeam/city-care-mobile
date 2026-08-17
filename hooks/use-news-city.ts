@@ -1,6 +1,7 @@
 import { cityById, type NewsCity } from "@/constants/news-cities";
 import { readJson, writeJson } from "@/storage/local-store";
 import { nearestCity } from "@/utils/news-city";
+import { usePreferences } from "@/context/PreferencesContext";
 import * as Location from "expo-location";
 import { useCallback, useEffect, useState } from "react";
 
@@ -26,6 +27,7 @@ export type CityOrigin = "pending" | "chosen" | "located" | "uncovered" | "unava
 export function useNewsCity() {
   const [city, setCity] = useState<NewsCity | null>(null);
   const [origin, setOrigin] = useState<CityOrigin>("pending");
+  const { location: allowed } = usePreferences();
 
   useEffect(() => {
     let cancelled = false;
@@ -36,6 +38,13 @@ export function useNewsCity() {
       if (stored) {
         setCity(stored);
         setOrigin("chosen");
+        return;
+      }
+
+      // Coupée dans les réglages : on n'a plus qu'à le dire, et la liste de
+      // villes reste à un appui.
+      if (!allowed) {
+        setOrigin("unavailable");
         return;
       }
 
@@ -62,7 +71,7 @@ export function useNewsCity() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [allowed]);
 
   const choose = useCallback((next: NewsCity) => {
     setCity(next);

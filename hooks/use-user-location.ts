@@ -1,4 +1,5 @@
 import { DEFAULT_LOCATION, MAP_DELTAS } from "@/constants/config";
+import { usePreferences } from "@/context/PreferencesContext";
 import * as Location from "expo-location";
 import { useEffect, useState } from "react";
 
@@ -14,8 +15,22 @@ export function useUserLocation(delta: number = MAP_DELTAS.user) {
    * d'une position vraie doit pouvoir distinguer les deux.
    */
   const [precise, setPrecise] = useState(false);
+  const { location: allowed } = usePreferences();
 
   useEffect(() => {
+    /**
+     * Coupée dans les réglages : on ne demande rien et on n'attend rien.
+     *
+     * `loading` passe à faux tout de suite, sans quoi les écrans qui l'attendent
+     * — la carte du formulaire, celle de l'accueil — resteraient sur leur
+     * indicateur pour une réponse qui ne viendra jamais.
+     */
+    if (!allowed) {
+      setPrecise(false);
+      setLoading(false);
+      return;
+    }
+
     async function init() {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status === "granted") {

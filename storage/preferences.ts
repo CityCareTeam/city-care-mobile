@@ -36,6 +36,16 @@ export type Preferences = {
   nearbyAlerts: boolean;
   /** Rayon de ces alertes, en kilomètres. */
   nearbyRadiusKm: number;
+  /**
+   * Autorise l'application à demander et utiliser la position.
+   *
+   * Ce n'est pas un doublon de l'autorisation du système : celle-ci se règle
+   * dans Android, une fois, pour toujours, et la retirer demande de sortir de
+   * l'application. Ici, on coupe l'usage sans toucher à l'autorisation — la
+   * carte s'ouvre sur le centre-ville, le tri par proximité disparaît, les
+   * actus se choisissent à la main, et rien ne demande plus rien.
+   */
+  location: boolean;
 };
 
 /**
@@ -52,6 +62,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   defaultSort: "recent",
   nearbyAlerts: false,
   nearbyRadiusKm: 1,
+  location: true,
 };
 
 const THEMES: ThemePreference[] = ["light", "dark", "system"];
@@ -98,6 +109,7 @@ export async function loadPreferences(): Promise<Preferences> {
     nearbyRadiusKm: (NEARBY_RADII as readonly number[]).includes(stored?.nearbyRadiusKm as number)
       ? (stored?.nearbyRadiusKm as number)
       : DEFAULT_PREFERENCES.nearbyRadiusKm,
+    location: typeof stored?.location === "boolean" ? stored.location : DEFAULT_PREFERENCES.location,
   };
 }
 

@@ -18,7 +18,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
  * choisi, on ne demande rien.
  */
 export function useIncidentSearch<T extends Searchable>(incidents: T[]) {
-  const { defaultSort } = usePreferences();
+  const { defaultSort, location: allowed } = usePreferences();
   const [query, setQuery] = useState("");
   const [sort, setSortMode] = useState<SortMode>(defaultSort);
   const [origin, setOrigin] = useState<{ latitude: number; longitude: number } | null>(null);
@@ -53,13 +53,14 @@ export function useIncidentSearch<T extends Searchable>(incidents: T[]) {
     } catch {
       setOrigin(DEFAULT_LOCATION);
     }
-  }, [origin]);
+  }, [origin, allowed]);
 
   useEffect(() => {
     if (adopted.current || defaultSort === "recent") return;
+    if (defaultSort === "nearest" && !allowed) return;
     adopted.current = true;
     void setSort(defaultSort);
-  }, [defaultSort, setSort]);
+  }, [defaultSort, setSort, allowed]);
 
   const results = useMemo(() => {
     const found = query.trim() ? incidents.filter((incident) => matchesQuery(incident, query)) : incidents;

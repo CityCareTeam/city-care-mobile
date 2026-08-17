@@ -23,11 +23,12 @@ import { useIncidentPhotos } from "@/hooks/use-incident-photos";
 import { useIncidentVotes } from "@/hooks/use-incident-votes";
 import { updateIncidentStatus } from "@/services/incidents";
 import { getValidToken } from "@/storage/tokens";
-import type { IncidentResponse } from "@/types/incidents";
+import type { IncidentResponse, StatusHistoryEntry } from "@/types/incidents";
 import { formatIncidentDateTime } from "@/utils/format-date";
 import { formatDistance } from "@/utils/format-distance";
 import { distanceKm } from "@/utils/incident-search";
 import { GlassPillSelector } from "@/components/ui/GlassPillSelector";
+import { ModalShell } from "@/components/ui/ModalShell";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -39,12 +40,27 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { Image } from "expo-image";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
+
+/**
+ * Le dernier changement qui a mené à ce statut.
+ *
+ * On remonte l'historique à l'envers plutôt que d'utiliser `findLast`, absent de
+ * certains moteurs : un signalement rouvert a deux entrées « en cours », et
+ * c'est la plus récente qui décrit où il en est.
+ */
+function lastChangeTo(history: StatusHistoryEntry[], status: string): StatusHistoryEntry | null {
+  for (let i = history.length - 1; i >= 0; i--) {
+    if (history[i].newStatus === status) return history[i];
+  }
+  return null;
+}
 
 type Props = {
   incident: IncidentResponse | null;
@@ -70,6 +86,9 @@ export function IncidentDetailSheet({ incident, userPlace, initialTab, onClose, 
   const [zoomedPhoto, setZoomedPhoto] = useState<string | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [sending, setSending] = useState(false);
+  /** Statut choisi, en attente du commentaire facultatif. */
+  const [pendingStatus, setPendingStatus] = useState<string | null>(null);
+  const [comment, setComment] = useState("");
 
   const away =
     userPlace && incident
@@ -77,7 +96,7 @@ export function IncidentDetailSheet({ incident, userPlace, initialTab, onClose, 
       : "";
 
   const { canAccessChat, canChangeStatus, canDeleteIncident, canDeletePhoto, canVote } = useIncidentPermissions(incident);
-  const { photos, photosLoading, photosError, statusHistory, handleDeletePhoto } = useIncidentPhotos(incident?.id ?? null);
+  const { photos, photosLoading, photosError, statusHistory, reloadHistory, handleDeletePhoto } = useIncidentPhotos(incident?.id ?? null);
   const { votes, toggling, toggleVote } = useIncidentVotes(incident?.id ?? null);
   const { messages, send, connected, loading: chatLoading } = useIncidentChat(
     activeTab === "chat" ? (incident?.id ?? null) : null
@@ -87,14 +106,28 @@ export function IncidentDetailSheet({ incident, userPlace, initialTab, onClose, 
     setActiveTab(initialTab ?? "details");
   }, [incident?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleStatusChange = async (newStatus: string) => {
+  /**
+   * Le commentaire n'est pas obligatoire, et c'est un choix.
+   *
+   * Un champ imposé sur un geste qu'un agent répète trente fois par jour se
+   * remplit de « ok » — et un historique de « ok » vaut moins que pas
+   * d'historique du tout. La fenêtre propose donc les deux sorties à égalité :
+   * passer outre est un geste normal, pas une échappatoire cachée.
+   */
+  const handleStatusChange = async (newStatus: string, comment?: string) => {
     if (!incident) return;
+    setPendingStatus(null);
+    setComment("");
     setUpdatingStatus(true);
     try {
       const token = await getValidToken();
       if (!token) throw new Error(STRINGS.api.unauthenticated);
-      await updateIncidentStatus(incident.id, newStatus, token);
+      const written = comment?.trim();
+      await updateIncidentStatus(incident.id, newStatus, token, written || undefined);
       onStatusUpdated({ ...incident, status: newStatus } as IncidentResponse);
+      // L'historique vient du serveur : il faut le redemander pour que la frise
+      // montre le commentaire qu'on vient d'écrire.
+      reloadHistory();
     } catch (e) {
       Alert.alert(STRINGS.alert.errorTitle, e instanceof Error ? e.message : STRINGS.api.unknownError);
     } finally {
@@ -225,6 +258,51 @@ export function IncidentDetailSheet({ incident, userPlace, initialTab, onClose, 
     timelineLabel: { alignItems: "center", marginTop: 8, gap: 2 },
     timelineStepText: { fontSize: 11, color: colors.text, opacity: 0.4, fontWeight: "600", textAlign: "center" },
     timelineStepTextActive: { opacity: 1, color: colors.text },
+    // En retrait et en italique : c'est une citation, pas une donnée de plus.
+    commentHint: { fontSize: 12.5, color: colors.text, opacity: 0.6, lineHeight: 17, marginBottom: 12 },
+    commentInput: {
+      minHeight: 88,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: colors.chipBorder,
+      backgroundColor: colors.chipBg,
+      padding: 12,
+      fontSize: 14,
+      color: colors.text,
+      textAlignVertical: "top",
+      marginBottom: 14,
+    },
+    commentActions: { flexDirection: "row", gap: 10 },
+    // Les deux sorties ont le même poids visuel à l'exception du remplissage :
+    // « sans » n'est pas une porte de service.
+    commentSkip: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: 13,
+      borderRadius: 14,
+      backgroundColor: colors.chipBg,
+      borderWidth: 1,
+      borderColor: colors.chipBorder,
+    },
+    commentSkipLabel: { fontSize: 13.5, fontWeight: "700", color: colors.text, opacity: 0.75 },
+    commentSend: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: 13,
+      borderRadius: 14,
+      backgroundColor: colors.primary,
+    },
+    commentSendLabel: { fontSize: 13.5, fontWeight: "700", color: "#fff" },
+    timelineComment: {
+      fontSize: 11.5,
+      color: colors.text,
+      opacity: 0.6,
+      fontStyle: "italic",
+      lineHeight: 16,
+      marginTop: 3,
+    },
     timelineDateText: { fontSize: 10, color: colors.text, opacity: 0.5, textAlign: "center" },
     descBlock: {
       backgroundColor: colors.white, borderRadius: 12,
@@ -415,12 +493,16 @@ export function IncidentDetailSheet({ incident, userPlace, initialTab, onClose, 
                     const isActive = incident.status === "resolved"
                       || (incident.status === "in_progress" && step !== "resolved")
                       || step === "reported";
+                    // Le dernier passage à ce statut, et non le premier : un
+                    // signalement peut être rouvert, et c'est le mot le plus
+                    // récent qui décrit où il en est.
+                    const change = lastChangeTo(statusHistory, step);
                     const stepDate = step === "reported"
                       ? formatIncidentDateTime(incident.createdAt)
                       : step === "resolved" && incident.resolvedAt
                         ? formatIncidentDateTime(incident.resolvedAt)
-                        : step === "in_progress"
-                          ? (() => { const e = statusHistory.find(h => h.newStatus === "in_progress"); return e ? formatIncidentDateTime(e.changedAt) : null; })()
+                        : change
+                          ? formatIncidentDateTime(change.changedAt)
                           : null;
                     const lineActive = i < arr.length - 1 && (
                       incident.status === "resolved" || (incident.status === "in_progress" && i === 0)
@@ -436,6 +518,14 @@ export function IncidentDetailSheet({ incident, userPlace, initialTab, onClose, 
                         <View style={s.timelineLabel}>
                           <Text style={[s.timelineStepText, isActive && s.timelineStepTextActive]}>{STATUS_LABEL[step]}</Text>
                           {stepDate && <Text style={s.timelineDateText}>{stepDate}</Text>}
+                          {/* Le mot de l'agent, là où il se lit : sous l'étape
+                              qu'il explique. Le serveur le gardait déjà, aucun
+                              écran ne le montrait — un citoyen apprenait que son
+                              signalement passait « en cours » sans jamais savoir
+                              ce qui allait être fait. */}
+                          {change?.comment?.trim() ? (
+                            <Text style={s.timelineComment}>{change.comment.trim()}</Text>
+                          ) : null}
                         </View>
                       </View>
                     );
@@ -514,7 +604,7 @@ export function IncidentDetailSheet({ incident, userPlace, initialTab, onClose, 
                         <TouchableOpacity
                           key={nextStatus}
                           style={[s.statusActionBtn, { backgroundColor: STATUS_COLOR[nextStatus] ?? "#999" }]}
-                          onPress={() => handleStatusChange(nextStatus)}
+                          onPress={() => setPendingStatus(nextStatus)}
                           disabled={updatingStatus}
                           activeOpacity={0.8}
                         >
@@ -552,6 +642,48 @@ export function IncidentDetailSheet({ incident, userPlace, initialTab, onClose, 
         )}
 
         <PhotoViewer uri={zoomedPhoto} onClose={() => setZoomedPhoto(null)} />
+
+        {/* Le commentaire de changement de statut.
+            Deux sorties à égalité : envoyer avec, ou changer sans. Le champ est
+            là, ouvert, pré-focalisé — mais rien n'oblige à le remplir, parce
+            qu'un champ imposé sur un geste répété trente fois par jour se
+            remplit de « ok ». */}
+        <ModalShell
+          visible={pendingStatus !== null}
+          title={pendingStatus ? t.incident.commentTitle(STATUS_LABEL[pendingStatus] ?? pendingStatus) : ""}
+          onClose={() => { setPendingStatus(null); setComment(""); }}
+        >
+          <Text style={s.commentHint}>{t.incident.commentHint}</Text>
+          <TextInput
+            style={s.commentInput}
+            value={comment}
+            onChangeText={setComment}
+            placeholder={t.incident.commentPlaceholder}
+            placeholderTextColor={colors.text + "55"}
+            multiline
+            maxLength={500}
+            autoFocus
+          />
+          <View style={s.commentActions}>
+            <TouchableOpacity
+              style={s.commentSkip}
+              onPress={() => pendingStatus && void handleStatusChange(pendingStatus)}
+              activeOpacity={0.75}
+              accessibilityRole="button"
+            >
+              <Text style={s.commentSkipLabel}>{t.incident.commentSkip}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[s.commentSend, !comment.trim() && { opacity: 0.4 }]}
+              onPress={() => pendingStatus && void handleStatusChange(pendingStatus, comment)}
+              disabled={!comment.trim()}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+            >
+              <Text style={s.commentSendLabel}>{t.incident.commentSend}</Text>
+            </TouchableOpacity>
+          </View>
+        </ModalShell>
       </KeyboardAvoidingView>
     </Modal>
   );

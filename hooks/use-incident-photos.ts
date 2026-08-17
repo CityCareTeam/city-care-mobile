@@ -2,7 +2,7 @@ import { STRINGS } from "@/constants/strings";
 import { deletePhoto, getPhotos, getStatusHistory } from "@/services/incidents";
 import { getValidToken } from "@/storage/tokens";
 import type { PhotoResponse, StatusHistoryEntry } from "@/types/incidents";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Alert } from "react-native";
 
 export function useIncidentPhotos(incidentId: string | null) {
@@ -29,6 +29,24 @@ export function useIncidentPhotos(incidentId: string | null) {
     }).finally(() => setPhotosLoading(false));
   }, [incidentId]);
 
+  /**
+   * Redemande l'historique seul.
+   *
+   * Il vient du serveur, et c'est lui qui porte les commentaires : après un
+   * changement de statut, la frise afficherait sinon l'état d'avant — sans le
+   * mot que l'agent vient d'écrire. On ne recharge pas les photos au passage,
+   * elles n'ont pas bougé.
+   */
+  const reloadHistory = useCallback(() => {
+    if (!incidentId) return;
+    void getStatusHistory(incidentId)
+      .then(setStatusHistory)
+      .catch(() => {
+        // Sans historique, la frise garde ses dates : elle n'a jamais dépendu
+        // de lui pour dire où en est le signalement.
+      });
+  }, [incidentId]);
+
   const handleDeletePhoto = (photoId: string) => {
     Alert.alert(STRINGS.photos.deleteConfirmTitle, STRINGS.photos.deleteConfirmMsg, [
       { text: "Annuler", style: "cancel" },
@@ -49,5 +67,5 @@ export function useIncidentPhotos(incidentId: string | null) {
     ]);
   };
 
-  return { photos, photosLoading, photosError, statusHistory, handleDeletePhoto };
+  return { photos, photosLoading, photosError, statusHistory, reloadHistory, handleDeletePhoto };
 }

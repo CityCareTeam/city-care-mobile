@@ -54,6 +54,7 @@ export function SettingsModal({ visible, onClose }: { visible: boolean; onClose:
     haptics, setHaptics,
     sounds, setSounds,
     defaultSort, setDefaultSort,
+    location, setLocation,
   } = usePreferences();
   const effective = resolveLanguage(language);
   const s = useStrings();
@@ -175,6 +176,25 @@ export function SettingsModal({ visible, onClose }: { visible: boolean; onClose:
         styles={styles}
         accent={colors.primary}
       />
+
+      <View style={styles.divider} />
+
+      {/* ── Localisation ──
+          Ce n'est pas un doublon de l'autorisation Android : celle-ci se règle
+          hors de l'application, une fois pour toutes. Ici on coupe l'usage sans
+          y toucher — et ce que ça retire est écrit, parce qu'un réglage dont on
+          ne mesure pas les conséquences ne se coupe pas de bon cœur. */}
+      <Text style={styles.label}>{s.settings.location}</Text>
+      <Switch
+        icon="my-location"
+        label={s.settings.locationUse}
+        detail={s.settings.locationUseDetail}
+        value={location}
+        onToggle={setLocation}
+        styles={styles}
+        accent={colors.primary}
+      />
+      {!location && <Text style={styles.hint}>{s.settings.locationOffHint}</Text>}
 
       <View style={styles.divider} />
 

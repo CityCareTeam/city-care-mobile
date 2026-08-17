@@ -1,5 +1,6 @@
 import { GlassPillSelector } from "@/components/ui/GlassPillSelector";
 import { useAppColors } from "@/hooks/use-app-colors";
+import { usePreferences } from "@/context/PreferencesContext";
 import { useStrings } from "@/hooks/use-strings";
 import type { SortMode } from "@/utils/incident-search";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
@@ -26,6 +27,7 @@ type Props = {
 export function IncidentSearchBar({ query, onQueryChange, sort, onSortChange }: Props) {
   const { colors } = useAppColors();
   const t = useStrings();
+  const { location: canLocate } = usePreferences();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   return (
@@ -56,11 +58,15 @@ export function IncidentSearchBar({ query, onQueryChange, sort, onSortChange }: 
         )}
       </View>
 
+      {/* « Proches » disparaît quand la localisation est coupée dans les
+          réglages : un bouton qui ne peut rien faire vaut moins qu'un bouton
+          absent — on le presserait en boucle en cherchant ce qui ne marche
+          pas. */}
       <GlassPillSelector
         options={[
           { label: t.home.sortRecent, value: "recent" as const },
           { label: t.home.sortOldest, value: "oldest" as const },
-          { label: t.home.sortNearest, value: "nearest" as const },
+          ...(canLocate ? [{ label: t.home.sortNearest, value: "nearest" as const }] : []),
         ]}
         activeValue={sort}
         onSelect={onSortChange}

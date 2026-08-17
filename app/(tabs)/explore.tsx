@@ -205,6 +205,12 @@ export default function SignalementsScreen() {
    * hook — « les miens » et « suivis » sont locaux à cet écran, et les oublier
    * ici laisserait le panneau promettre plus qu'il ne tient.
    */
+  /** Ramène la carte sur l'utilisateur, au cadrage d'ouverture. */
+  const recenter = useCallback(() => {
+    if (!userRegion) return;
+    mapRef.current?.animateToRegion(userRegion, MAP_ANIMATION_MS.animateRegion);
+  }, [userRegion]);
+
   const clearFilters = useCallback(() => {
     setFilterType(null);
     setFilterStatus(null);
@@ -452,19 +458,39 @@ export default function SignalementsScreen() {
         }}
       />
 
-      {/* Au-dessus du bouton de signalement, en rond et discret : la carte
-          s'ouvrait sur la position de l'utilisateur, et aller voir un autre
-          quartier demandait de faire glisser le doigt sur des kilomètres. */}
+      {/* ── Commandes de la carte ──
+          Une colonne et non des boutons semés : ils sont deux aujourd'hui,
+          trois demain, et chacun posé à sa propre distance du bord aurait fini
+          en escalier. La pile se cale au-dessus du bouton de signalement, qui
+          reste la seule action pleine de l'écran. */}
       {!selected && (
-        <TouchableOpacity
-          style={styles.searchBtn}
-          onPress={() => setPlaceSearch(true)}
-          activeOpacity={0.8}
-          accessibilityRole="button"
-          accessibilityLabel={t.map.searchTitle}
-        >
-          <MaterialIcons name="search" size={22} color={colors.primary} />
-        </TouchableOpacity>
+        <View style={styles.controls}>
+          <TouchableOpacity
+            style={styles.control}
+            onPress={() => setPlaceSearch(true)}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel={t.map.searchTitle}
+          >
+            <MaterialIcons name="search" size={22} color={colors.primary} />
+          </TouchableOpacity>
+
+          {/* Recentrer : la carte s'ouvre sur la position, mais dès qu'on l'a
+              déplacée, y revenir demandait de faire glisser à l'aveugle.
+              Absent quand la localisation est coupée — un bouton qui ne peut
+              rien faire vaut moins qu'un bouton absent. */}
+          {knowsWhereWeAre && (
+            <TouchableOpacity
+              style={styles.control}
+              onPress={recenter}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel={t.map.recenter}
+            >
+              <MaterialIcons name="my-location" size={21} color={colors.primary} />
+            </TouchableOpacity>
+          )}
+        </View>
       )}
 
       <AddressSearch
@@ -527,12 +553,19 @@ function makeStyles(c: AppColors, bottomInset: number) {
       gap: 8,
     },
     fabLabel: { fontSize: 15, fontWeight: "700", color: "#fff" },
-    // Rond, blanc et de la taille d'un pouce : il ne dispute pas la vedette au
-    // bouton de signalement, qui reste la seule action pleine de l'écran.
-    searchBtn: {
+    // La colonne se cale juste au-dessus du bouton de signalement, dont elle
+    // reprend la marge droite : les commandes s'alignent sur un seul axe au lieu
+    // de descendre en escalier à mesure qu'on en ajoute.
+    controls: {
       position: "absolute",
       bottom: 60 + bottomInset + (Platform.OS === "ios" ? 0 : 8) + 16 + 62,
       right: 24,
+      gap: 10,
+      alignItems: "center",
+    },
+    // Ronds, blancs et de la taille d'un pouce : ces commandes ne disputent pas
+    // la vedette au bouton de signalement, qui reste la seule action pleine.
+    control: {
       width: 48,
       height: 48,
       borderRadius: 24,
