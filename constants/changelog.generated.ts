@@ -742,6 +742,16 @@ export const LAST_RELEASED_VERSION = "1.5.5";
 export const UNRELEASED_CHANGES: Change[] = [
   {
     "kind": "feature",
+    "scope": "menu",
+    "text": "Bouton de déconnexion en bas du panneau latéral"
+  },
+  {
+    "kind": "feature",
+    "scope": "moderation",
+    "text": "Le signalement masqué passe au rouge chez son auteur"
+  },
+  {
+    "kind": "feature",
     "scope": "moderation",
     "text": "Onglet des contenus masqués et pastille de la file"
   },
