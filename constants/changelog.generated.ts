@@ -742,6 +742,15 @@ export const LAST_RELEASED_VERSION = "1.5.5";
 export const UNRELEASED_CHANGES: Change[] = [
   {
     "kind": "feature",
+    "text": "Open news items, and keep the map's last known state"
+  },
+  {
+    "kind": "fix",
+    "scope": "home",
+    "text": "Give agents and admins the same exact breakdown as citizens"
+  },
+  {
+    "kind": "feature",
     "scope": "news",
     "text": "Read the Haut-Bugey tourist office agenda for the plateau"
   },
