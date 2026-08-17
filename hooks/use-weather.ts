@@ -1,3 +1,4 @@
+import { usePreferences } from "@/context/PreferencesContext";
 import { DEFAULT_LOCATION } from "@/constants/config";
 import { reverseGeocode } from "@/services/incidents";
 import { getCurrentWeather, type Weather } from "@/services/weather";
@@ -22,7 +23,11 @@ const MAX_AGE_MS = 3 * 60 * 60 * 1000;
  * serait disproportionné — on se contente donc de la permission déjà accordée,
  * et à défaut de la ville.
  */
-async function weatherLocation(): Promise<{ latitude: number; longitude: number }> {
+async function weatherLocation(allowed: boolean): Promise<{ latitude: number; longitude: number }> {
+  // Coupée dans les réglages : un interrupteur qui laisserait la météo
+  // géolocaliser quand même serait un interrupteur qui ment.
+  if (!allowed) return DEFAULT_LOCATION;
+
   try {
     const { status } = await Location.getForegroundPermissionsAsync();
     if (status !== "granted") return DEFAULT_LOCATION;
@@ -68,6 +73,7 @@ async function cityFor(latitude: number, longitude: number): Promise<string | nu
  */
 export function useWeather(): HeaderWeather | null {
   const [weather, setWeather] = useState<HeaderWeather | null>(null);
+  const { location: allowed } = usePreferences();
 
   useEffect(() => {
     let alive = true;
@@ -84,7 +90,7 @@ export function useWeather(): HeaderWeather | null {
       }
 
       try {
-        const { latitude, longitude } = await weatherLocation();
+        const { latitude, longitude } = await weatherLocation(allowed);
         // La ville en parallèle : elle ne doit pas retarder la température, qui
         // est ce qu'on est venu lire.
         const [current, city] = await Promise.all([
@@ -104,7 +110,7 @@ export function useWeather(): HeaderWeather | null {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [allowed]);
 
   return weather;
 }
