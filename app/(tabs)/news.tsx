@@ -313,12 +313,22 @@ const NewsCard = memo(function NewsCard({
         ) : null}
       </View>
 
-      {/* Un bloc dans le coin, et le chevron s'en va.
-          Il n'était pas une cible — il annonçait l'appui sur la rangée, ce que
-          le retour au toucher de la carte dit déjà. Le garder à côté d'un vrai
-          bouton en faisait un faux bouton, et deux cibles au même bord ne
-          disent plus laquelle l'appui va toucher. Le partage est donc seul à
-          droite, détaché du texte, dans son propre carré. */}
+      {/* Le chevron annonce l'appui sur la rangée, qui ouvre la fiche. Il n'est
+          pas une cible lui-même — c'est la carte entière qui l'est. */}
+      {open && (
+        <MaterialIcons
+          name="chevron-right"
+          size={20}
+          color={styles.place.color}
+          style={styles.chevron}
+        />
+      )}
+
+      {/* Le partage, hors du flux et dans le coin.
+          Posé dans la rangée, il se retrouvait à côté du chevron : deux cibles
+          au même bord, dont une fausse. En absolu il occupe vraiment l'angle,
+          et le chevron garde le milieu du bord — deux hauteurs différentes, donc
+          deux gestes qu'on ne confond plus. */}
       <TouchableOpacity
         style={styles.shareCorner}
         onPress={onShare}
@@ -449,7 +459,11 @@ function makeStyles(c: AppColors, bottomInset: number) {
     // blanc, il aurait flotté sans qu'on sache s'il appartenait au titre ou à
     // la date. La cible d'appui est élargie par `hitSlop`, sans grossir le
     // carré — quinze points d'icône ne se visent pas au pouce.
+    chevron: { alignSelf: "center" },
     shareCorner: {
+      position: "absolute",
+      top: 8,
+      right: 8,
       width: 30,
       height: 30,
       borderRadius: 10,
@@ -461,7 +475,8 @@ function makeStyles(c: AppColors, bottomInset: number) {
       flexShrink: 0,
     },
     body: { flex: 1, minWidth: 0, gap: 4 },
-    whenRow: { flexDirection: "row", alignItems: "center", gap: 7, flexWrap: "wrap" },
+    // Réserve la place du bloc du coin : sans quoi la date passerait dessous.
+    whenRow: { flexDirection: "row", alignItems: "center", gap: 7, flexWrap: "wrap", paddingRight: 30 },
     // La date en petites majuscules colorées, le délai en pastille pleine : le
     // second se remarque, le premier se lit.
     soonChip: {
