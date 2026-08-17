@@ -51,6 +51,7 @@ describe('getTourismEvents', () => {
     expect(item.place).toBe("Plateau d'Hauteville");
     expect(item.imageUrl).toContain('40133516-345x234.jpg');
     expect(item.id).toContain('/fete-manifestations/marche/');
+    expect(item.url).toBe('https://www.hautbugey-tourisme.com/fete-manifestations/marche/');
   });
 
   // Le résumé se termine par un lien « … » qui n'a pas de sens hors de la page.

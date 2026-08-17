@@ -232,6 +232,7 @@ export const en: typeof fr = {
     choose: "Pick",
     changeCity: "Change city",
     pickTitle: "City",
+    open: "View details",
     empty: "No upcoming event right now.",
     failed: "Couldn’t load the news.",
     sources: (parts: string) => `Sources: ${parts}`,
@@ -376,6 +377,8 @@ export const en: typeof fr = {
   mapNotice: {
     unavailableTitle: "Data unavailable",
     unavailableDetail: "Can’t reach the server.",
+    staleTitle: "Out of date",
+    staleDetail: "This is the last known state of the map.",
     emptyDetail: "Nobody has reported anything here yet.",
     emptyTitle: "No reports",
     noResultsTitle: "No results",

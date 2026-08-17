@@ -243,6 +243,7 @@ export const fr = {
     choose: "Choisir",
     changeCity: "Changer de ville",
     pickTitle: "Ville",
+    open: "Voir la fiche",
     empty: "Aucun événement à venir pour le moment.",
     failed: "Impossible de charger les actualités.",
     // On lit la page d'un office de tourisme : la citer n'est pas une
@@ -395,6 +396,8 @@ export const fr = {
   mapNotice: {
     unavailableTitle: "Données indisponibles",
     unavailableDetail: "Impossible de joindre le serveur.",
+    staleTitle: "Données datées",
+    staleDetail: "Voici le dernier état connu de la carte.",
     emptyDetail: "Personne n'a encore signalé quoi que ce soit ici.",
     emptyTitle: "Aucun signalement",
     noResultsTitle: "Aucun résultat",

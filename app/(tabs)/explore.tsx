@@ -19,6 +19,7 @@ import { useAutoRefresh } from "@/hooks/use-auto-refresh";
 import { useMapClusters } from "@/hooks/use-map-clusters";
 import { useUserLocation } from "@/hooks/use-user-location";
 import { getIncidents } from "@/services/incidents";
+import { loadIncidentsCache, saveIncidentsCache } from "@/storage/incidents-cache";
 import type { IncidentResponse, MapClusterDto } from "@/types/incidents";
 import { useFocusEffect } from "@react-navigation/native";
 import { router, useLocalSearchParams } from "expo-router";
@@ -127,6 +128,9 @@ export default function SignalementsScreen() {
   const [incidents, setIncidents] = useState<IncidentResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [incidentsFailed, setIncidentsFailed] = useState(false);
+  /** Vrai tant que les épingles affichées viennent du cache et non du réseau. */
+  const [incidentsStale, setIncidentsStale] = useState(false);
+  const freshPins = useRef(false);
   const [selected, setSelected] = useState<IncidentResponse | null>(null);
   const [initialTab, setInitialTab] = useState<"details" | "chat">("details");
 
@@ -155,7 +159,7 @@ export default function SignalementsScreen() {
     if (followedOnly) visible = visible.filter((i) => followed.has(i.id));
     return visible;
   }, [filteredIncidents, mineOnly, dbUser, followedOnly, followed]);
-  const { clusters, failed: clustersFailed, currentZoom, onRegionChangeComplete, reload: reloadClusters } =
+  const { clusters, failed: clustersFailed, stale: clustersStale, currentZoom, onRegionChangeComplete, reload: reloadClusters } =
     useMapClusters(filterStatus, filterType, userRegion ?? INITIAL_REGION);
 
   const mapRef = useRef<MapView>(null);
@@ -171,8 +175,24 @@ export default function SignalementsScreen() {
       const res = await getIncidents({ pageSize: INCIDENTS_PAGE_SIZE.load });
       setIncidents(res.data);
       setIncidentsFailed(false);
+      setIncidentsStale(false);
+      freshPins.current = true;
+      // Le même cache que le fil : même endpoint, même page, même fraîcheur.
+      // Les deux écrans se rendent donc service l'un à l'autre — ouvrir
+      // l'accueil garnit la carte, et l'inverse.
+      void saveIncidentsCache(res.data, res.pagination.total_count);
     } catch {
       setIncidentsFailed(true);
+
+      // Le dernier état connu, mais seulement si rien n'a jamais abouti : en
+      // cours de session, ce qui est affiché vient du réseau et vaut mieux.
+      if (!freshPins.current) {
+        const cache = await loadIncidentsCache();
+        if (cache && cache.incidents.length > 0) {
+          setIncidents(cache.incidents);
+          setIncidentsStale(true);
+        }
+      }
     } finally {
       if (!silent) setLoading(false);
     }
@@ -273,12 +293,22 @@ export default function SignalementsScreen() {
 
   const notice: MapNoticeKind | null = useMemo(() => {
     if (loading) return null;
-    if (isClusterMode ? clustersFailed : incidentsFailed) return "offline";
     const nothingToShow = isClusterMode ? clusters.length === 0 : visibleIncidents.length === 0;
+
+    // Trois situations qui se ressemblaient sous un seul mot. « Hors ligne »
+    // annonçait la panne même quand la carte, elle, montrait quelque chose —
+    // le cache ou ce qui restait de la session. Elle ne l'annonce plus que
+    // lorsqu'il n'y a réellement rien à voir ; sinon elle dit ce qui est vrai :
+    // ce qui est affiché date.
+    if (isClusterMode ? clustersFailed : incidentsFailed) {
+      return nothingToShow ? "offline" : "stale";
+    }
+    if (isClusterMode ? clustersStale : incidentsStale) return "stale";
+
     if (!nothingToShow) return null;
     return filterStatus || filterType ? "filtered" : "empty";
   }, [
-    loading, isClusterMode, clustersFailed, incidentsFailed,
+    loading, isClusterMode, clustersFailed, incidentsFailed, clustersStale, incidentsStale,
     clusters.length, visibleIncidents.length, filterStatus, filterType,
   ]);
 
@@ -369,7 +399,7 @@ export default function SignalementsScreen() {
         <MapNotice
           kind={notice}
           top={insets.top + FILTER_BAR_TOP + FILTER_BAR_HEIGHT}
-          onRetry={notice === "offline" ? handleRefresh : undefined}
+          onRetry={notice === "offline" || notice === "stale" ? handleRefresh : undefined}
         />
       )}
 

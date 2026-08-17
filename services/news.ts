@@ -20,6 +20,11 @@ export type NewsItem = {
   imageUrl: string | null;
   /** Début, pour fusionner deux sources dans un seul ordre chronologique. */
   startsAt: string | null;
+  /**
+   * Fiche complète chez la source. Une carte sans elle est une impasse : on
+   * annonce un événement sans dire où le retrouver.
+   */
+  url: string | null;
 };
 
 /** Deux fois le même événement publié des deux côtés ne fait qu'une carte. */

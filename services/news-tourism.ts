@@ -124,6 +124,7 @@ export async function getTourismEvents(url: string): Promise<NewsItem[]> {
       place: text(field(item, FIELD.town)) || null,
       imageUrl: field(item, FIELD.image) ?? null,
       startsAt: parseFrenchDate(when),
+      url: field(item, FIELD.link) ?? null,
     } satisfies NewsItem;
   });
 

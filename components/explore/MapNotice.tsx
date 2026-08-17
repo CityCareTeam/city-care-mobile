@@ -6,10 +6,11 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useMemo } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-export type MapNoticeKind = "offline" | "empty" | "filtered";
+export type MapNoticeKind = "offline" | "stale" | "empty" | "filtered";
 
 const ICONS: Record<MapNoticeKind, React.ComponentProps<typeof MaterialIcons>["name"]> = {
   offline: "cloud-off",
+  stale: "history",
   empty: "explore",
   filtered: "filter-alt-off",
 };
@@ -21,6 +22,7 @@ const ICONS: Record<MapNoticeKind, React.ComponentProps<typeof MaterialIcons>["n
 function notices(t: Dictionary): Record<MapNoticeKind, { title: string; detail: string }> {
   return {
     offline: { title: t.mapNotice.unavailableTitle, detail: t.mapNotice.unavailableDetail },
+    stale: { title: t.mapNotice.staleTitle, detail: t.mapNotice.staleDetail },
     empty: { title: t.mapNotice.emptyTitle, detail: t.mapNotice.emptyDetail },
     filtered: { title: t.mapNotice.noResultsTitle, detail: t.mapNotice.noResultsDetail },
   };
@@ -50,7 +52,7 @@ export function MapNotice({ kind, top, onRetry }: Props) {
       <MaterialIcons
         name={ICONS[kind]}
         size={20}
-        color={kind === "offline" ? colors.primary : styles.title.color}
+        color={kind === "offline" || kind === "stale" ? colors.primary : styles.title.color}
       />
       <View style={styles.text}>
         <Text style={styles.title}>{notice.title}</Text>

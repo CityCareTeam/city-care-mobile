@@ -17,6 +17,7 @@ const record = {
   firstdate_begin: '2026-08-17T07:00:00+00:00',
   location_name: 'France Travail Belley',
   location_city: 'Belley',
+  canonicalurl: 'https://openagenda.com/francetravail/events/creation-entreprise',
   thumbnail: 'https://img.openagenda.com/main/017e.thumb.image.jpg',
   image: 'https://img.openagenda.com/main/017e.base.image.jpg',
 };
@@ -77,6 +78,8 @@ describe('getNews', () => {
     expect(item.title).toBe('Création entreprise');
     expect(item.when).toBe('Lundi 17 août, 09h00');
     expect(item.startsAt).toBe('2026-08-17T07:00:00+00:00');
+    // Sans elle, la carte annonce un événement sans dire où le retrouver.
+    expect(item.url).toContain('openagenda.com');
   });
 
   // « Salle des fêtes » situe mieux que « Belley » quand on est déjà à Belley.

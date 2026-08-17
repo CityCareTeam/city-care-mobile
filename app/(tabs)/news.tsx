@@ -12,8 +12,9 @@ import { mixHex } from "@/utils/color";
 import { getTabBarScrollPadding } from "@/utils/layout";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { Image } from "expo-image";
+import * as WebBrowser from "expo-web-browser";
 import { memo, useMemo, useState } from "react";
-import { FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { FlatList, Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 /**
@@ -65,7 +66,9 @@ export default function NewsScreen() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.container}
         refreshControl={refreshControl}
-        renderItem={({ item }) => <NewsCard item={item} styles={styles} />}
+        renderItem={({ item }) => (
+          <NewsCard item={item} styles={styles} openLabel={t.news.open} />
+        )}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListHeaderComponent={
           <>
@@ -199,12 +202,29 @@ function CityOption({
 const NewsCard = memo(function NewsCard({
   item,
   styles,
+  openLabel,
 }: {
   item: NewsItem;
   styles: ReturnType<typeof makeStyles>;
+  openLabel: string;
 }) {
+  /**
+   * Le navigateur intégré plutôt qu'un renvoi vers Chrome : on revient d'un
+   * geste, et l'application ne perd pas sa place. Sans lien, la carte reste
+   * une carte — inerte, mais sans faux bouton.
+   */
+  const open = item.url
+    ? () => void WebBrowser.openBrowserAsync(item.url as string).catch(() => {})
+    : undefined;
+
   return (
-    <View style={styles.card}>
+    <Pressable
+      style={({ pressed }) => [styles.card, pressed && open ? styles.cardPressed : null]}
+      onPress={open}
+      disabled={!open}
+      accessibilityRole={open ? "link" : undefined}
+      accessibilityLabel={open ? `${item.title}. ${openLabel}` : undefined}
+    >
       {/* L'image est facultative : beaucoup d'événements n'en ont pas, et une
           carte sans illustration doit rester une carte, pas un trou. */}
       {item.imageUrl && (
@@ -222,8 +242,15 @@ const NewsCard = memo(function NewsCard({
             <Text style={styles.place} numberOfLines={1}>{item.place}</Text>
           </View>
         ) : null}
+        {/* Discret, mais il faut que l'appui se devine avant d'être tenté. */}
+        {open && (
+          <View style={styles.openRow}>
+            <Text style={styles.openLabel}>{openLabel}</Text>
+            <MaterialIcons name="open-in-new" size={13} color={styles.openLabel.color} />
+          </View>
+        )}
       </View>
-    </View>
+    </Pressable>
   );
 });
 
@@ -315,6 +342,9 @@ function makeStyles(c: AppColors, bottomInset: number) {
       textTransform: "uppercase",
       color: c.primary,
     },
+    cardPressed: { opacity: 0.7 },
+    openRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 6 },
+    openLabel: { fontSize: 11.5, fontWeight: "700", color: c.primary },
     cardTitle: { fontSize: 15.5, fontWeight: "700", color: c.text, lineHeight: 21 },
     summaryText: { fontSize: 13, color: c.text, opacity: 0.6, lineHeight: 19 },
     placeRow: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 3 },

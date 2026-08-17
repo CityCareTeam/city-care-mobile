@@ -26,6 +26,7 @@ const ENDPOINT =
 
 type Record = {
   uid?: string;
+  canonicalurl?: string | null;
   title_fr?: string | null;
   description_fr?: string | null;
   daterange_fr?: string | null;
@@ -100,5 +101,6 @@ export async function getOpenAgendaEvents(
     // sept cents pixels de large.
     imageUrl: record.thumbnail ?? record.image ?? null,
     startsAt: record.firstdate_begin ?? null,
+    url: record.canonicalurl ?? null,
   }));
 }

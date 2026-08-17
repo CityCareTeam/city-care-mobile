@@ -10,7 +10,7 @@ const national = getOpenAgendaEvents as jest.Mock;
 const tourism = getTourismEvents as jest.Mock;
 
 function item(title: string, startsAt: string | null): NewsItem {
-  return { id: title, title, summary: '', when: '', place: null, imageUrl: null, startsAt };
+  return { id: title, title, summary: '', when: '', place: null, imageUrl: null, startsAt, url: null };
 }
 
 const PLATEAU: NewsCity = {
