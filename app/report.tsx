@@ -5,10 +5,14 @@ import { MAP_DELTAS } from "@/constants/config";
 import { MAX_INCIDENT_PHOTOS } from "@/constants/incidents";
 import { STRINGS } from "@/constants/strings";
 import { isNetworkError } from "@/services/api-client";
+import { searchPlaces, type PlaceSuggestion } from "@/services/geocoding";
 import { createIncident, reverseGeocode, uploadPhoto } from "@/services/incidents";
+import { useNearbyDuplicates } from "@/hooks/use-nearby-duplicates";
+import { metersBetween } from "@/utils/duplicates";
 import { enqueueReport } from "@/storage/pending-reports";
 import { clearDraft, isWorthSaving, latestDraft, listDrafts, saveDraft, type ReportDraft } from "@/storage/report-draft";
 import { getValidToken } from "@/storage/tokens";
+import { mixHex } from "@/utils/color";
 import { succeeded } from "@/utils/haptics";
 import type { IncidentType } from "@/types/incidents";
 import type { AppColors } from "@/hooks/use-app-colors";
@@ -40,12 +44,6 @@ type PickedPhoto = {
   mimeType: string;
 };
 
-type NominatimResult = {
-  display_name: string;
-  lat: string;
-  lon: string;
-};
-
 const INCIDENT_TYPES: {
   value: IncidentType;
   icon: React.ComponentProps<typeof MaterialIcons>["name"];
@@ -70,7 +68,7 @@ export default function ReportScreen() {
 
   const { coords, setCoords, loading: locLoading } = useUserLocation(MAP_DELTAS.report);
   const [addressQuery, setAddressQuery] = useState("");
-  const [suggestions, setSuggestions]   = useState<NominatimResult[]>([]);
+  const [suggestions, setSuggestions]   = useState<PlaceSuggestion[]>([]);
   const [description, setDescription]   = useState("");
   const [selectedType, setSelectedType] = useState<IncidentType | null>(null);
   const [submitting, setSubmitting]     = useState(false);
@@ -83,6 +81,8 @@ export default function ReportScreen() {
   const [draftId, setDraftId] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<ReportDraft[]>([]);
   const [picking, setPicking] = useState(false);
+
+  const duplicates = useNearbyDuplicates(selectedType, coords);
 
   // Un formulaire à moitié rempli devant un nid-de-poule, un appel entrant, et
   // tout est à refaire : c'est le moment où l'on renonce à signaler.
@@ -191,24 +191,18 @@ export default function ReportScreen() {
     setAddressQuery(text);
     if (searchTimeout.current) clearTimeout(searchTimeout.current);
     if (text.length < 3) { setSuggestions([]); return; }
-    searchTimeout.current = setTimeout(async () => {
-      try {
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(text)}&format=json&limit=5&addressdetails=1`,
-          { headers: { "User-Agent": "CityCare/1.0" } },
-        );
-        const data = await res.json() as NominatimResult[];
-        setSuggestions(data);
-      } catch {
-        setSuggestions([]);
-      }
+    searchTimeout.current = setTimeout(() => {
+      // Les environs d'abord : « Garibaldi » saisi depuis Lyon doit proposer la
+      // rue avant une place italienne.
+      searchPlaces(text, coords)
+        .then(setSuggestions)
+        .catch(() => setSuggestions([]));
     }, 350);
   }
 
-  function selectSuggestion(s: NominatimResult) {
-    const lat = parseFloat(s.lat);
-    const lon = parseFloat(s.lon);
-    setAddressQuery(s.display_name);
+  function selectSuggestion(s: PlaceSuggestion) {
+    const { latitude: lat, longitude: lon } = s;
+    setAddressQuery(s.label);
     setSuggestions([]);
     setCoords({ latitude: lat, longitude: lon });
     mapRef.current?.animateToRegion({
@@ -257,6 +251,12 @@ export default function ReportScreen() {
 
   async function handleSubmit() {
     if (!selectedType || !description.trim() || description.trim().length > 255) return;
+
+    // La carte au-dessus informe ; cette question-ci ne bloque pas non plus.
+    // Un doublon reste parfois légitime — deux trous voisins, une aggravation à
+    // signaler — et c'est l'utilisateur sur place qui sait, pas nous.
+    if (duplicates.length > 0 && !(await confirmDuplicate())) return;
+
     setSubmitting(true);
     try {
       const token = await getValidToken();
@@ -308,6 +308,21 @@ export default function ReportScreen() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  /** `Alert` est déclaratif ; on l'enveloppe pour pouvoir l'attendre. */
+  function confirmDuplicate(): Promise<boolean> {
+    return new Promise((resolve) => {
+      Alert.alert(
+        t.report.duplicateConfirmTitle,
+        t.report.duplicateConfirmMsg(duplicates.length),
+        [
+          { text: t.alert.cancel, style: "cancel", onPress: () => resolve(false) },
+          { text: t.report.duplicateSendAnyway, onPress: () => resolve(true) },
+        ],
+        { cancelable: true, onDismiss: () => resolve(false) },
+      );
+    });
   }
 
   const initialRegion: Region = { ...coords, latitudeDelta: MAP_DELTAS.report, longitudeDelta: MAP_DELTAS.report };
@@ -451,7 +466,7 @@ export default function ReportScreen() {
                 activeOpacity={0.7}
               >
                 <MaterialIcons name="location-on" size={14} color={colors.primary} style={{ marginTop: 1 }} />
-                <Text style={styles.suggestionText} numberOfLines={2}>{s.display_name}</Text>
+                <Text style={styles.suggestionText} numberOfLines={2}>{s.label}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -520,6 +535,36 @@ export default function ReportScreen() {
         )}
       </View>
 
+      {/* ── Doublon probable ──
+          Averti ici et non au moment de l'envoi : mieux vaut le dire avant que
+          l'utilisateur ait rédigé sa description. Il n'a aucun moyen de savoir
+          qu'un voisin l'a devancé, et ce trou-là est le premier travers d'une
+          application de signalement — la même bouche d'égout déclarée quinze
+          fois, et un agent qui trie à la main. */}
+      {duplicates.length > 0 && (
+        <TouchableOpacity
+          style={styles.duplicateCard}
+          onPress={() => router.push(`/(tabs)/explore?selectId=${duplicates[0].id}`)}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel={t.report.duplicateOpen}
+        >
+          <MaterialIcons name="content-copy" size={19} color={colors.primary} />
+          <View style={styles.duplicateText}>
+            <Text style={styles.duplicateTitle}>
+              {t.report.duplicateTitle(
+                duplicates.length,
+                metersBetween(coords, duplicates[0]),
+              )}
+            </Text>
+            <Text style={styles.duplicateDetail} numberOfLines={2}>
+              {duplicates[0].description || t.report.duplicateOpen}
+            </Text>
+          </View>
+          <MaterialIcons name="chevron-right" size={20} color={colors.text + "55"} />
+        </TouchableOpacity>
+      )}
+
       {/* ── Submit ── */}
       <Button label={t.report.submit} onPress={handleSubmit} loading={submitting} disabled={!canSubmit} />
       {!canSubmit && (
@@ -538,6 +583,22 @@ export default function ReportScreen() {
 function makeStyles(c: AppColors, isDark: boolean) {
   return StyleSheet.create({
     container: { backgroundColor: c.background, padding: 20, paddingBottom: 48 },
+
+    // ── Doublon probable ──
+    // Teinté de la couleur de l'application et non du rouge des erreurs : ce
+    // n'est pas une faute, c'est un renseignement.
+    duplicateCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 11,
+      padding: 13,
+      borderRadius: 14,
+      marginBottom: 14,
+      backgroundColor: mixHex(c.background, c.primary, 0.13),
+    },
+    duplicateText: { flex: 1, gap: 2 },
+    duplicateTitle: { fontSize: 13.5, fontWeight: "700", color: c.text },
+    duplicateDetail: { fontSize: 12, color: c.text, opacity: 0.6, lineHeight: 16 },
 
     // ── Brouillon ──
     draftBar: {

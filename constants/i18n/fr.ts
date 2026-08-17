@@ -225,6 +225,11 @@ export const fr = {
   map: {
     report: "Signaler",
     resume: "Reprendre",
+    searchTitle: "Aller à une adresse",
+    searchPlaceholder: "Rue, ville, lieu…",
+    searchHint: "Saisissez au moins trois caractères.",
+    searchNoResult: (query: string) => `Aucune adresse trouvée pour « ${query} ».`,
+    searchFailed: "Recherche indisponible. Vérifiez votre connexion.",
   },
 
   // ── Notifications ──
@@ -290,6 +295,19 @@ export const fr = {
 
   // ── Signalement ──
   report: {
+    duplicateTitle: (count: number, meters: number) =>
+      count > 1
+        ? `${count} signalements du même type à moins de ${meters} m`
+        : `Un signalement du même type à ${meters} m`,
+    duplicateOpen: "Ouvrir le signalement existant",
+    duplicateConfirmTitle: "Déjà signalé ?",
+    // Type de retour explicite : deux littéraux sans lui donnent une union de
+    // littéraux, que la traduction anglaise ne peut alors plus satisfaire.
+    duplicateConfirmMsg: (count: number): string =>
+      count > 1
+        ? "Plusieurs signalements du même type sont ouverts juste à côté. Envoyer quand même ?"
+        : "Un signalement du même type est ouvert juste à côté. Envoyer quand même ?",
+    duplicateSendAnyway: "Envoyer quand même",
     screenTitle: "Signaler un incident",
     location: "Localisation",
     addressPlaceholder: "Rechercher ou taper une adresse...",
@@ -390,6 +408,9 @@ export const fr = {
     mineOnlyA11y: "N’afficher que mes signalements",
     share: "Partager",
     shareA11y: "Partager ce signalement",
+    directions: "Y aller",
+    directionsA11y: "Ouvrir l’itinéraire vers ce signalement",
+    directionsFailed: "Aucune application de cartes n’a répondu.",
     shareTitle: "Signalement CityCare+",
     details: "Détails",
     chat: "Discussion",

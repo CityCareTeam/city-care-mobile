@@ -217,6 +217,11 @@ export const en: typeof fr = {
   map: {
     report: "Report",
     resume: "Resume",
+    searchTitle: "Go to an address",
+    searchPlaceholder: "Street, town, place…",
+    searchHint: "Type at least three characters.",
+    searchNoResult: (query: string) => `No address found for “${query}”.`,
+    searchFailed: "Search unavailable. Check your connection.",
   },
 
   notifications: {
@@ -274,6 +279,17 @@ export const en: typeof fr = {
 
 
   report: {
+    duplicateTitle: (count: number, meters: number) =>
+      count > 1
+        ? `${count} reports of the same type within ${meters} m`
+        : `A report of the same type ${meters} m away`,
+    duplicateOpen: "Open the existing report",
+    duplicateConfirmTitle: "Already reported?",
+    duplicateConfirmMsg: (count: number) =>
+      count > 1
+        ? "Several reports of the same type are open right next to this one. Send anyway?"
+        : "A report of the same type is open right next to this one. Send anyway?",
+    duplicateSendAnyway: "Send anyway",
     screenTitle: "Report an incident",
     location: "Location",
     addressPlaceholder: "Search or type an address...",
@@ -371,6 +387,9 @@ export const en: typeof fr = {
     mineOnlyA11y: "Show only my reports",
     share: "Share",
     shareA11y: "Share this report",
+    directions: "Directions",
+    directionsA11y: "Open directions to this report",
+    directionsFailed: "No maps app answered.",
     shareTitle: "CityCare+ report",
     details: "Details",
     chat: "Discussion",

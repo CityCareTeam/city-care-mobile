@@ -1,6 +1,7 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { IncidentFilterBar } from "@/components/incident-filter-bar";
 import { ClusterLegend } from "@/components/explore/ClusterLegend";
+import { AddressSearch } from "@/components/explore/AddressSearch";
 import { IncidentDetailSheet } from "@/components/explore/IncidentDetailSheet";
 import { MapNotice, MapNoticeKind } from "@/components/explore/MapNotice";
 import { CLUSTER_PIN_ANCHOR, ClusterPin, MAP_PIN_ANCHOR, MapPin } from "@/components/ui/MapPin";
@@ -133,6 +134,7 @@ export default function SignalementsScreen() {
   const freshPins = useRef(false);
   const [selected, setSelected] = useState<IncidentResponse | null>(null);
   const [initialTab, setInitialTab] = useState<"details" | "chat">("details");
+  const [placeSearch, setPlaceSearch] = useState(false);
 
   const { region: userRegion } = useUserLocation(MAP_DELTAS.user);
   const { colors } = useAppColors();
@@ -159,7 +161,7 @@ export default function SignalementsScreen() {
     if (followedOnly) visible = visible.filter((i) => followed.has(i.id));
     return visible;
   }, [filteredIncidents, mineOnly, dbUser, followedOnly, followed]);
-  const { clusters, failed: clustersFailed, stale: clustersStale, currentZoom, onRegionChangeComplete, reload: reloadClusters } =
+  const { clusters, failed: clustersFailed, stale: clustersStale, currentZoom, currentRegionRef, onRegionChangeComplete, reload: reloadClusters } =
     useMapClusters(filterStatus, filterType, userRegion ?? INITIAL_REGION);
 
   const mapRef = useRef<MapView>(null);
@@ -422,6 +424,39 @@ export default function SignalementsScreen() {
         }}
       />
 
+      {/* Au-dessus du bouton de signalement, en rond et discret : la carte
+          s'ouvrait sur la position de l'utilisateur, et aller voir un autre
+          quartier demandait de faire glisser le doigt sur des kilomètres. */}
+      {!selected && (
+        <TouchableOpacity
+          style={styles.searchBtn}
+          onPress={() => setPlaceSearch(true)}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel={t.map.searchTitle}
+        >
+          <MaterialIcons name="search" size={22} color={colors.primary} />
+        </TouchableOpacity>
+      )}
+
+      <AddressSearch
+        visible={placeSearch}
+        onClose={() => setPlaceSearch(false)}
+        near={currentRegionRef.current}
+        onPick={(place) => {
+          setPlaceSearch(false);
+          mapRef.current?.animateToRegion(
+            {
+              latitude: place.latitude,
+              longitude: place.longitude,
+              latitudeDelta: MAP_DELTAS.explore,
+              longitudeDelta: MAP_DELTAS.explore,
+            },
+            MAP_ANIMATION_MS.animateRegion,
+          );
+        }}
+      />
+
       {!selected && canReportIncident && (
         <TouchableOpacity style={styles.fab} onPress={() => router.push("/report")} activeOpacity={0.85}>
           <MaterialIcons name={hasDraft ? "edit-note" : "add"} size={22} color="#fff" />
@@ -464,6 +499,24 @@ function makeStyles(c: AppColors, bottomInset: number) {
       gap: 8,
     },
     fabLabel: { fontSize: 15, fontWeight: "700", color: "#fff" },
+    // Rond, blanc et de la taille d'un pouce : il ne dispute pas la vedette au
+    // bouton de signalement, qui reste la seule action pleine de l'écran.
+    searchBtn: {
+      position: "absolute",
+      bottom: 60 + bottomInset + (Platform.OS === "ios" ? 0 : 8) + 16 + 62,
+      right: 24,
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: c.white,
+      alignItems: "center",
+      justifyContent: "center",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.16,
+      shadowRadius: 8,
+      elevation: 5,
+    },
     fabDot: {
       position: "absolute",
       top: 8,

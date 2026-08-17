@@ -8,12 +8,14 @@ import {
   TYPE_ICON,
   TYPE_LABEL,
 } from "@/constants/incidents";
+import { Toast } from "@/components/ui/ToastMessage";
 import { STRINGS } from "@/constants/strings";
 import { useAuth } from "@/context/AuthContext";
 import { useAppColors } from "@/hooks/use-app-colors";
 import { useStrings } from "@/hooks/use-strings";
 import { useFollowedIncidents } from "@/hooks/use-followed-incidents";
 import { warned } from "@/utils/haptics";
+import { openDirections } from "@/utils/directions";
 import { incidentShareMessage } from "@/utils/share-incident";
 import { useIncidentChat } from "@/hooks/use-incident-chat";
 import { useIncidentPermissions } from "@/hooks/use-incident-permissions";
@@ -100,6 +102,20 @@ export function IncidentDetailSheet({ incident, initialTab, onClose, onStatusUpd
     }).catch(() => {
       // Partage annulé ou aucune application capable de le recevoir : il n'y a
       // rien à dire à l'utilisateur, il vient de fermer la feuille lui-même.
+    });
+  };
+
+  /**
+   * Contrairement au partage, un échec se dit ici : l'utilisateur n'a rien
+   * annulé, il a appuyé sur un bouton qui n'a rien fait. C'est rare — un
+   * téléphone sans application de cartes — mais silencieux serait pire.
+   */
+  const handleDirections = () => {
+    if (!incident) return;
+    void openDirections(incident, incident.addressLabel).then((opened) => {
+      if (!opened) {
+        Toast.show({ type: "error", text1: t.alert.errorTitle, text2: t.incident.directionsFailed });
+      }
     });
   };
 
@@ -328,6 +344,21 @@ export function IncidentDetailSheet({ incident, initialTab, onClose, onStatusUpd
               >
                 <MaterialIcons name="share" size={16} color={colors.text} style={{ opacity: 0.6 }} />
                 <Text style={s.actionLabel}>{t.incident.share}</Text>
+              </TouchableOpacity>
+
+              {/* On ne guide pas soi-même : l'application de cartes du
+                  téléphone connaît les embouteillages, les transports et la
+                  voix de l'utilisateur. Un agent qui part sur site recopie
+                  aujourd'hui l'adresse à la main. */}
+              <TouchableOpacity
+                style={s.action}
+                onPress={handleDirections}
+                activeOpacity={0.75}
+                accessibilityRole="button"
+                accessibilityLabel={t.incident.directionsA11y}
+              >
+                <MaterialIcons name="directions" size={17} color={colors.text} style={{ opacity: 0.6 }} />
+                <Text style={s.actionLabel}>{t.incident.directions}</Text>
               </TouchableOpacity>
             </View>
 
