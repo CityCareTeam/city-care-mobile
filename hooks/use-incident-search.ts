@@ -47,5 +47,7 @@ export function useIncidentSearch<T extends Searchable>(incidents: T[]) {
     return sortIncidents(found, sort, origin);
   }, [incidents, query, sort, origin]);
 
-  return { query, setQuery, sort, setSort, results };
+  // L'origine sort du hook : les lignes peuvent alors dire à quelle distance
+  // elles se trouvent, ce que le seul ordre de la liste ne dit pas.
+  return { query, setQuery, sort, setSort, results, origin };
 }

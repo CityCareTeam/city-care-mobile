@@ -457,22 +457,28 @@ export const en: typeof fr = {
     next: "Next",
     back: "Back",
     done: "Let’s go",
+    stepA11y: (position: number, total: number) => `Step ${position} of ${total}`,
+    swipeHint: "Swipe to browse",
     steps: [
       {
         title: "Report in two gestures",
-        body: "A category, a description, a photo if you have one. Offline, your report is kept and sent on its own as soon as you’re back online.",
+        body: "A category, a description, a photo if you have one. If a report of the same type sits a few steps away, the app shows it to you before you send. Offline, yours is kept and sent as soon as you’re back online.",
       },
       {
         title: "Follow reports on the map",
-        body: "Pins group together as you zoom out. Filter by status, by category, or show only your own reports.",
+        body: "Pins group together as you zoom out. Search an address to look at another neighbourhood, and open directions to a report from its details.",
       },
       {
         title: "Find everything in the feed",
-        body: "Search by description or street, sort by date or by distance. Filters stay available above the list.",
+        body: "Search by description or street, sort by date or by distance — each row then shows how far it is. Filters stay above the list.",
       },
       {
         title: "Keep track of changes",
-        body: "A notification on every status change, and a discussion attached to each report to talk with city officers.",
+        body: "Bookmark a report to hear about its changes. A discussion is attached to each one, to talk with city officers.",
+      },
+      {
+        title: "See what’s on",
+        body: "The News tab shows events in your town — picked from your location, or from the list. Tap a card to open the full listing.",
       },
       {
         title: "Set up the app",

@@ -483,22 +483,28 @@ export const fr = {
     next: "Suivant",
     back: "Retour",
     done: "C’est parti",
+    stepA11y: (position: number, total: number) => `Étape ${position} sur ${total}`,
+    swipeHint: "Glissez pour parcourir",
     steps: [
       {
         title: "Signalez en deux gestes",
-        body: "Une catégorie, une description, une photo si vous en avez une. Sans réseau, le signalement est gardé et part tout seul dès que la connexion revient.",
+        body: "Une catégorie, une description, une photo si vous en avez une. Si un signalement du même type existe à deux pas, l’application vous le montre avant l’envoi. Sans réseau, le vôtre est gardé et part dès que la connexion revient.",
       },
       {
         title: "Suivez les signalements sur la carte",
-        body: "Les épingles se regroupent quand vous dézoomez. Filtrez par statut, par catégorie, ou n’affichez que vos propres signalements.",
+        body: "Les épingles se regroupent quand vous dézoomez. Cherchez une adresse pour aller voir un autre quartier, et ouvrez l’itinéraire vers un signalement depuis sa fiche.",
       },
       {
         title: "Retrouvez tout dans le fil",
-        body: "Cherchez par description ou par rue, triez par date ou par proximité. Les filtres restent disponibles au-dessus de la liste.",
+        body: "Cherchez par description ou par rue, triez par date ou par proximité — chaque ligne indique alors sa distance. Les filtres restent au-dessus de la liste.",
       },
       {
         title: "Suivez ce qui bouge",
-        body: "Une notification à chaque changement de statut, et une discussion attachée à chaque signalement pour échanger avec les agents.",
+        body: "Posez un signet sur un signalement pour être prévenu de ses changements. Une discussion est attachée à chacun, pour échanger avec les agents.",
+      },
+      {
+        title: "Voyez ce qui se passe",
+        body: "L’onglet Actus donne les événements de votre ville — choisie d’après votre position, ou dans la liste. Appuyez sur une carte pour ouvrir la fiche complète.",
       },
       {
         title: "Réglez l’application",

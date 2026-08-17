@@ -5,6 +5,7 @@ import { useAppColors } from "@/hooks/use-app-colors";
 import { useStrings } from "@/hooks/use-strings";
 import { extractCity } from "@/utils/format-address";
 import { formatDateShort } from "@/utils/format-date";
+import { formatDistance } from "@/utils/format-distance";
 import { memo, useMemo } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
@@ -25,6 +26,14 @@ type Props = {
    * favoris — le rendre indirect la rendait pénible à tenir.
    */
   onToggleFollow?: (id: string) => void;
+  /**
+   * Distance depuis l'utilisateur, en kilomètres. Absente tant qu'on ne connaît
+   * pas sa position — et on ne la réclame que s'il trie par proximité.
+   *
+   * Sans elle, l'ordre de la liste disait qu'un signalement était le plus
+   * proche, jamais s'il était à deux rues ou à dix kilomètres.
+   */
+  distanceKm?: number;
 };
 
 
@@ -125,7 +134,7 @@ function makeStyles(c: AppColors) {
   });
 }
 
-function IncidentRowBase({ id, type, status, description, address, createdAt, onPress, isMine, isFollowed, onToggleFollow }: Props) {
+function IncidentRowBase({ id, type, status, description, address, createdAt, onPress, isMine, isFollowed, onToggleFollow, distanceKm }: Props) {
   const { colors } = useAppColors();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const t = useStrings();
@@ -134,6 +143,10 @@ function IncidentRowBase({ id, type, status, description, address, createdAt, on
   const typeColor   = TYPE_COLOR[type]   ?? "#78909C";
   const typeIcon    = TYPE_ICON[type]    ?? "help-outline";
   const city        = extractCity(address);
+  // « Villeurbanne · 1,2 km » : où c'est, puis à quelle distance. Les deux
+  // répondent à la même question et tiennent sur la même ligne.
+  const away        = distanceKm === undefined ? "" : formatDistance(distanceKm, t.locale);
+  const place       = [city, away].filter(Boolean).join(" · ");
 
   return (
     <TouchableOpacity style={styles.row} onPress={() => onPress(id)} activeOpacity={0.75}>
@@ -170,8 +183,8 @@ function IncidentRowBase({ id, type, status, description, address, createdAt, on
         {description ? (
           <Text style={styles.description} numberOfLines={1}>{description}</Text>
         ) : null}
-        {city ? (
-          <Text style={styles.address} numberOfLines={1}>{city}</Text>
+        {place ? (
+          <Text style={styles.address} numberOfLines={1}>{place}</Text>
         ) : null}
       </View>
       <View style={styles.right}>

@@ -8,6 +8,7 @@ import { useFollowedAlerts } from "@/hooks/use-followed-alerts";
 import { useFollowedIncidents } from "@/hooks/use-followed-incidents";
 import { FeedSkeleton } from "@/components/ui/Skeleton";
 import { useIncidentSearch } from "@/hooks/use-incident-search";
+import { distanceKm } from "@/utils/incident-search";
 import { HeaderClock } from "@/components/ui/HeaderClock";
 import { Logo } from "@/components/ui/Logo";
 import { STATUS_COLOR, STATUS_LABEL, TYPE_LABEL } from "@/constants/incidents";
@@ -163,6 +164,25 @@ function SectionHeader({ title, count }: { title: string; count?: number }) {
       )}
     </View>
   );
+}
+
+/**
+ * Distance d'une ligne à l'utilisateur, ou rien quand on l'ignore.
+ *
+ * L'origine n'existe qu'une fois la position obtenue — c'est-à-dire une fois
+ * que l'utilisateur a demandé le tri par proximité. Elle reste ensuite : savoir
+ * qu'un signalement est à 300 m reste utile quand on repasse à l'ordre
+ * chronologique, et rien ne justifie de le taire.
+ *
+ * « Mes signalements » n'embarquent pas de coordonnées : ces lignes n'affichent
+ * simplement pas de distance, plutôt que d'en inventer une.
+ */
+function awayKm(
+  origin: { latitude: number; longitude: number } | null,
+  place: { latitude?: number | null; longitude?: number | null } | undefined,
+): number | undefined {
+  if (!origin || place?.latitude == null || place.longitude == null) return undefined;
+  return distanceKm(origin, { latitude: place.latitude, longitude: place.longitude });
 }
 
 /**
@@ -458,6 +478,7 @@ function CitizenView({
               incidents={followedSearch.results.map((i) => ({
                 id: i.id, type: i.type, status: i.status, description: i.description,
                 address: i.addressLabel, createdAt: i.createdAt,
+                distanceKm: awayKm(followedSearch.origin, i),
               }))}
               onPress={onPress}
             />
@@ -489,6 +510,9 @@ function CitizenView({
                 description: full?.description ?? i.description,
                 address: i.addressLabel,
                 createdAt: i.createdAt,
+                // Les coordonnées viennent du fil : la charge utile de « mes
+                // signalements » ne les porte pas.
+                distanceKm: awayKm(mineSearch.origin, full),
               };
             })}
             onPress={onPress}
@@ -504,7 +528,7 @@ function CitizenView({
           </>
         ) : (
           <IncidentList
-            incidents={search.results.map((i) => ({ id: i.id, type: i.type, status: i.status, description: i.description, address: i.addressLabel, createdAt: i.createdAt }))}
+            incidents={search.results.map((i) => ({ id: i.id, type: i.type, status: i.status, description: i.description, address: i.addressLabel, createdAt: i.createdAt, distanceKm: awayKm(search.origin, i) }))}
             onPress={onPress}
             myIds={myIdsSet}
             followedIds={followed}
@@ -635,6 +659,7 @@ function AgentView({
             description: i.description,
             address: i.addressLabel,
             createdAt: i.createdAt,
+            distanceKm: awayKm(search.origin, i),
           }))}
           onPress={onPress}
           onLoadMore={paging.hasMore ? paging.onLoadMore : undefined}
@@ -752,6 +777,7 @@ function AdminView({
             description: i.description,
             address: i.addressLabel,
             createdAt: i.createdAt,
+            distanceKm: awayKm(search.origin, i),
           }))}
           onPress={onPress}
           onLoadMore={paging.hasMore ? paging.onLoadMore : undefined}
