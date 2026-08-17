@@ -36,6 +36,11 @@ function getIconConfig(type: string): IconConfig {
     case "content_flagged":
     case "message_flagged":
       return { name: "flag", bg: "#e53e3e20", color: "#e53e3e" };
+    // Reçue par l'auteur d'un contenu retiré — ou remis en ligne. Un œil barré
+    // plutôt qu'un drapeau : ce n'est pas une alerte à traiter, c'est une
+    // décision qui le concerne.
+    case "content_moderated":
+      return { name: "visibility-off", bg: "#e53e3e20", color: "#e53e3e" };
     default:
       return { name: "notifications", bg: "#AF52DE20", color: "#AF52DE" };
   }

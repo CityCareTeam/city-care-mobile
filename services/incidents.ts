@@ -80,6 +80,13 @@ export async function getIncidents(params?: {
   type?: string;
   page?: number;
   pageSize?: number;
+  /**
+   * Ramener aussi les contenus masqués par la modération. Le serveur ne
+   * l'accorde qu'aux agents et aux admins, et ignore la demande des autres — le
+   * jeton est donc indispensable pour que le drapeau serve à quelque chose.
+   */
+  includeHidden?: boolean;
+  token?: string;
 }): Promise<IncidentListResponse> {
   const url = new URL(API_ENDPOINTS.incidents);
   if (params?.status) url.searchParams.set("status", params.status);
@@ -87,8 +94,10 @@ export async function getIncidents(params?: {
   if (params?.page) url.searchParams.set("page", String(params.page));
   if (params?.pageSize)
     url.searchParams.set("pageSize", String(params.pageSize));
+  if (params?.includeHidden) url.searchParams.set("includeHidden", "true");
 
-  const response = await fetch(url.toString());
+  const headers: HeadersInit = params?.token ? { Authorization: `Bearer ${params.token}` } : {};
+  const response = await fetch(url.toString(), { headers });
   if (!response.ok) throw new Error(STRINGS.api.incidentsLoadError);
   return response.json() as Promise<IncidentListResponse>;
 }

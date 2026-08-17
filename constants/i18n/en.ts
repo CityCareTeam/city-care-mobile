@@ -97,6 +97,25 @@ export const en: typeof fr = {
     notifications: "Alerts",
     news: "News",
     profile: "Profile",
+    admin: "Accounts",
+  },
+
+  admin: {
+    title: "Accounts",
+    subtitle: "User roles and access.",
+    searchPlaceholder: "Search an account…",
+    noUsers: "No matching account.",
+    loadFailed: "Couldn’t load accounts.",
+    you: "you",
+    roleChanged: "Role updated",
+    disabledTag: "Disabled",
+    disable: "Disable",
+    enable: "Re-enable",
+    disabled: "Account disabled",
+    enabled: "Account re-enabled",
+    disableTitle: "Disable this account?",
+    disableMessage: (name: string): string =>
+      `${name} will no longer be able to sign in. Their reports and messages stay online.`,
   },
 
   menu: {

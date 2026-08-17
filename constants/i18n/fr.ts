@@ -95,6 +95,26 @@ export const fr = {
     notifications: "Notifs",
     news: "Actus",
     profile: "Profil",
+    admin: "Comptes",
+  },
+
+  // ── Gestion des comptes (admin) ──
+  admin: {
+    title: "Comptes",
+    subtitle: "Rôles et accès des utilisateurs.",
+    searchPlaceholder: "Rechercher un compte…",
+    noUsers: "Aucun compte ne correspond.",
+    loadFailed: "Impossible de charger les comptes.",
+    you: "vous",
+    roleChanged: "Rôle mis à jour",
+    disabledTag: "Désactivé",
+    disable: "Désactiver",
+    enable: "Réactiver",
+    disabled: "Compte désactivé",
+    enabled: "Compte réactivé",
+    disableTitle: "Désactiver ce compte ?",
+    disableMessage: (name: string): string =>
+      `${name} ne pourra plus se connecter. Ses signalements et ses messages restent en ligne.`,
   },
 
   // ── Menu de l'application ──

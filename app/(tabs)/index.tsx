@@ -671,6 +671,8 @@ function AgentView({
             address: i.addressLabel,
             createdAt: i.createdAt,
             distanceKm: awayKm(search.origin, i),
+            // Renvoyé par le serveur seulement aux agents et aux admins.
+            hidden: i.visibility !== undefined && i.visibility !== "visible",
           }))}
           onPress={onPress}
           onLoadMore={paging.hasMore ? paging.onLoadMore : undefined}
@@ -789,6 +791,8 @@ function AdminView({
             address: i.addressLabel,
             createdAt: i.createdAt,
             distanceKm: awayKm(search.origin, i),
+            // Renvoyé par le serveur seulement aux agents et aux admins.
+            hidden: i.visibility !== undefined && i.visibility !== "visible",
           }))}
           onPress={onPress}
           onLoadMore={paging.hasMore ? paging.onLoadMore : undefined}
@@ -868,7 +872,16 @@ export default function HomeScreen() {
       // multiplier par le nombre de pages déroulées se paierait en batterie
       // autant qu'en charge serveur. Un tiré-pour-rafraîchir, lui, repart de
       // zéro — c'est le geste par lequel on demande explicitement du propre.
-      const firstPage = getIncidents({ page: 1, pageSize: INCIDENTS_PAGE_SIZE.load });
+      // Les agents et les admins voient aussi ce que la modération a retiré, en
+      // rouge : c'est leur file de travail, un contenu masqué qui en disparaît
+      // sans laisser de trace donne l'impression qu'il n'a jamais existé. Les
+      // citoyens gardent la liste publique, où le masqué n'a rien à faire.
+      const firstPage = getIncidents({
+        page: 1,
+        pageSize: INCIDENTS_PAGE_SIZE.load,
+        includeHidden: role !== "Citizen",
+        token,
+      });
       const [myRes, allRes] = await Promise.all([
         role === "Citizen" ? getMyIncidents(token) : Promise.resolve(null),
         firstPage,
