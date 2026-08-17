@@ -287,16 +287,31 @@ const NewsCard = memo(function NewsCard({
         {/* La date et le délai sur la même ligne. La source donne « Samedi 19
             septembre » ; savoir s'il faut compter sur ses doigts pour situer ce
             samedi-là est la seule question qu'on se pose devant un agenda. */}
-        {item.when || soon ? (
-          <View style={styles.whenRow}>
-            {item.when ? <Text style={styles.when}>{item.when}</Text> : null}
-            {soon ? (
-              <View style={styles.soonChip}>
-                <Text style={styles.soonText}>{soon}</Text>
-              </View>
-            ) : null}
-          </View>
-        ) : null}
+        <View style={styles.whenRow}>
+          {item.when ? (
+            <Text style={styles.when} numberOfLines={1}>{item.when}</Text>
+          ) : null}
+          {soon ? (
+            <View style={styles.soonChip}>
+              <Text style={styles.soonText}>{soon}</Text>
+            </View>
+          ) : null}
+
+          {/* Le partage en bout de cette ligne, et non dans la colonne de
+              droite : il y voisinait le chevron, et deux cibles empilées au
+              même bord ne disent plus laquelle l'appui va toucher. Ici il
+              coiffe l'entrée comme l'action d'un en-tête, à distance du geste
+              qui l'ouvre. */}
+          <TouchableOpacity
+            onPress={onShare}
+            hitSlop={12}
+            style={styles.shareBtn}
+            accessibilityRole="button"
+            accessibilityLabel={shareLabel}
+          >
+            <MaterialIcons name="share" size={15} color={styles.place.color} />
+          </TouchableOpacity>
+        </View>
         <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
         {/* Deux lignes de résumé, et non trois comme avant : c'est ce qui fait
             la différence entre un titre qu'on situe et une carte qu'on lit en
@@ -312,20 +327,16 @@ const NewsCard = memo(function NewsCard({
         ) : null}
       </View>
 
-      {/* Deux gestes en colonne : ouvrir la fiche, ou l'envoyer à quelqu'un.
-          Le chevron dit l'appui sur la rangée, le partage est son propre bouton
-          — sinon il faudrait ouvrir la fiche pour transmettre une date. */}
-      <View style={styles.cardActions}>
-        <TouchableOpacity
-          onPress={onShare}
-          hitSlop={10}
-          accessibilityRole="button"
-          accessibilityLabel={shareLabel}
-        >
-          <MaterialIcons name="share" size={17} color={styles.place.color} />
-        </TouchableOpacity>
-        {open && <MaterialIcons name="chevron-right" size={20} color={styles.place.color} />}
-      </View>
+      {/* Le chevron reste seul à ce bord : il ne fait rien de son côté, il
+          annonce l'appui sur la rangée entière. */}
+      {open && (
+        <MaterialIcons
+          name="chevron-right"
+          size={20}
+          color={styles.place.color}
+          style={styles.chevron}
+        />
+      )}
     </Pressable>
   );
 });
@@ -443,7 +454,14 @@ function makeStyles(c: AppColors, bottomInset: number) {
     thumbEmpty: { alignItems: "center", justifyContent: "center" },
     // La rangée s'aligne en haut — le texte est plus haut que la vignette — mais
     // le chevron désigne la rangée entière, pas sa première ligne.
-    cardActions: { alignItems: "center", justifyContent: "center", gap: 10, alignSelf: "center" },
+    // Poussé au bout de la ligne de date, et une cible d'appui élargie par
+    //  : quinze points d'icône ne se visent pas au pouce.
+    // Poussé au bout de la ligne de date. La cible d'appui est élargie par
+    // `hitSlop` plutôt que par du remplissage : quinze points d'icône ne se
+    // visent pas au pouce, mais l'élargir visuellement l'aurait fait peser
+    // autant que la date.
+    shareBtn: { marginLeft: "auto", paddingLeft: 8 },
+    chevron: { alignSelf: "center" },
     body: { flex: 1, minWidth: 0, gap: 4 },
     whenRow: { flexDirection: "row", alignItems: "center", gap: 7, flexWrap: "wrap" },
     // La date en petites majuscules colorées, le délai en pastille pleine : le
@@ -462,6 +480,7 @@ function makeStyles(c: AppColors, bottomInset: number) {
       textTransform: "uppercase",
     },
     when: {
+      flexShrink: 1,
       fontSize: 11,
       fontWeight: "800",
       letterSpacing: 0.5,
