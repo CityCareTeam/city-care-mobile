@@ -136,7 +136,7 @@ export default function SignalementsScreen() {
   const [initialTab, setInitialTab] = useState<"details" | "chat">("details");
   const [placeSearch, setPlaceSearch] = useState(false);
 
-  const { region: userRegion } = useUserLocation(MAP_DELTAS.user);
+  const { region: userRegion, precise: knowsWhereWeAre } = useUserLocation(MAP_DELTAS.user);
   const { colors } = useAppColors();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(colors, insets.bottom), [colors, insets.bottom]);
@@ -412,6 +412,10 @@ export default function SignalementsScreen() {
 
       <IncidentDetailSheet
         incident={selected}
+        // La position vient d'ici, où elle est déjà connue — et seulement si
+        // elle est réelle : le repli sur le centre-ville donnerait une distance
+        // fausse que rien à l'écran ne démentirait.
+        userPlace={knowsWhereWeAre ? userRegion : null}
         initialTab={initialTab}
         onClose={() => setSelected(null)}
         onStatusUpdated={(updated) => {

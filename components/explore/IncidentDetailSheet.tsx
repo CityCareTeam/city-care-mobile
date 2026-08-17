@@ -25,6 +25,8 @@ import { updateIncidentStatus } from "@/services/incidents";
 import { getValidToken } from "@/storage/tokens";
 import type { IncidentResponse } from "@/types/incidents";
 import { formatIncidentDateTime } from "@/utils/format-date";
+import { formatDistance } from "@/utils/format-distance";
+import { distanceKm } from "@/utils/incident-search";
 import { GlassPillSelector } from "@/components/ui/GlassPillSelector";
 import { useEffect, useState } from "react";
 import {
@@ -46,13 +48,19 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 type Props = {
   incident: IncidentResponse | null;
+  /**
+   * Position de l'utilisateur, quand elle est réelle. Fournie par l'écran qui la
+   * possède déjà : la redemander ici déclencherait une seconde autorisation, et
+   * la position de repli — le centre-ville — donnerait une distance fausse.
+   */
+  userPlace?: { latitude: number; longitude: number } | null;
   initialTab?: "details" | "chat";
   onClose: () => void;
   onStatusUpdated: (updated: IncidentResponse) => void;
   onDeleted: () => void;
 };
 
-export function IncidentDetailSheet({ incident, initialTab, onClose, onStatusUpdated, onDeleted }: Props) {
+export function IncidentDetailSheet({ incident, userPlace, initialTab, onClose, onStatusUpdated, onDeleted }: Props) {
   const { colors } = useAppColors();
   const t = useStrings();
   const { followed, toggle: toggleFollow } = useFollowedIncidents();
@@ -62,6 +70,11 @@ export function IncidentDetailSheet({ incident, initialTab, onClose, onStatusUpd
   const [zoomedPhoto, setZoomedPhoto] = useState<string | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [sending, setSending] = useState(false);
+
+  const away =
+    userPlace && incident
+      ? formatDistance(distanceKm(userPlace, incident), t.locale)
+      : "";
 
   const { canAccessChat, canChangeStatus, canDeleteIncident, canDeletePhoto, canVote } = useIncidentPermissions(incident);
   const { photos, photosLoading, photosError, statusHistory, handleDeletePhoto } = useIncidentPhotos(incident?.id ?? null);
@@ -224,6 +237,19 @@ export function IncidentDetailSheet({ incident, initialTab, onClose, onStatusUpd
       gap: 8, paddingHorizontal: 4, marginBottom: 14,
     },
     addressText: { flex: 1, fontSize: 13, color: colors.text, opacity: 0.6, lineHeight: 18 },
+    // Une pastille, pas une ligne de plus : la distance complète l'adresse, elle
+    // ne la concurrence pas.
+    awayChip: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 10,
+      backgroundColor: colors.primary + "1F",
+      flexShrink: 0,
+    },
+    awayText: { fontSize: 11.5, fontWeight: "800", color: colors.primary },
     sectionLabel: {
       fontSize: 11, color: colors.text, opacity: 0.45,
       marginBottom: 10, textTransform: "uppercase",
@@ -416,11 +442,24 @@ export function IncidentDetailSheet({ incident, initialTab, onClose, onStatusUpd
                   <Text style={s.desc}>{incident.description}</Text>
                 </View>
 
-                {/* Adresse */}
-                {incident.addressLabel && (
+                {/* Adresse, et distance depuis l'utilisateur.
+                    La distance vient de l'écran de la carte, qui connaît déjà la
+                    position : la redemander ici aurait déclenché une seconde
+                    autorisation pour rien. Elle ne s'affiche que si cette
+                    position est réelle — mesurer depuis le centre-ville par
+                    défaut annoncerait une distance fausse sans le dire. */}
+                {(incident.addressLabel || away) && (
                   <View style={s.addressRow}>
                     <MaterialIcons name="location-on" size={16} color={colors.text} style={{ opacity: 0.4, marginTop: 1 }} />
-                    <Text style={s.addressText} numberOfLines={2}>{incident.addressLabel}</Text>
+                    <Text style={s.addressText} numberOfLines={2}>
+                      {incident.addressLabel}
+                    </Text>
+                    {away ? (
+                      <View style={s.awayChip}>
+                        <MaterialIcons name="near-me" size={12} color={colors.primary} />
+                        <Text style={s.awayText}>{away}</Text>
+                      </View>
+                    ) : null}
                   </View>
                 )}
 

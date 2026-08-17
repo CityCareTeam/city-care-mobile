@@ -75,6 +75,33 @@ describe('useUserLocation', () => {
     expect(result.current.region.longitude).toBe(gpsCoords.longitude);
   });
 
+  /**
+   * `precise` sépare une position obtenue d'un repli sur le centre-ville. Les
+   * deux sont bonnes pour cadrer une carte, une seule l'est pour mesurer une
+   * distance — annoncer « à 4 km » depuis un point où l'utilisateur n'est pas
+   * serait faux sans que rien ne le dise.
+   */
+  it('ne se dit précise que sur une position réellement obtenue', async () => {
+    mockRequestPermission.mockResolvedValue({ status: 'granted' });
+    mockGetPosition.mockResolvedValue({ coords: { latitude: 45.75, longitude: 4.85 } });
+    const { result } = renderHook(() => useUserLocation());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.precise).toBe(true);
+  });
+
+  it('reste imprécise sur un refus ou un échec du GPS', async () => {
+    mockRequestPermission.mockResolvedValue({ status: 'denied' });
+    const denied = renderHook(() => useUserLocation());
+    await waitFor(() => expect(denied.result.current.loading).toBe(false));
+    expect(denied.result.current.precise).toBe(false);
+
+    mockRequestPermission.mockResolvedValue({ status: 'granted' });
+    mockGetPosition.mockRejectedValue(new Error('GPS unavailable'));
+    const failed = renderHook(() => useUserLocation());
+    await waitFor(() => expect(failed.result.current.loading).toBe(false));
+    expect(failed.result.current.precise).toBe(false);
+  });
+
   it('setCoords updates coords and region immediately', async () => {
     mockRequestPermission.mockResolvedValue({ status: 'denied' });
     const { result } = renderHook(() => useUserLocation());

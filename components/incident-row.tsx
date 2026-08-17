@@ -89,10 +89,18 @@ function makeStyles(c: AppColors) {
       color: c.text,
       lineHeight: 19,
     },
+    // La transparence est dans la couleur, pas dans `opacity` : celle-ci
+    // s'applique à tout le sous-arbre et aurait délavé la distance en orange
+    // avec le reste.
     meta: {
       fontSize: 11.5,
-      color: c.text,
-      opacity: 0.45,
+      color: c.text + "73",
+    },
+    // La distance est la seule chose ici qui dépende de l'endroit où l'on se
+    // tient : elle mérite d'être trouvée sans être cherchée.
+    away: {
+      color: c.primary,
+      fontWeight: "800",
     },
     // Neutre, et non en couleur d'accent : la ligne porte déjà une bulle de
     // catégorie colorée et un badge de statut coloré. Une date orange y faisait
@@ -164,7 +172,8 @@ function IncidentRowBase({ id, type, status, description, address, createdAt, on
    */
   const written = description?.trim();
   const title = written || typeLabel;
-  const meta = [written ? typeLabel : "", knownCity, away].filter(Boolean).join(" · ");
+  // La distance reste à part : elle se colore, le reste non.
+  const context = [written ? typeLabel : "", knownCity].filter(Boolean).join(" · ");
 
   return (
     <TouchableOpacity style={styles.row} onPress={() => onPress(id)} activeOpacity={0.75}>
@@ -198,8 +207,13 @@ function IncidentRowBase({ id, type, status, description, address, createdAt, on
       </View>
       <View style={styles.content}>
         <Text style={styles.title} numberOfLines={2}>{title}</Text>
-        {meta ? (
-          <Text style={styles.meta} numberOfLines={1}>{meta}</Text>
+        {context || away ? (
+          <Text style={styles.meta} numberOfLines={1}>
+            {context}
+            {away ? (
+              <Text style={styles.away}>{context ? ` · ${away}` : away}</Text>
+            ) : null}
+          </Text>
         ) : null}
       </View>
       <View style={styles.right}>
