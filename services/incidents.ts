@@ -93,6 +93,28 @@ export async function getIncidents(params?: {
   return response.json() as Promise<IncidentListResponse>;
 }
 
+/**
+ * Un signalement par son identifiant.
+ *
+ * Nécessaire parce que la liste ne suffit pas : elle est paginée — un
+ * signalement au-delà de la première page n'y figure pas — et le serveur en
+ * retire les contenus masqués. Chercher dans la liste pour ouvrir une fiche
+ * n'ouvrait donc rien dans les deux cas.
+ *
+ * Le jeton est facultatif mais compte : c'est lui qui permet à l'auteur d'un
+ * contenu masqué, et à la modération, de le lire quand même. Sans jeton, le
+ * serveur répond 404 sur un contenu masqué — ce qui est le comportement voulu.
+ */
+export async function getIncidentById(
+  id: string,
+  accessToken?: string,
+): Promise<IncidentResponse> {
+  const headers: HeadersInit = accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
+  const response = await fetch(`${API_ENDPOINTS.incidents}/${id}`, { headers });
+  if (!response.ok) throw new Error(`Erreur ${response.status}`);
+  return response.json() as Promise<IncidentResponse>;
+}
+
 export async function updateIncidentStatus(
   id: string,
   status: string,

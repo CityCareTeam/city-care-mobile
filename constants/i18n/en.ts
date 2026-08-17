@@ -405,6 +405,7 @@ export const en: typeof fr = {
     directions: "Directions",
     directionsA11y: "Open directions to this report",
     directionsFailed: "No maps app answered.",
+    notFound: "This report is no longer available.",
     shareTitle: "CityCare+ report",
     details: "Details",
     chat: "Discussion",

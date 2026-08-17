@@ -399,26 +399,16 @@ export function IncidentDetailSheet({ incident, userPlace, initialTab, onClose, 
     },
     deleteBtnText: { fontWeight: "700", fontSize: 14, color: colors.statusRed },
     /**
-     * Discret, et en bas.
-     *
-     * Signaler n'a pas le poids de suivre ou de partager : c'est un geste rare et
-     * correctif, qu'on vient chercher une fois. Le mettre dans la rangée
-     * d'actions le proposerait à chaque ouverture de fiche — et l'en-tête a déjà
-     * été dégagé une fois pour cette raison. Il reste néanmoins visible : un
-     * signalement qu'on ne trouve pas ne se fait pas.
+     * Même forme que le bouton de vote, à sa gauche : les deux jugent le
+     * signalement, l'un l'approuve, l'autre le conteste. Sans libellé — un
+     * drapeau se lit, et l'en-tête n'a pas la place d'un mot de plus.
      */
     flagBtn: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 7,
-      marginTop: 12,
-      paddingVertical: 12,
-      borderRadius: 12,
-      borderWidth: 1,
-      borderColor: colors.chipBorder,
+      alignItems: "center", justifyContent: "center",
+      width: 30, height: 30, borderRadius: 15,
+      borderWidth: 1, borderColor: colors.inputBorder,
+      marginRight: 6,
     },
-    flagBtnText: { fontSize: 13, fontWeight: "600", color: colors.text, opacity: 0.55 },
   });
 
   return (
@@ -446,6 +436,22 @@ export function IncidentDetailSheet({ incident, userPlace, initialTab, onClose, 
                   <Text style={s.statusBadgeText}>{STATUS_LABEL[incident.status] ?? incident.status}</Text>
                 </View>
               </View>
+              {/* Juste à gauche du vote : les deux jugent le signalement — l'un
+                  l'approuve, l'autre le conteste — quand suivre, partager et
+                  itinéraire, en dessous, en font quelque chose. Masqué pour
+                  l'auteur : se signaler soi-même n'a pas de sens, et il peut déjà
+                  supprimer. */}
+              {incident.authorUserId !== dbUser?.id && (
+                <TouchableOpacity
+                  style={s.flagBtn}
+                  onPress={() => setFlagging({ target: "incident", id: incident.id })}
+                  activeOpacity={0.75}
+                  accessibilityRole="button"
+                  accessibilityLabel={t.moderation.flagTitle}
+                >
+                  <MaterialIcons name="flag" size={15} color={colors.text} style={{ opacity: 0.45 }} />
+                </TouchableOpacity>
+              )}
               <TouchableOpacity
                 style={[s.voteBtn, votes?.hasVoted && s.voteBtnActive, toggling && { opacity: 0.5 }]}
                 onPress={toggleVote}
@@ -691,20 +697,6 @@ export function IncidentDetailSheet({ incident, userPlace, initialTab, onClose, 
                   </TouchableOpacity>
                 )}
 
-                {/* Signaler le contenu d'autrui, pas le sien : se dénoncer
-                    soi-même n'a pas de sens, et l'auteur peut déjà supprimer. */}
-                {incident.authorUserId !== dbUser?.id && (
-                  <TouchableOpacity
-                    style={s.flagBtn}
-                    onPress={() => setFlagging({ target: "incident", id: incident.id })}
-                    activeOpacity={0.75}
-                    accessibilityRole="button"
-                    accessibilityLabel={t.moderation.flagTitle}
-                  >
-                    <MaterialIcons name="flag" size={15} color={colors.text} style={{ opacity: 0.45 }} />
-                    <Text style={s.flagBtnText}>{t.moderation.flagShort}</Text>
-                  </TouchableOpacity>
-                )}
               </ScrollView>
             )}
 

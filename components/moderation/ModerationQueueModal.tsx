@@ -1,4 +1,3 @@
-import { GlassPillSelector } from "@/components/ui/GlassPillSelector";
 import { ModalShell } from "@/components/ui/ModalShell";
 import { Toast } from "@/components/ui/ToastMessage";
 import { useAppColors } from "@/hooks/use-app-colors";
@@ -206,17 +205,41 @@ export function ModerationQueueModal({
       )}
 
       {/* Deux onglets, parce que masquer déplace un contenu au lieu de le faire
-          disparaître. Sans le second, une décision prise ne se revoyait plus. */}
+          disparaître. Sans le second, une décision prise ne se revoyait plus.
+
+          Un sélecteur à plat, et non le `GlassPillSelector` des autres écrans :
+          celui-ci empile un flou, une ombre et une `elevation` pour se détacher
+          d'une carte ou d'une photo. Posé sur la surface opaque d'une fenêtre, il
+          n'a rien à faire flotter — et cette pile rendait un fond quadrillé sur
+          Android, là où il ne devait y avoir qu'un fond. */}
       {state === "ready" && (
-        <GlassPillSelector
-          options={[
-            { label: t.moderation.tabQueue, value: "queue" as const, badge: items.length || undefined },
-            { label: t.moderation.tabHidden, value: "hidden" as const, badge: hidden.length || undefined },
-          ]}
-          activeValue={tab}
-          onSelect={setTab}
-          style={styles.tabs}
-        />
+        <View style={styles.tabs}>
+          {([
+            { key: "queue" as const, label: t.moderation.tabQueue, count: items.length },
+            { key: "hidden" as const, label: t.moderation.tabHidden, count: hidden.length },
+          ]).map((option) => {
+            const active = tab === option.key;
+            return (
+              <TouchableOpacity
+                key={option.key}
+                style={[styles.tab, active && styles.tabActive]}
+                onPress={() => setTab(option.key)}
+                activeOpacity={0.8}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: active }}
+              >
+                <Text style={[styles.tabLabel, active && styles.tabLabelActive]}>{option.label}</Text>
+                {option.count > 0 && (
+                  <View style={[styles.tabCount, active && styles.tabCountActive]}>
+                    <Text style={[styles.tabCountText, active && styles.tabCountTextActive]}>
+                      {option.count}
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       )}
 
       {state === "ready" && tab === "queue" && items.length === 0 && (
@@ -425,7 +448,41 @@ function makeStyles(c: ReturnType<typeof useAppColors>["colors"]) {
     },
     open: { flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 3, paddingLeft: 6 },
     openLabel: { fontSize: 12, fontWeight: "700", color: c.primary },
-    tabs: { marginBottom: 14 },
+    // Une piste creusée dans la surface, sans ombre ni flou : la fenêtre porte
+    // déjà son relief, un second en aurait fait deux.
+    tabs: {
+      flexDirection: "row",
+      gap: 4,
+      padding: 4,
+      marginBottom: 14,
+      borderRadius: 14,
+      backgroundColor: c.chipBg,
+      borderWidth: 1,
+      borderColor: c.chipBorder,
+    },
+    tab: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 6,
+      paddingVertical: 9,
+      borderRadius: 10,
+    },
+    tabActive: { backgroundColor: c.primary },
+    tabLabel: { fontSize: 13, fontWeight: "700", color: c.text, opacity: 0.5 },
+    tabLabelActive: { color: "#fff", opacity: 1 },
+    tabCount: {
+      minWidth: 18,
+      paddingHorizontal: 5,
+      paddingVertical: 1,
+      borderRadius: 9,
+      alignItems: "center",
+      backgroundColor: c.primary + "26",
+    },
+    tabCountActive: { backgroundColor: "rgba(255,255,255,0.28)" },
+    tabCountText: { fontSize: 10.5, fontWeight: "800", color: c.primary },
+    tabCountTextActive: { color: "#fff" },
     /** Gris et non rouge : le contenu est déjà traité, il n'alerte plus. */
     hiddenBadge: { backgroundColor: c.text + "66" },
     decidedBy: { fontSize: 11.5, color: c.text, opacity: 0.5 },

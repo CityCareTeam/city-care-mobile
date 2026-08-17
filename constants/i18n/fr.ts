@@ -426,6 +426,7 @@ export const fr = {
     directions: "Y aller",
     directionsA11y: "Ouvrir l’itinéraire vers ce signalement",
     directionsFailed: "Aucune application de cartes n’a répondu.",
+    notFound: "Ce signalement n’est plus accessible.",
     shareTitle: "Signalement CityCare+",
     details: "Détails",
     chat: "Discussion",

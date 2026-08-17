@@ -20,10 +20,11 @@ import { useAutoRefresh } from "@/hooks/use-auto-refresh";
 import { useMapClusters } from "@/hooks/use-map-clusters";
 import { useContentReport } from "@/hooks/use-content-report";
 import { useUserLocation } from "@/hooks/use-user-location";
-import { getIncidents } from "@/services/incidents";
+import { Toast } from "@/components/ui/ToastMessage";
+import { getIncidentById, getIncidents } from "@/services/incidents";
 import { loadIncidentsCache, saveIncidentsCache } from "@/storage/incidents-cache";
+import { getValidToken } from "@/storage/tokens";
 import type { IncidentResponse, MapClusterDto } from "@/types/incidents";
-import { useFocusEffect } from "@react-navigation/native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -171,7 +172,6 @@ export default function SignalementsScreen() {
 
   const mapRef = useRef<MapView>(null);
   const markerJustPressed = useRef(false);
-  const pendingSelectRef = useRef<string | null>(null);
 
   // ── Load incidents ──
   const loadIncidents = useCallback(async (silent = false) => {
@@ -266,22 +266,45 @@ export default function SignalementsScreen() {
   // ── selectId (depuis une notification) ──
   const { selectId, tab: tabParam } = useLocalSearchParams<{ selectId?: string; tab?: string }>();
 
+  /**
+   * Ouvre la fiche demandée par un lien — notification, ou file de modération.
+   *
+   * Demandée au serveur par son identifiant, et non cherchée dans la liste déjà
+   * chargée. Cette liste est paginée et le serveur en retire les contenus
+   * masqués : un signalement au-delà de la première page, ou masqué par la
+   * modération, n'y figurait pas, et le lien n'ouvrait alors rien du tout — sans
+   * un mot, ce qui se lit comme un bouton mort.
+   *
+   * Le jeton part avec la requête : c'est lui qui autorise l'auteur d'un contenu
+   * masqué, et la modération, à le lire.
+   */
   useEffect(() => {
     if (!selectId) return;
+    let alive = true;
     setSelected(null);
-    pendingSelectRef.current = selectId;
+    // La liste reste rechargée : la carte doit montrer l'épingle de ce qu'on
+    // vient d'ouvrir, quand il y en a une.
     loadIncidents();
-  }, [selectId, loadIncidents]);
 
-  useEffect(() => {
-    if (!pendingSelectRef.current || incidents.length === 0) return;
-    const inc = incidents.find((i) => i.id === pendingSelectRef.current);
-    if (inc) {
-      pendingSelectRef.current = null;
-      setInitialTab(tabParam === "chat" ? "chat" : "details");
-      selectIncident(inc);
-    }
-  }, [incidents, selectIncident, tabParam]);
+    void (async () => {
+      try {
+        const token = await getValidToken();
+        const inc = await getIncidentById(selectId, token ?? undefined);
+        if (!alive) return;
+        setInitialTab(tabParam === "chat" ? "chat" : "details");
+        selectIncident(inc);
+      } catch {
+        if (!alive) return;
+        // Supprimé, ou masqué pour qui n'a pas le droit de le voir. On le dit :
+        // un lien qui ne fait rien laisse chercher la panne.
+        Toast.show({ type: "error", text1: t.incident.notFound });
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [selectId, tabParam, loadIncidents, selectIncident, t]);
 
   const refreshAll = useCallback((silent: boolean) => {
     // Un selectId venu d'une notification déclenche déjà son propre chargement
@@ -294,8 +317,6 @@ export default function SignalementsScreen() {
     interval: POLL_INTERVAL_MS.incidents,
     failed: clustersFailed || incidentsFailed,
   });
-
-  useFocusEffect(useCallback(() => () => { pendingSelectRef.current = null; }, []));
 
   // Garde le statut du signalement ouvert dans la fiche à jour avec le polling
   useEffect(() => {

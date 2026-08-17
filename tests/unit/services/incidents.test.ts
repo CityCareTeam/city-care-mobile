@@ -1,6 +1,7 @@
 import { STRINGS } from '@/constants/strings';
 import {
   createIncident,
+  getIncidentById,
   getIncidents,
   getMapSummary,
   updateIncidentStatus,
@@ -424,5 +425,51 @@ describe('getMapSummary', () => {
   it('throws on error response', async () => {
     mockFetch.mockResolvedValueOnce(makeResponse(500, {}));
     await expect(getMapSummary()).rejects.toThrow();
+  });
+});
+
+/**
+ * Le défaut que ces tests verrouillent : ouvrir une fiche depuis un lien —
+ * notification, ou file de modération — cherchait le signalement dans la liste
+ * déjà chargée. Cette liste est paginée et le serveur en retire les contenus
+ * masqués : au-delà de la première page, ou masqué, le lien n'ouvrait rien du
+ * tout, sans un mot.
+ */
+describe('getIncidentById', () => {
+  beforeEach(() => mockFetch.mockClear());
+
+  it('demande le signalement par son identifiant', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(200, incidentResponse));
+    const inc = await getIncidentById('inc-1');
+
+    expect(mockFetch.mock.calls[0][0]).toContain('/incidents/inc-1');
+    expect(inc.id).toBe('inc-1');
+  });
+
+  /**
+   * Le jeton n'est pas décoratif : c'est lui qui autorise l'auteur d'un contenu
+   * masqué, et la modération, à le lire. Sans lui le serveur répond 404, ce qui
+   * est le comportement voulu pour tous les autres.
+   */
+  it('porte le jeton quand il est fourni', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(200, incidentResponse));
+    await getIncidentById('inc-1', 'jeton');
+
+    const options = mockFetch.mock.calls[0][1] as { headers: Record<string, string> };
+    expect(options.headers.Authorization).toBe('Bearer jeton');
+  });
+
+  it('n’envoie aucune autorisation sans jeton', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(200, incidentResponse));
+    await getIncidentById('inc-1');
+
+    const options = mockFetch.mock.calls[0][1] as { headers: Record<string, string> };
+    expect(options.headers.Authorization).toBeUndefined();
+  });
+
+  // Supprimé, ou masqué pour qui n'a pas le droit de le voir. L'écran le dit.
+  it('lève sur un signalement inaccessible', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(404, {}));
+    await expect(getIncidentById('inc-1')).rejects.toThrow('404');
   });
 });
