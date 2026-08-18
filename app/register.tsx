@@ -1,4 +1,5 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { DANGER } from "@/constants/theme";
 import { LegalModal, type LegalDocument } from "@/components/app/LegalModal";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -53,7 +54,7 @@ function makeStyles(c: AppColors) {
     strengthBars: { flexDirection: "row", gap: 4, flex: 1 },
     strengthBar: { flex: 1, height: 3, borderRadius: 2 },
     strengthLabel: { fontSize: 11, fontWeight: "700", minWidth: 36, textAlign: "right" },
-    confirmError: { fontSize: 12, color: "#e53e3e", marginTop: -10, marginBottom: 12 },
+    confirmError: { fontSize: 12, color: DANGER, marginTop: -10, marginBottom: 12 },
     btnTop: { marginTop: 8, marginBottom: 12 },
     acceptRow: { flexDirection: "row", alignItems: "flex-start", gap: 10, marginTop: 18 },
     checkbox: {

@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/Button";
+import { DANGER } from "@/constants/theme";
 import { Input } from "@/components/ui/Input";
 import { ModalShell } from "@/components/ui/ModalShell";
 import { STRINGS } from "@/constants/strings";
@@ -90,7 +91,7 @@ export function EditProfileModal({ visible, initialValues, onClose, onSaved }: P
   const styles = StyleSheet.create({
     row: { flexDirection: "row", gap: 12 },
     rowField: { flex: 1 },
-    errorText: { color: "#e53e3e", fontSize: 13, marginBottom: 12 },
+    errorText: { color: DANGER, fontSize: 13, marginBottom: 12 },
   });
 
   return (

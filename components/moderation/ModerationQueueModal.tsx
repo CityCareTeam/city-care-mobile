@@ -1,4 +1,5 @@
 import { ModalShell } from "@/components/ui/ModalShell";
+import { DANGER } from "@/constants/theme";
 import { Toast } from "@/components/ui/ToastMessage";
 import { useAppColors } from "@/hooks/use-app-colors";
 import { useStrings } from "@/hooks/use-strings";
@@ -401,7 +402,6 @@ export function ModerationQueueModal({
   );
 }
 
-const DANGER = "#e53e3e";
 
 function makeStyles(c: ReturnType<typeof useAppColors>["colors"]) {
   return StyleSheet.create({

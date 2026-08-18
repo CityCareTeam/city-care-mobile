@@ -1,4 +1,5 @@
 import { ModalShell } from "@/components/ui/ModalShell";
+import { ROLE_COLOR , INFO, SUCCESS , DANGER } from "@/constants/theme";
 import { useAppColors } from "@/hooks/use-app-colors";
 import { checkAndFetchUpdate, useAppUpdate, useRunningUpdate } from "@/hooks/use-app-update";
 import { useStrings } from "@/hooks/use-strings";
@@ -13,9 +14,6 @@ import { Text } from "@/components/ui/AppText";
 type Status = "idle" | "checking" | "up-to-date" | "downloaded" | "unavailable" | "failed";
 
 type Icon = React.ComponentProps<typeof MaterialIcons>["name"];
-
-const SUCCESS = "#4caf50";
-const DANGER = "#e53e3e";
 
 /**
  * État des mises à jour, et bouton pour en chercher une.
@@ -187,10 +185,10 @@ export function UpdatesModal({ visible, onClose }: { visible: boolean; onClose: 
  * couleur inventée qui laisserait croire à un sens.
  */
 function channelColor(channel: string, primary: string): string {
-  if (channel === "production") return "#4caf50";
-  if (channel === "rc") return "#2196f3";
+  if (channel === "production") return SUCCESS;
+  if (channel === "rc") return INFO;
   if (channel === "beta") return primary;
-  return "#78909c";
+  return ROLE_COLOR.citizen;
 }
 
 function Row({

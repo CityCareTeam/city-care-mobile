@@ -31,6 +31,31 @@ export const CityCareColors = {
   chipBg: "#e8e1c7",
   chipBorder: "#ddd6bd",
   loaderOverlay: "rgba(239,233,211,0.6)",
+
+  // ── Rouge d'alerte ──
+  //
+  // Distinct de `statusRed`, qui décrit un statut de signalement. Celui-ci dit
+  // « attention, ceci détruit » : suppression, désactivation, masquage.
+  // Vingt-trois composants l'écrivaient en dur, à deux points de `statusRed` —
+  // deux rouges qu'on ne distingue pas à l'œil et que rien ne tenait ensemble.
+  danger: "#e53e3e",
+
+  // Le trio des statuts de signalement. Il vivait jusqu'ici dans
+  // `constants/incidents.ts`, en trois valeurs écrites à la main qui ne
+  // correspondaient à aucun jeton — dont un troisième vert, à sept points de
+  // `statusGreen`, que sept composants recopiaient.
+  info: "#2196f3",
+  warning: "#f0a500",
+  success: "#4caf50",
+
+  // ── Rôles ──
+  //
+  // Une teinte par rôle, déclarée ici et nulle part ailleurs. Le violet évite à
+  // l'administrateur de porter le rouge du danger : deux sens dans une même
+  // couleur, c'est un sens de perdu.
+  roleCitizen: "#78909C",
+  roleAgent: "#1D9BF0",
+  roleAdmin: "#AF52DE",
 };
 
 // CityCare+ charte graphique — mode sombre
@@ -49,5 +74,55 @@ export const CityCareColorsDark: typeof CityCareColors = {
   chipBg: "#2a2a25",
   chipBorder: "#4a4840",
   loaderOverlay: "rgba(26,26,22,0.6)",
+
+  // ── Rouge d'alerte ──
+  //
+  // Distinct de `statusRed`, qui décrit un statut de signalement. Celui-ci dit
+  // « attention, ceci détruit » : suppression, désactivation, masquage.
+  // Vingt-trois composants l'écrivaient en dur, à deux points de `statusRed` —
+  // deux rouges qu'on ne distingue pas à l'œil et que rien ne tenait ensemble.
+  danger: "#e53e3e",
+
+  // Le trio des statuts de signalement. Il vivait jusqu'ici dans
+  // `constants/incidents.ts`, en trois valeurs écrites à la main qui ne
+  // correspondaient à aucun jeton — dont un troisième vert, à sept points de
+  // `statusGreen`, que sept composants recopiaient.
+  info: "#2196f3",
+  warning: "#f0a500",
+  success: "#4caf50",
+
+  // ── Rôles ──
+  //
+  // Une teinte par rôle, déclarée ici et nulle part ailleurs. Le violet évite à
+  // l'administrateur de porter le rouge du danger : deux sens dans une même
+  // couleur, c'est un sens de perdu.
+  roleCitizen: "#78909C",
+  roleAgent: "#1D9BF0",
+  roleAdmin: "#AF52DE",
 };
 
+
+/**
+ * Les teintes qui ne dépendent pas du thème, exportées pour être utilisables
+ * partout — y compris à la racine d'un module, où aucun crochet ne tourne.
+ *
+ * Vingt-trois fichiers écrivaient ce rouge en dur, à deux points de
+ * `statusRed` : deux rouges qu'on ne distingue pas à l'œil et que rien ne
+ * tenait ensemble.
+ */
+export const DANGER = CityCareColors.danger;
+
+/** Une teinte par rôle, déclarée ici et nulle part ailleurs. */
+export const ROLE_COLOR = {
+  citizen: CityCareColors.roleCitizen,
+  agent: CityCareColors.roleAgent,
+  admin: CityCareColors.roleAdmin,
+} as const;
+
+/** L'orange de la marque, pour les portées où aucun crochet ne tourne. */
+export const PRIMARY = CityCareColors.primary;
+
+/** Le trio des statuts, même usage. */
+export const INFO = CityCareColors.info;
+export const WARNING = CityCareColors.warning;
+export const SUCCESS = CityCareColors.success;

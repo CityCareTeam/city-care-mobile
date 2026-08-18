@@ -1,4 +1,5 @@
 import { IncidentChatTab } from "@/components/explore/IncidentChatTab";
+import { SUCCESS , DANGER, ROLE_COLOR } from "@/constants/theme";
 import { PhotoViewer } from "@/components/explore/PhotoViewer";
 import {
   NEXT_STATUSES,
@@ -440,8 +441,8 @@ export function IncidentDetailSheet({ incident, userPlace, initialTab, onClose, 
 
             {/* En-tête */}
             <View style={s.header}>
-              <View style={[s.typeIconBubble, { backgroundColor: (TYPE_COLOR[incident.type] ?? "#78909C") + "22" }]}>
-                <MaterialIcons name={TYPE_ICON[incident.type] ?? "help-outline"} size={22} color={TYPE_COLOR[incident.type] ?? "#78909C"} />
+              <View style={[s.typeIconBubble, { backgroundColor: (TYPE_COLOR[incident.type] ?? ROLE_COLOR.citizen) + "22" }]}>
+                <MaterialIcons name={TYPE_ICON[incident.type] ?? "help-outline"} size={22} color={TYPE_COLOR[incident.type] ?? ROLE_COLOR.citizen} />
               </View>
               <View style={s.titleBlock}>
                 <Text style={s.type}>{TYPE_LABEL[incident.type] ?? incident.type}</Text>
@@ -570,7 +571,7 @@ export function IncidentDetailSheet({ incident, userPlace, initialTab, onClose, 
               <GlassPillSelector
                 options={[
                   { label: t.incident.details,    value: "details" as const },
-                  { label: t.incident.chat, value: "chat"    as const, dotColor: connected ? "#4caf50" : "#e53e3e" },
+                  { label: t.incident.chat, value: "chat"    as const, dotColor: connected ? SUCCESS : DANGER },
                 ]}
                 activeValue={activeTab}
                 onSelect={(v) => setActiveTab(v)}

@@ -1,4 +1,5 @@
 import { AppMenuProvider } from "@/context/AppMenuContext";
+import { DANGER , CityCareColors, CityCareColorsDark } from "@/constants/theme";
 import { AuthProvider } from "@/context/AuthContext";
 import { useStrings } from "@/hooks/use-strings";
 import { NotificationProvider, useNotificationContext } from "@/context/NotificationContext";
@@ -25,7 +26,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { GlassSurface } from "@/components/ui/GlassSurface";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { CityCareColors, CityCareColorsDark } from "@/constants/theme";
+
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
 const TABS = [
@@ -375,7 +376,7 @@ const styles = StyleSheet.create({
     minWidth: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: "#e53e3e",
+    backgroundColor: DANGER,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 3,

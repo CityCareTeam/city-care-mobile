@@ -1,4 +1,5 @@
 import { AccountsModal } from "@/components/admin/AccountsModal";
+import { ROLE_COLOR } from "@/constants/theme";
 import { SettingsModal } from "@/components/app/SettingsModal";
 import { UpdatesModal } from "@/components/app/UpdatesModal";
 import { ReleaseNotesModal } from "@/components/profile/ReleaseNotesModal";
@@ -30,7 +31,7 @@ type Entry = Panel | "guide" | "privacy" | "terms";
 const WIDTH = Math.min(330, Dimensions.get("window").width * 0.84);
 
 /** Violet de l administration, distinct de l accent de l application. */
-const ADMIN_ACCENT = "#AF52DE";
+const ADMIN_ACCENT = ROLE_COLOR.admin;
 
 /** Au-delà, on considère que le geste voulait fermer et non hésiter. */
 const CLOSE_THRESHOLD = WIDTH * 0.35;

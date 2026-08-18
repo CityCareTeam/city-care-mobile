@@ -1,4 +1,5 @@
 import { ModalShell } from "@/components/ui/ModalShell";
+import { ROLE_COLOR } from "@/constants/theme";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Toast } from "@/components/ui/ToastMessage";
 import { useAuth } from "@/context/AuthContext";
@@ -27,13 +28,6 @@ import {
   View,
 } from "react-native";
 import { Text } from "@/components/ui/AppText";
-
-/** Une couleur par rôle, et la même que partout ailleurs dans l'application. */
-const ROLE_COLOR: Record<AdminRole, string> = {
-  citizen: "#78909C",
-  agent: "#1D9BF0",
-  admin: "#AF52DE",
-};
 
 const ROLE_ICON: Record<AdminRole, React.ComponentProps<typeof MaterialIcons>["name"]> = {
   citizen: "person",

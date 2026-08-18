@@ -1,4 +1,5 @@
 import type { AppColors } from "@/hooks/use-app-colors";
+import { DANGER } from "@/constants/theme";
 import { View } from "react-native";
 import { Text } from "@/components/ui/AppText";
 
@@ -16,7 +17,7 @@ export function SectionHeader({ title, colors, required }: Props) {
         {title}
       </Text>
       {required && (
-        <Text style={{ fontSize: 13, color: "#e53e3e", fontWeight: "700", marginLeft: -4 }}>*</Text>
+        <Text style={{ fontSize: 13, color: DANGER, fontWeight: "700", marginLeft: -4 }}>*</Text>
       )}
     </View>
   );

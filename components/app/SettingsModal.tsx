@@ -1,5 +1,6 @@
 import { ModalShell } from "@/components/ui/ModalShell";
-import { CityCareColors, CityCareColorsDark } from "@/constants/theme";
+import { DANGER , CityCareColors, CityCareColorsDark } from "@/constants/theme";
+
 import { usePreferences } from "@/context/PreferencesContext";
 import { useAppColors } from "@/hooks/use-app-colors";
 import { useStrings } from "@/hooks/use-strings";
@@ -14,7 +15,6 @@ import { useMemo, useState } from "react";
 import { ActivityIndicator, Alert, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Text } from "@/components/ui/AppText";
 
-const DANGER = "#e53e3e";
 
 /** Les trois ordres du fil, dans l'ordre où ils apparaissent sur l'écran. */
 const SORTS: SortPreference[] = ["recent", "oldest", "nearest"];

@@ -1,4 +1,5 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { DANGER, ROLE_COLOR } from "@/constants/theme";
 import { Button } from "@/components/ui/Button";
 import { Toast } from "@/components/ui/ToastMessage";
 import { MAP_DELTAS } from "@/constants/config";
@@ -56,7 +57,7 @@ const INCIDENT_TYPES: {
   { value: "Waste",    icon: "delete-outline",  color: "#66BB6A" },
   { value: "Graffiti", icon: "format-paint",    color: "#AB47BC" },
   { value: "Safety",   icon: "shield",          color: "#EF5350" },
-  { value: "Other",    icon: "help-outline",    color: "#78909C" },
+  { value: "Other",    icon: "help-outline",    color: ROLE_COLOR.citizen },
 ];
 
 
@@ -487,7 +488,7 @@ export default function ReportScreen() {
               accessibilityRole="button"
               accessibilityLabel={t.report.discardTitle}
             >
-              <MaterialIcons name="delete-outline" size={19} color="#e53e3e" />
+              <MaterialIcons name="delete-outline" size={19} color={DANGER} />
             </TouchableOpacity>
           </TouchableOpacity>
         ))}

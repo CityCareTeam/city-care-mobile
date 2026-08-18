@@ -1,4 +1,5 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { DANGER } from "@/constants/theme";
 import { ROLE_COLORS } from "@/constants/roles";
 import { useAppColors } from "@/hooks/use-app-colors";
 import { useStrings } from "@/hooks/use-strings";
@@ -178,7 +179,7 @@ export function IncidentChatTab({ messages, loading, connected, sending, dbUserI
                           <MaterialIcons
                             name={moderating ? "visibility-off" : "flag"}
                             size={12}
-                            color={moderating ? "#e53e3e" : colors.text}
+                            color={moderating ? DANGER : colors.text}
                             style={!moderating && { opacity: 0.35 }}
                           />
                         </TouchableOpacity>

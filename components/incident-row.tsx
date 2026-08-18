@@ -1,4 +1,5 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { DANGER, ROLE_COLOR } from "@/constants/theme";
 import { STATUS_COLOR, STATUS_LABEL, TYPE_COLOR, TYPE_ICON, TYPE_LABEL } from "@/constants/incidents";
 import type { AppColors } from "@/hooks/use-app-colors";
 import { useAppColors } from "@/hooks/use-app-colors";
@@ -181,7 +182,7 @@ function makeStyles(c: AppColors) {
 }
 
 /** Rouge de la modération. Distinct du rouge de statut, qui dit « résolu ». */
-const HIDDEN = "#e53e3e";
+const HIDDEN = DANGER;
 
 function IncidentRowBase({ id, type, status, description, address, createdAt, onPress, isMine, isFollowed, onToggleFollow, distanceKm, hidden }: Props) {
   const { colors } = useAppColors();
@@ -189,7 +190,7 @@ function IncidentRowBase({ id, type, status, description, address, createdAt, on
   const t = useStrings();
 
   const statusColor = STATUS_COLOR[status] ?? "#999";
-  const typeColor   = TYPE_COLOR[type]   ?? "#78909C";
+  const typeColor   = TYPE_COLOR[type]   ?? ROLE_COLOR.citizen;
   const typeIcon    = TYPE_ICON[type]    ?? "help-outline";
   const typeLabel   = TYPE_LABEL[type]   ?? type;
 

@@ -1,4 +1,5 @@
 import { ModalShell } from "@/components/ui/ModalShell";
+import { DANGER } from "@/constants/theme";
 import { useAppColors } from "@/hooks/use-app-colors";
 import { useStrings } from "@/hooks/use-strings";
 import { FLAG_REASONS, type FlagReason } from "@/services/moderation";
@@ -173,7 +174,7 @@ function makeStyles(c: ReturnType<typeof useAppColors>["colors"]) {
     },
     // Rouge quand le geste retire pour tout le monde : la couleur dit la portée
     // avant qu'on ait lu le libellé.
-    sendDanger: { backgroundColor: "#e53e3e" },
+    sendDanger: { backgroundColor: DANGER },
     sendLabel: { fontSize: 14, fontWeight: "700", color: "#fff" },
   });
 }

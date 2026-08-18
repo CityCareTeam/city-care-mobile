@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/Button";
+import { DANGER } from "@/constants/theme";
 import { Input } from "@/components/ui/Input";
 import { ModalShell } from "@/components/ui/ModalShell";
 import { STRINGS } from "@/constants/strings";
@@ -59,7 +60,7 @@ export function ChangePasswordModal({ visible, onClose, onSaved }: Props) {
     strengthBars: { flexDirection: "row", gap: 4, flex: 1 },
     strengthBar: { flex: 1, height: 3, borderRadius: 2 },
     strengthLabel: { fontSize: 11, fontWeight: "700", minWidth: 36, textAlign: "right" },
-    errorText: { color: "#e53e3e", fontSize: 13, marginBottom: 12 },
+    errorText: { color: DANGER, fontSize: 13, marginBottom: 12 },
   });
 
   return (

@@ -1,4 +1,5 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons"; // empty state icon
+import { DANGER } from "@/constants/theme";
 import { makeRowStyles, NotificationRow } from "@/components/notifications/NotificationRow";
 import { useNotificationContext } from "@/context/NotificationContext";
 import { ErrorNotice } from "@/components/ui/ErrorNotice";
@@ -374,8 +375,8 @@ export default function NotificationsScreen() {
                   accessibilityLabel={t.notifications.clearAllA11y}
                 >
                   {clearingAll
-                    ? <ActivityIndicator size="small" color="#e53e3e" />
-                    : <MaterialIcons name="delete-outline" size={19} color="#e53e3e" />
+                    ? <ActivityIndicator size="small" color={DANGER} />
+                    : <MaterialIcons name="delete-outline" size={19} color={DANGER} />
                   }
                 </TouchableOpacity>
               </View>

@@ -1,4 +1,5 @@
 import { STATUS_COLOR, STATUS_LABEL } from "@/constants/incidents";
+import { PRIMARY, SUCCESS , DANGER, ROLE_COLOR } from "@/constants/theme";
 import type { AppColors } from "@/hooks/use-app-colors";
 import type { NotificationResponse } from "@/types/notifications";
 import type { Dictionary } from "@/constants/i18n";
@@ -27,23 +28,23 @@ const COUNTED_TYPES = new Set(["new_message", "content_flagged", "message_flagge
 function getIconConfig(type: string): IconConfig {
   switch (type) {
     case "new_incident":
-      return { name: "add-location-alt", bg: "#f6aa5420", color: "#f6aa54" };
+      return { name: "add-location-alt", bg: PRIMARY + "20", color: PRIMARY };
     case "incident_status_changed":
-      return { name: "autorenew", bg: "#1D9BF020", color: "#1D9BF0" };
+      return { name: "autorenew", bg: ROLE_COLOR.agent + "20", color: ROLE_COLOR.agent };
     case "new_message":
-      return { name: "chat-bubble", bg: "#4caf5020", color: "#4caf50" };
+      return { name: "chat-bubble", bg: SUCCESS + "20", color: SUCCESS };
     // La modération est en rouge et sous un drapeau : c'est la seule notification
     // qui demande un arbitrage, pas une lecture.
     case "content_flagged":
     case "message_flagged":
-      return { name: "flag", bg: "#e53e3e20", color: "#e53e3e" };
+      return { name: "flag", bg: DANGER + "20", color: DANGER };
     // Reçue par l'auteur d'un contenu retiré — ou remis en ligne. Un œil barré
     // plutôt qu'un drapeau : ce n'est pas une alerte à traiter, c'est une
     // décision qui le concerne.
     case "content_moderated":
-      return { name: "visibility-off", bg: "#e53e3e20", color: "#e53e3e" };
+      return { name: "visibility-off", bg: DANGER + "20", color: DANGER };
     default:
-      return { name: "notifications", bg: "#AF52DE20", color: "#AF52DE" };
+      return { name: "notifications", bg: ROLE_COLOR.admin + "20", color: ROLE_COLOR.admin };
   }
 }
 
@@ -212,7 +213,7 @@ export function makeRowStyles(c: AppColors) {
       width: 72,
       borderTopRightRadius: 16,
       borderBottomRightRadius: 16,
-      backgroundColor: "#e53e3e",
+      backgroundColor: DANGER,
       marginLeft: 6,
     },
     inner: {
@@ -238,7 +239,7 @@ export function makeRowStyles(c: AppColors) {
     statusBadge: { borderRadius: 12, paddingHorizontal: 9, paddingVertical: 4 },
     statusBadgeText: { fontSize: 11, fontWeight: "700" },
     msgCountBadge: {
-      backgroundColor: "#4caf50",
+      backgroundColor: SUCCESS,
       borderRadius: 10,
       minWidth: 20,
       height: 20,

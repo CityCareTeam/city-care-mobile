@@ -1,4 +1,5 @@
 import { languageAwareLabels } from "@/constants/i18n";
+import { INFO, SUCCESS, WARNING } from "@/constants/theme";
 import type MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 export const MAX_INCIDENT_PHOTOS = 3;
@@ -22,9 +23,9 @@ export const TYPE_COLOR: Record<string, string> = {
 };
 
 export const STATUS_COLOR: Record<string, string> = {
-  reported: "#2196f3",
-  in_progress: "#f0a500",
-  resolved: "#4caf50",
+  reported: INFO,
+  in_progress: WARNING,
+  resolved: SUCCESS,
 };
 
 /**

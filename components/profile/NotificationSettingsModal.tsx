@@ -1,4 +1,5 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { PRIMARY, SUCCESS , DANGER, ROLE_COLOR } from "@/constants/theme";
 import { ModalShell } from "@/components/ui/ModalShell";
 import { MultiPillSelector } from "@/components/ui/MultiPillSelector";
 import { TYPE_LABEL_SNAKE } from "@/constants/incidents";
@@ -67,7 +68,7 @@ export function NotificationSettingsModal({ visible, onClose }: Props) {
       backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)",
     },
     comingSoonText: { fontSize: 10, fontWeight: "700", color: colors.text, opacity: 0.4, letterSpacing: 0.3 },
-    errorText: { color: "#e53e3e", fontSize: 13, textAlign: "center", marginVertical: 12 },
+    errorText: { color: DANGER, fontSize: 13, textAlign: "center", marginVertical: 12 },
     radii: { flexDirection: "row", gap: 8, padding: 12 },
     radius: {
       flex: 1,
@@ -108,8 +109,8 @@ export function NotificationSettingsModal({ visible, onClose }: Props) {
           <SectionHeader label={t.notifSettings.inApp} />
           <View style={s.group}>
             <View style={s.row}>
-              <View style={[s.iconBubble, { backgroundColor: "#f6aa5422" }]}>
-                <MaterialIcons name="add-location-alt" size={20} color="#f6aa54" />
+              <View style={[s.iconBubble, { backgroundColor: PRIMARY + "22" }]}>
+                <MaterialIcons name="add-location-alt" size={20} color={PRIMARY} />
               </View>
               <View style={s.rowText}>
                 <Text style={s.rowLabel}>{t.notifSettings.reports}</Text>
@@ -118,14 +119,14 @@ export function NotificationSettingsModal({ visible, onClose }: Props) {
               <Switch
                 value={settings.in_app_incidents_enabled}
                 onValueChange={toggle("in_app_incidents_enabled")}
-                trackColor={{ false: colors.secondary, true: "#f6aa5470" }}
-                thumbColor={settings.in_app_incidents_enabled ? "#f6aa54" : colors.text + "40"}
+                trackColor={{ false: colors.secondary, true: PRIMARY + "70" }}
+                thumbColor={settings.in_app_incidents_enabled ? PRIMARY : colors.text + "40"}
               />
             </View>
             <View style={s.divider} />
             <View style={s.row}>
-              <View style={[s.iconBubble, { backgroundColor: "#4caf5022" }]}>
-                <MaterialIcons name="chat-bubble" size={20} color="#4caf50" />
+              <View style={[s.iconBubble, { backgroundColor: SUCCESS + "22" }]}>
+                <MaterialIcons name="chat-bubble" size={20} color={SUCCESS} />
               </View>
               <View style={s.rowText}>
                 <Text style={s.rowLabel}>{t.notifSettings.messages}</Text>
@@ -134,8 +135,8 @@ export function NotificationSettingsModal({ visible, onClose }: Props) {
               <Switch
                 value={settings.in_app_messages_enabled}
                 onValueChange={toggle("in_app_messages_enabled")}
-                trackColor={{ false: colors.secondary, true: "#4caf5070" }}
-                thumbColor={settings.in_app_messages_enabled ? "#4caf50" : colors.text + "40"}
+                trackColor={{ false: colors.secondary, true: SUCCESS + "70" }}
+                thumbColor={settings.in_app_messages_enabled ? SUCCESS : colors.text + "40"}
               />
             </View>
           </View>
@@ -143,8 +144,8 @@ export function NotificationSettingsModal({ visible, onClose }: Props) {
           <SectionHeader label={t.notifSettings.push} />
           <View style={s.group}>
             <View style={s.row}>
-              <View style={[s.iconBubble, { backgroundColor: "#AF52DE22" }]}>
-                <MaterialIcons name="notifications" size={20} color="#AF52DE" />
+              <View style={[s.iconBubble, { backgroundColor: ROLE_COLOR.admin + "22" }]}>
+                <MaterialIcons name="notifications" size={20} color={ROLE_COLOR.admin} />
               </View>
               <View style={s.rowText}>
                 <Text style={s.rowLabel}>{t.notifSettings.reports}</Text>
@@ -153,14 +154,14 @@ export function NotificationSettingsModal({ visible, onClose }: Props) {
               <Switch
                 value={settings.push_enabled}
                 onValueChange={toggle("push_enabled")}
-                trackColor={{ false: colors.secondary, true: "#AF52DE70" }}
-                thumbColor={settings.push_enabled ? "#AF52DE" : colors.text + "40"}
+                trackColor={{ false: colors.secondary, true: ROLE_COLOR.admin + "70" }}
+                thumbColor={settings.push_enabled ? ROLE_COLOR.admin : colors.text + "40"}
               />
             </View>
             <View style={s.divider} />
             <View style={s.row}>
-              <View style={[s.iconBubble, { backgroundColor: "#AF52DE22" }]}>
-                <MaterialIcons name="notifications-active" size={20} color="#AF52DE" />
+              <View style={[s.iconBubble, { backgroundColor: ROLE_COLOR.admin + "22" }]}>
+                <MaterialIcons name="notifications-active" size={20} color={ROLE_COLOR.admin} />
               </View>
               <View style={s.rowText}>
                 <Text style={s.rowLabel}>{t.notifSettings.messages}</Text>
@@ -169,8 +170,8 @@ export function NotificationSettingsModal({ visible, onClose }: Props) {
               <Switch
                 value={settings.push_messages_enabled}
                 onValueChange={toggle("push_messages_enabled")}
-                trackColor={{ false: colors.secondary, true: "#AF52DE70" }}
-                thumbColor={settings.push_messages_enabled ? "#AF52DE" : colors.text + "40"}
+                trackColor={{ false: colors.secondary, true: ROLE_COLOR.admin + "70" }}
+                thumbColor={settings.push_messages_enabled ? ROLE_COLOR.admin : colors.text + "40"}
               />
             </View>
           </View>
@@ -178,8 +179,8 @@ export function NotificationSettingsModal({ visible, onClose }: Props) {
           <SectionHeader label={t.notifSettings.email} dim />
           <View style={[s.group, { opacity: 0.45 }]}>
             <View style={s.row}>
-              <View style={[s.iconBubble, { backgroundColor: "#1D9BF022" }]}>
-                <MaterialIcons name="mail-outline" size={20} color="#1D9BF0" />
+              <View style={[s.iconBubble, { backgroundColor: ROLE_COLOR.agent + "22" }]}>
+                <MaterialIcons name="mail-outline" size={20} color={ROLE_COLOR.agent} />
               </View>
               <View style={s.rowText}>
                 <Text style={s.rowLabel}>{t.notifSettings.emailNotifications}</Text>
@@ -200,8 +201,8 @@ export function NotificationSettingsModal({ visible, onClose }: Props) {
           <SectionHeader label={t.notifSettings.thisDevice} />
           <View style={s.group}>
             <View style={s.row}>
-              <View style={[s.iconBubble, { backgroundColor: "#f6aa5422" }]}>
-                <MaterialIcons name="my-location" size={20} color="#f6aa54" />
+              <View style={[s.iconBubble, { backgroundColor: PRIMARY + "22" }]}>
+                <MaterialIcons name="my-location" size={20} color={PRIMARY} />
               </View>
               <View style={s.rowText}>
                 <Text style={s.rowLabel}>{t.settings.nearbyAlerts}</Text>
@@ -210,8 +211,8 @@ export function NotificationSettingsModal({ visible, onClose }: Props) {
               <Switch
                 value={nearbyAlerts}
                 onValueChange={setNearbyAlerts}
-                trackColor={{ false: colors.secondary, true: "#f6aa5470" }}
-                thumbColor={nearbyAlerts ? "#f6aa54" : colors.text + "40"}
+                trackColor={{ false: colors.secondary, true: PRIMARY + "70" }}
+                thumbColor={nearbyAlerts ? PRIMARY : colors.text + "40"}
               />
             </View>
             {nearbyAlerts && (

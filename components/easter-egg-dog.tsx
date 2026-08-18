@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { PRIMARY } from "@/constants/theme";
 import { Animated, Modal, ScrollView, StyleSheet, View } from "react-native";
 import { Text } from "@/components/ui/AppText";
 
@@ -66,7 +67,7 @@ export function EasterEggDog({ visible, onHide }: Props) {
 
   const dogColor = colorAnim.interpolate({
     inputRange:  [0, 0.5, 1],
-    outputRange: ["#f6aa54", "#f4e044", "#f6aa54"],
+    outputRange: [PRIMARY, "#f4e044", PRIMARY],
   });
 
   const wagRotate = wagAnim.interpolate({

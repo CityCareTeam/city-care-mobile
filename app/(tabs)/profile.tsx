@@ -1,4 +1,5 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { DANGER } from "@/constants/theme";
 import { AppVersion } from "@/components/ui/AppVersion";
 import { Card } from "@/components/ui/Card";
 import { ChangePasswordModal } from "@/components/profile/ChangePasswordModal";
@@ -165,7 +166,7 @@ function makeStyles(c: AppColors, topInset: number, bottomInset: number) {
     },
     rowBadgeText: { fontSize: 11, fontWeight: "800", color: "#fff" },
 
-    errorText: { color: "#e53e3e", fontSize: 13, marginBottom: 12 },
+    errorText: { color: DANGER, fontSize: 13, marginBottom: 12 },
     version: { marginTop: 20, fontSize: 12, color: c.text, opacity: 0.3 },
   });
 }
@@ -338,7 +339,7 @@ export default function ProfileScreen() {
           {/* La file de modération est un outil de travail, pas un réglage : elle
               n'apparaît que pour ceux qui ont à trancher. */}
           {(role === "Agent" || role === "Admin") && (
-            <SettingsRow label={t.moderation.queue} icon="flag" color="#e53e3e" badge={queueCount} last onPress={() => setQueueOpen(true)} styles={styles} colors={colors} />
+            <SettingsRow label={t.moderation.queue} icon="flag" color={DANGER} badge={queueCount} last onPress={() => setQueueOpen(true)} styles={styles} colors={colors} />
           )}
         </Card>
 
@@ -385,7 +386,7 @@ export default function ProfileScreen() {
           <SettingsRow
             label={t.profile.deleteAccount}
             icon="delete-forever"
-            color="#e53e3e"
+            color={DANGER}
             showChevron={false}
             last
             loading={deleting}

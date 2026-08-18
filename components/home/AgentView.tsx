@@ -1,4 +1,5 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { INFO } from "@/constants/theme";
 import type { IncidentResponse } from "@/types/incidents";
 import type { Paging } from "@/hooks/use-incidents-paging";
 import { EmptyState } from "@/components/home/EmptyState";
@@ -71,7 +72,7 @@ export function AgentView({
         reported={cityStats?.reported ?? loaded.reported}
       >
         <View style={styles.backlogRow}>
-          <MaterialIcons name="pending-actions" size={15} color="#2196f3" />
+          <MaterialIcons name="pending-actions" size={15} color={INFO} />
           <Text style={styles.backlogText}>{t.stats.backlog(backlog)}</Text>
         </View>
       </StatusBreakdown>
