@@ -37,6 +37,7 @@ import {
   View,
 } from "react-native";
 import { Text } from "@/components/ui/AppText";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MapView, { Marker, Region } from "react-native-maps";
 
 type PickedPhoto = {
@@ -103,7 +104,8 @@ const ReportMap = memo(function ReportMap({
 export default function ReportScreen() {
   const { colors, isDark } = useAppColors();
   const t = useStrings();
-  const styles = useMemo(() => makeStyles(colors, isDark), [colors, isDark]);
+  const insets = useSafeAreaInsets();
+  const styles = useMemo(() => makeStyles(colors, isDark, insets.top, insets.bottom), [colors, isDark, insets.top, insets.bottom]);
 
   const mapRef = useRef<MapView>(null);
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -660,9 +662,17 @@ export default function ReportScreen() {
   );
 }
 
-function makeStyles(c: AppColors, isDark: boolean) {
+function makeStyles(c: AppColors, isDark: boolean, topInset: number, bottomInset: number) {
   return StyleSheet.create({
-    container: { backgroundColor: c.background, padding: 20, paddingBottom: 48 },
+    // Poussé en modale, donc plein écran sur Android : sans les encoches, le
+    // titre passait sous la barre d état et le dernier bouton sous la barre de
+    // navigation.
+    container: {
+      backgroundColor: c.background,
+      padding: 20,
+      paddingTop: topInset + 20,
+      paddingBottom: bottomInset + 48,
+    },
 
     // ── Doublon probable ──
     // Teinté de la couleur de l'application et non du rouge des erreurs : ce

@@ -37,8 +37,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
  */
 export default function NewsScreen() {
   const { colors } = useAppColors();
-  const { bottom } = useSafeAreaInsets();
-  const styles = useMemo(() => makeStyles(colors, bottom), [colors, bottom]);
+  const { top, bottom } = useSafeAreaInsets();
+  const styles = useMemo(() => makeStyles(colors, top, bottom), [colors, top, bottom]);
   const t = useStrings();
 
   const { city, origin, choose } = useNewsCity();
@@ -344,13 +344,13 @@ const NewsCard = memo(function NewsCard({
   );
 });
 
-function makeStyles(c: AppColors, bottomInset: number) {
+function makeStyles(c: AppColors, topInset: number, bottomInset: number) {
   return StyleSheet.create({
     container: {
       flexGrow: 1,
       backgroundColor: c.background,
       paddingHorizontal: 16,
-      paddingTop: 48,
+      paddingTop: topInset + 12,
       paddingBottom: getTabBarScrollPadding(bottomInset),
     },
 

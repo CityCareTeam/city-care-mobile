@@ -34,7 +34,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // ─── Styles ────────────────────────────────────────────────────────────────────
 
-function makeStyles(c: AppColors, bottomInset: number) {
+function makeStyles(c: AppColors, topInset: number, bottomInset: number) {
   return StyleSheet.create({
     center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: c.background },
     container: {
@@ -42,7 +42,7 @@ function makeStyles(c: AppColors, bottomInset: number) {
       backgroundColor: c.background,
       alignItems: "center",
       padding: 20,
-      paddingTop: 48,
+      paddingTop: topInset + 12,
       paddingBottom: getTabBarScrollPadding(bottomInset),
     },
 
@@ -176,8 +176,8 @@ export default function ProfileScreen() {
   const { keycloakUser, dbUser, loading, logout, isAuthenticated, authError, refreshUser } = useAuth();
   const { colors } = useAppColors();
   const t = useStrings();
-  const { bottom: bottomInset } = useSafeAreaInsets();
-  const styles = useMemo(() => makeStyles(colors, bottomInset), [colors, bottomInset]);
+  const { top: topInset, bottom: bottomInset } = useSafeAreaInsets();
+  const styles = useMemo(() => makeStyles(colors, topInset, bottomInset), [colors, topInset, bottomInset]);
 
   const [editOpen, setEditOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);

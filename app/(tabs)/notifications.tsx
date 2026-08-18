@@ -32,7 +32,7 @@ import { useAuth } from "@/context/AuthContext";
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-function makeStyles(c: AppColors, bottomInset: number) {
+function makeStyles(c: AppColors, topInset: number, bottomInset: number) {
   return StyleSheet.create({
     center: {
       flex: 1,
@@ -44,7 +44,7 @@ function makeStyles(c: AppColors, bottomInset: number) {
       flexGrow: 1,
       backgroundColor: c.background,
       paddingHorizontal: 16,
-      paddingTop: 48,
+      paddingTop: topInset + 12,
       paddingBottom: getTabBarScrollPadding(bottomInset),
     },
 
@@ -134,8 +134,8 @@ function makeStyles(c: AppColors, bottomInset: number) {
 export default function NotificationsScreen() {
   const { isAuthenticated, loading } = useAuth();
   const { colors } = useAppColors();
-  const { bottom: bottomInset } = useSafeAreaInsets();
-  const styles = useMemo(() => makeStyles(colors, bottomInset), [colors, bottomInset]);
+  const { top: topInset, bottom: bottomInset } = useSafeAreaInsets();
+  const styles = useMemo(() => makeStyles(colors, topInset, bottomInset), [colors, topInset, bottomInset]);
   const rowStyles = useMemo(() => makeRowStyles(colors), [colors]);
   const { refreshCount } = useNotificationContext();
   const t = useStrings();
